@@ -19,6 +19,15 @@ const narrativeTrace = {
 type Scenario = { scenario: string; allocation: Record<string, number>; cost: number; final_adoption: number; trajectory: { day: number; adoption: number }[] };
 function fmt(value: number | undefined, digits = 3) { return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "n/a"; }
 function allocationLabel(key: string) { return key.replace(/_/g, " "); }
+function simulatePreview(start: number, allocation: Record<string, number>, horizon = 60) {
+  let adoption = Math.max(0, Math.min(1, start));
+  const influence = 0.035 + 0.035 * allocation.demand_generation + 0.045 * allocation.consumer_subsidy + 0.03 * allocation.supply_chain;
+  const resistance = Math.max(0.004, 0.018 - 0.007 * allocation.supply_chain - 0.004 * allocation.consumer_subsidy);
+  return Array.from({ length: horizon }, (_, i) => {
+    adoption = Math.max(0, Math.min(1, adoption + influence * adoption * (1 - adoption) - resistance * adoption));
+    return { day: i + 1, live_preview: adoption };
+  });
+}
 
 export default function AnalysisPage() {
   const [series, setSeries] = useState(defaultSeries);
@@ -32,6 +41,7 @@ export default function AnalysisPage() {
   const [policy, setPolicy] = useState<any>(null);
   const [hierarchical, setHierarchical] = useState<any>(null);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [focusedScenario, setFocusedScenario] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [countryLoading, setCountryLoading] = useState(false);
   const [scenarioLoading, setScenarioLoading] = useState(false);
@@ -39,6 +49,11 @@ export default function AnalysisPage() {
 
   const values = () => series.split(",").map((x) => Number(x.trim())).filter((x) => !Number.isNaN(x));
   const selectedAllocation = { demand_generation: trustCampaign, consumer_subsidy: subsidy, supply_chain: supplyChain };
+  const lastObserved = values().at(-1) ?? 0.25;
+
+  const livePreview = useMemo(() => simulatePreview(lastObserved, selectedAllocation), [lastObserved, trustCampaign, subsidy, supplyChain]);
+  const previewFinal = livePreview.at(-1)?.live_preview;
+  const previewDelta = typeof previewFinal === "number" ? previewFinal - lastObserved : undefined;
 
   const bayesianChart = useMemo(() => {
     const mean = bayesian?.trajectory?.mean || [];
@@ -79,13 +94,13 @@ export default function AnalysisPage() {
     const selected = scenarios.find((s) => s.scenario === "Selected policy");
     const optimized = scenarios.find((s) => s.scenario === "Optimized");
     const best = scenarioRanking[0] || optimized || selected;
-    const start = values().at(-1) ?? baseline?.trajectory?.[0]?.adoption ?? 0;
+    const start = lastObserved;
     const dominantAllocation = optimization?.best?.allocation || selectedAllocation;
     const dominantLever = Object.entries(dominantAllocation).sort((a: any, b: any) => b[1] - a[1])[0];
     const uncertainty = [["diffusion", bayesian?.parameters?.beta?.q95 - bayesian?.parameters?.beta?.q05], ["intervention response", bayesian?.parameters?.gamma?.q95 - bayesian?.parameters?.gamma?.q05], ["resistance", bayesian?.parameters?.delta?.q95 - bayesian?.parameters?.delta?.q05]].filter((x: any) => Number.isFinite(x[1])).sort((a: any, b: any) => b[1] - a[1]);
     const widest = uncertainty[0];
     const highUncertainty = widest && widest[1] > 0.2;
-    if (!scenarios.length) return { headline: "Run analysis to generate a recommendation.", adoptionChange: "n/a", recommendation: "Start with Run full analysis. The system will rank scenarios and explain the strongest policy case.", uncertaintyAdvice: "No uncertainty assessment yet.", traceability: ["Traceability appears after policy allocation is selected."], driver: "n/a", evidence: "No scenario outputs yet.", confidence: "Pending" };
+    if (!scenarios.length) return { headline: "Live preview is active. Run analysis to validate with backend simulation.", adoptionChange: `${fmt(start)} → ${fmt(previewFinal)} (${previewDelta && previewDelta >= 0 ? "+" : ""}${fmt(previewDelta)} preview)`, recommendation: "Adjust sliders to preview policy direction, then run full analysis for calibrated ranking.", uncertaintyAdvice: "No Bayesian uncertainty assessment yet.", traceability: ["Traceability appears after policy allocation is selected."], driver: "Preview uses selected levers only.", evidence: "No backend scenario outputs yet.", confidence: "Preview" };
     const baselineGain = best && baseline ? best.final_adoption - baseline.final_adoption : undefined;
     const traceKey = dominantLever?.[0] as keyof typeof narrativeTrace;
     return {
@@ -98,7 +113,7 @@ export default function AnalysisPage() {
       evidence: `Baseline=${fmt(baseline?.final_adoption)}, Selected=${fmt(selected?.final_adoption)}, Optimized=${fmt(optimized?.final_adoption)}.`,
       confidence: highUncertainty ? "Provisional" : "Moderate",
     };
-  }, [scenarios, scenarioRanking, optimization, bayesian, trustCampaign, subsidy, supplyChain, series]);
+  }, [scenarios, scenarioRanking, optimization, bayesian, trustCampaign, subsidy, supplyChain, series, previewFinal, previewDelta]);
 
   async function runBackendScenarios(nextParams = params, opt = optimization) {
     setScenarioLoading(true); setError("");
@@ -106,6 +121,7 @@ export default function AnalysisPage() {
       const optimizedAllocation = opt?.best?.allocation || { demand_generation: 0.7, consumer_subsidy: 0.8, supply_chain: 0.6 };
       const res = await post("/analytics/scenario-simulate", { base_params: nextParams, horizon: 180, scenarios: { Baseline: { demand_generation: 0, consumer_subsidy: 0, supply_chain: 0 }, "Selected policy": selectedAllocation, Optimized: optimizedAllocation } });
       setScenarios(res.scenarios || []);
+      setFocusedScenario(null);
     } catch (e: any) { setError(e?.message || "Scenario simulation failed. Check NEXT_PUBLIC_API_URL."); }
     finally { setScenarioLoading(false); }
   }
@@ -158,6 +174,11 @@ export default function AnalysisPage() {
           <label>Trust campaign {trustCampaign.toFixed(2)}<input type="range" min="0" max="1" step="0.05" value={trustCampaign} onChange={(e) => setTrustCampaign(Number(e.target.value))} /></label>
           <label>Subsidy {subsidy.toFixed(2)}<input type="range" min="0" max="1" step="0.05" value={subsidy} onChange={(e) => setSubsidy(Number(e.target.value))} /></label>
           <label>Supply chain {supplyChain.toFixed(2)}<input type="range" min="0" max="1" step="0.05" value={supplyChain} onChange={(e) => setSupplyChain(Number(e.target.value))} /></label>
+          <div className="card" style={{ padding: 12, boxShadow: "none" }}>
+            <h2>Live preview</h2>
+            <p><strong>Projected:</strong> {fmt(lastObserved)} → {fmt(previewFinal)} ({previewDelta && previewDelta >= 0 ? "+" : ""}{fmt(previewDelta)})</p>
+            <ResponsiveContainer width="100%" height={120}><LineChart data={livePreview}><XAxis dataKey="day" hide /><YAxis domain={[0, 1]} hide /><Tooltip /><Line type="monotone" dataKey="live_preview" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer>
+          </div>
           <button onClick={runAnalysis} disabled={loading}>{loading ? "Running..." : "Run full analysis"}</button>
           <button onClick={() => runBackendScenarios()} disabled={scenarioLoading}>{scenarioLoading ? "Running..." : "Run scenarios"}</button>
           <button onClick={runMultiCountry} disabled={countryLoading}>{countryLoading ? "Running..." : "Multi-country demo"}</button>
@@ -175,25 +196,15 @@ export default function AnalysisPage() {
             <p><strong>Recommendation:</strong> {interpretation.recommendation}</p>
             <p><strong>Evidence:</strong> {interpretation.evidence}</p>
           </section>
-
           <section className="card">
             <h2>Scenario ranking</h2>
-            {scenarioRanking.length ? (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead><tr><th>Rank</th><th>Scenario</th><th>Adoption</th><th>Cost</th><th>Score</th></tr></thead>
-                <tbody>{scenarioRanking.map((s, i) => <tr key={s.scenario}><td>{i + 1}</td><td>{s.scenario}</td><td>{fmt(s.final_adoption)}</td><td>{fmt(s.cost)}</td><td>{fmt(s.score)}</td></tr>)}</tbody>
-              </table>
-            ) : <p>No ranking yet.</p>}
+            {scenarioRanking.length ? <table><thead><tr><th>Rank</th><th>Scenario</th><th>Adoption</th><th>Cost</th><th>Score</th></tr></thead><tbody>{scenarioRanking.map((s, i) => <tr key={s.scenario} onMouseEnter={() => setFocusedScenario(s.scenario)} onMouseLeave={() => setFocusedScenario(null)}><td>{i + 1}</td><td>{s.scenario}</td><td>{fmt(s.final_adoption)}</td><td>{fmt(s.cost)}</td><td>{fmt(s.score)}</td></tr>)}</tbody></table> : <p>No ranking yet.</p>}
           </section>
-
-          <section className="card">
-            <h2>Why this recommendation?</h2>
-            <ul>{interpretation.traceability.map((item, i) => <li key={i}>{item}</li>)}</ul>
-          </section>
+          <section className="card"><h2>Why this recommendation?</h2><ul>{interpretation.traceability.map((item, i) => <li key={i}>{item}</li>)}</ul></section>
         </main>
 
         <aside style={{ display: "grid", gap: 16 }}>
-          <section className="card chart-card"><h2>Scenario comparison</h2>{scenarioChart.length ? <ResponsiveContainer width="100%" height={260}><LineChart data={scenarioChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" /><YAxis domain={[0, 1]} /><Tooltip /><Legend />{scenarios.map((s) => <Line key={s.scenario} type="monotone" dataKey={s.scenario} strokeWidth={2} dot={false} />)}</LineChart></ResponsiveContainer> : <p>Run scenarios to view trajectories.</p>}</section>
+          <section className="card chart-card"><h2>Scenario comparison</h2>{scenarioChart.length ? <ResponsiveContainer width="100%" height={260}><LineChart data={scenarioChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" /><YAxis domain={[0, 1]} /><Tooltip /><Legend />{scenarios.map((s) => <Line key={s.scenario} type="monotone" dataKey={s.scenario} strokeWidth={focusedScenario === s.scenario || !focusedScenario ? 3 : 1} opacity={focusedScenario && focusedScenario !== s.scenario ? 0.28 : 1} dataKey={s.scenario} dot={false} />)}</LineChart></ResponsiveContainer> : <p>Run scenarios to view trajectories.</p>}</section>
           <section className="card chart-card"><h2>Bayesian credible band</h2>{bayesianChart.length ? <ResponsiveContainer width="100%" height={220}><LineChart data={bayesianChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" /><YAxis domain={[0, 1]} /><Tooltip /><Legend /><Line type="monotone" dataKey="upper" strokeWidth={1} dot={false} /><Line type="monotone" dataKey="mean" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="lower" strokeWidth={1} dot={false} /></LineChart></ResponsiveContainer> : <p>No Bayesian run yet.</p>}</section>
           <section className="card chart-card"><h2>Policy allocation</h2><ResponsiveContainer width="100%" height={220}><BarChart data={allocationChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis domain={[0, 1]} /><Tooltip /><Bar dataKey="value" /></BarChart></ResponsiveContainer></section>
           <section className="card chart-card"><h2>Multi-country comparison</h2>{countryChart.length ? <ResponsiveContainer width="100%" height={220}><BarChart data={countryChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="country" /><YAxis /><Tooltip /><Legend /><Bar dataKey="beta" /><Bar dataKey="gamma" /><Bar dataKey="delta" /></BarChart></ResponsiveContainer> : <p>Run multi-country demo.</p>}</section>
