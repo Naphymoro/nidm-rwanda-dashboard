@@ -59,3 +59,15 @@
 - [x] Verify responsive design on mobile/tablet/desktop
 - [x] Optimize performance (lazy loading, memoization)
 - [x] Create checkpoint for deployment
+
+## Phase 11: AIMS Colorblind-Friendly Palette & Remaining Features
+- [ ] Replace neon palette with AIMS colors: navy (#1A3668), teal (#00A9B5), gold (#F4A500)
+- [ ] Update simulation chart with colorblind-safe trajectory colors
+- [ ] Add simulation playback controls (play/pause/reset/speed slider)
+- [ ] Build Digital Twin architecture view with animated node-graph
+- [ ] Add Reinforcement Learning insights panel with reward curve
+- [ ] Implement CSV file parsing into structured narratives
+- [ ] Implement TXT/MD narrative file parsing
+- [ ] Build searchable/filterable narrative library
+- [ ] Update vitest tests for new features
+- [ ] Save final checkpoint

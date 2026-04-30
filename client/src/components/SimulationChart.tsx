@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 interface SimulationDataPoint {
@@ -23,178 +24,156 @@ interface SimulationChartProps {
   data: SimulationDataPoint[];
   title?: string;
   height?: number;
+  /** Current playback time (used to draw a vertical "playhead" reference line). */
+  currentTime?: number;
 }
+
+/**
+ * Colorblind-safe AIMS palette + Okabe-Ito extensions.
+ * Each line also uses a distinct dash pattern so that users with any form of
+ * color-vision deficiency can still tell the five compartments apart.
+ */
+export const COMPARTMENT_COLORS = {
+  Susceptible: "#00A9B5", // AIMS Teal
+  Misinformed: "#F4A500", // AIMS Gold
+  Truth: "#56B870",       // Bluish-green (Okabe-Ito)
+  Inoculated: "#1A3668",  // AIMS Navy
+  Resistant: "#D55E00",   // Vermillion (Okabe-Ito)
+} as const;
+
+const COMPARTMENT_DASH = {
+  Susceptible: undefined,           // solid
+  Misinformed: "6 4",               // dashed
+  Truth: "2 3",                     // dotted
+  Inoculated: "10 4 2 4",           // dash-dot
+  Resistant: "12 6",                // long dash
+} as const;
 
 export default function SimulationChart({
   data,
   title = "NIDM Compartmental Model Trajectories",
   height = 400,
+  currentTime,
 }: SimulationChartProps) {
   const chartData = useMemo(() => {
     return data.map((point) => ({
-      time: point.time.toFixed(1),
-      Susceptible: Math.round(point.Susceptible * 100) / 100,
-      Misinformed: Math.round(point.Misinformed * 100) / 100,
-      Truth: Math.round(point.Truth * 100) / 100,
-      Inoculated: Math.round(point.Inoculated * 100) / 100,
-      Resistant: Math.round(point.Resistant * 100) / 100,
+      time: Number(point.time.toFixed(1)),
+      Susceptible: Math.round(point.Susceptible * 1000) / 1000,
+      Misinformed: Math.round(point.Misinformed * 1000) / 1000,
+      Truth: Math.round(point.Truth * 1000) / 1000,
+      Inoculated: Math.round(point.Inoculated * 1000) / 1000,
+      Resistant: Math.round(point.Resistant * 1000) / 1000,
     }));
   }, [data]);
 
-  const colors = {
-    Susceptible: "rgb(74, 144, 217)",      // Blue
-    Misinformed: "rgb(232, 82, 58)",       // Red-orange
-    Truth: "rgb(46, 204, 113)",            // Green
-    Inoculated: "rgb(243, 156, 18)",       // Gold
-    Resistant: "rgb(155, 89, 182)",        // Purple
-  };
-
   return (
     <div className="glass-dark border border-border/50 rounded-lg p-6 glow-secondary">
-      <h3 className="text-lg font-bold neon-text mb-6">{title}</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-bold neon-text">{title}</h3>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot" />
+          <span>Live trajectory</span>
+        </div>
+      </div>
 
       <ResponsiveContainer width="100%" height={height}>
         <LineChart
           data={chartData}
           margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
         >
-          <defs>
-            {/* Gradient definitions for each line */}
-            <linearGradient id="grad-susceptible" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.Susceptible} stopOpacity={0.8} />
-              <stop offset="100%" stopColor={colors.Susceptible} stopOpacity={0.1} />
-            </linearGradient>
-            <linearGradient id="grad-misinformed" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.Misinformed} stopOpacity={0.8} />
-              <stop offset="100%" stopColor={colors.Misinformed} stopOpacity={0.1} />
-            </linearGradient>
-            <linearGradient id="grad-truth" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.Truth} stopOpacity={0.8} />
-              <stop offset="100%" stopColor={colors.Truth} stopOpacity={0.1} />
-            </linearGradient>
-            <linearGradient id="grad-inoculated" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.Inoculated} stopOpacity={0.8} />
-              <stop offset="100%" stopColor={colors.Inoculated} stopOpacity={0.1} />
-            </linearGradient>
-            <linearGradient id="grad-resistant" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors.Resistant} stopOpacity={0.8} />
-              <stop offset="100%" stopColor={colors.Resistant} stopOpacity={0.1} />
-            </linearGradient>
-          </defs>
-
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="rgba(255, 255, 255, 0.1)"
+            stroke="rgba(255, 255, 255, 0.08)"
             vertical={false}
           />
           <XAxis
             dataKey="time"
             stroke="rgba(255, 255, 255, 0.5)"
             style={{ fontSize: "12px" }}
+            label={{
+              value: "Time (days)",
+              position: "insideBottom",
+              offset: -2,
+              fill: "rgba(255,255,255,0.5)",
+              fontSize: 11,
+            }}
           />
           <YAxis
             stroke="rgba(255, 255, 255, 0.5)"
             style={{ fontSize: "12px" }}
+            label={{
+              value: "Population fraction",
+              angle: -90,
+              position: "insideLeft",
+              fill: "rgba(255,255,255,0.5)",
+              fontSize: 11,
+            }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "rgba(13, 13, 26, 0.95)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
+              backgroundColor: "rgba(14, 26, 51, 0.95)",
+              border: "1px solid rgba(0, 169, 181, 0.3)",
               borderRadius: "8px",
-              boxShadow: "0 0 20px rgba(0, 255, 200, 0.2)",
+              boxShadow: "0 0 20px rgba(0, 169, 181, 0.25)",
             }}
             labelStyle={{ color: "rgba(255, 255, 255, 0.9)" }}
+            itemStyle={{ color: "rgba(255, 255, 255, 0.85)" }}
           />
-          <Legend
-            wrapperStyle={{ paddingTop: "20px" }}
-            iconType="line"
-          />
+          <Legend wrapperStyle={{ paddingTop: "20px" }} iconType="line" />
 
-          <Line
-            type="monotone"
-            dataKey="Susceptible"
-            stroke={colors.Susceptible}
-            strokeWidth={2.5}
-            dot={false}
-            isAnimationActive={true}
-            animationDuration={1000}
-          />
-          <Line
-            type="monotone"
-            dataKey="Misinformed"
-            stroke={colors.Misinformed}
-            strokeWidth={2.5}
-            dot={false}
-            isAnimationActive={true}
-            animationDuration={1000}
-          />
-          <Line
-            type="monotone"
-            dataKey="Truth"
-            stroke={colors.Truth}
-            strokeWidth={2.5}
-            dot={false}
-            isAnimationActive={true}
-            animationDuration={1000}
-          />
-          <Line
-            type="monotone"
-            dataKey="Inoculated"
-            stroke={colors.Inoculated}
-            strokeWidth={2.5}
-            dot={false}
-            isAnimationActive={true}
-            animationDuration={1000}
-          />
-          <Line
-            type="monotone"
-            dataKey="Resistant"
-            stroke={colors.Resistant}
-            strokeWidth={2.5}
-            dot={false}
-            isAnimationActive={true}
-            animationDuration={1000}
-          />
+          {currentTime !== undefined && (
+            <ReferenceLine
+              x={Number(currentTime.toFixed(1))}
+              stroke="#F4A500"
+              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              label={{
+                value: `t=${currentTime.toFixed(1)}`,
+                position: "top",
+                fill: "#F4A500",
+                fontSize: 11,
+              }}
+            />
+          )}
+
+          {(Object.keys(COMPARTMENT_COLORS) as Array<keyof typeof COMPARTMENT_COLORS>).map(
+            (key) => (
+              <Line
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={COMPARTMENT_COLORS[key]}
+                strokeWidth={2.5}
+                strokeDasharray={COMPARTMENT_DASH[key]}
+                dot={false}
+                isAnimationActive={true}
+                animationDuration={800}
+              />
+            )
+          )}
         </LineChart>
       </ResponsiveContainer>
 
-      {/* Legend explanation */}
+      {/* Legend explanation with dash patterns visible */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6 text-xs">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: colors.Susceptible }}
-          />
-          <span className="text-muted-foreground">Susceptible</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: colors.Misinformed }}
-          />
-          <span className="text-muted-foreground">Misinformed</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: colors.Truth }}
-          />
-          <span className="text-muted-foreground">Truth</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: colors.Inoculated }}
-          />
-          <span className="text-muted-foreground">Inoculated</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: colors.Resistant }}
-          />
-          <span className="text-muted-foreground">Resistant</span>
-        </div>
+        {(Object.keys(COMPARTMENT_COLORS) as Array<keyof typeof COMPARTMENT_COLORS>).map(
+          (key) => (
+            <div key={key} className="flex items-center gap-2">
+              <svg width="24" height="6" className="flex-shrink-0">
+                <line
+                  x1="0"
+                  y1="3"
+                  x2="24"
+                  y2="3"
+                  stroke={COMPARTMENT_COLORS[key]}
+                  strokeWidth="2.5"
+                  strokeDasharray={COMPARTMENT_DASH[key]}
+                />
+              </svg>
+              <span className="text-muted-foreground">{key}</span>
+            </div>
+          )
+        )}
       </div>
     </div>
   );
