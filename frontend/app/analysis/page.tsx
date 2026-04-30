@@ -32,6 +32,14 @@ type Scenario = {
   trajectory: { day: number; adoption: number }[];
 };
 
+function fmt(value: number | undefined, digits = 3) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "n/a";
+}
+
+function allocationLabel(key: string) {
+  return key.replace(/_/g, " ");
+}
+
 export default function AnalysisPage() {
   const [series, setSeries] = useState(defaultSeries);
   const [budget, setBudget] = useState(0.7);
@@ -70,14 +78,14 @@ export default function AnalysisPage() {
 
   const allocationChart = useMemo(() => {
     const allocation = optimization?.best?.allocation || selectedAllocation;
-    return Object.keys(allocation).map((key) => ({ name: key.replace("_", " "), value: allocation[key] }));
+    return Object.keys(allocation).map((key) => ({ name: allocationLabel(key), value: allocation[key] }));
   }, [optimization, trustCampaign, subsidy, supplyChain]);
 
   const scenarioChart = useMemo(() => {
     if (!scenarios.length) return [];
     const maxLength = Math.max(...scenarios.map((s) => s.trajectory.length));
     return Array.from({ length: maxLength }, (_, i) => {
-      const row: Record<string, number> = { day: i + 1 };
+      const row: Record<string, number | null> = { day: i + 1 };
       scenarios.forEach((scenario) => {
         row[scenario.scenario] = scenario.trajectory[i]?.adoption ?? null;
       });
@@ -94,6 +102,52 @@ export default function AnalysisPage() {
       delta: countries[country]?.delta?.mean,
     }));
   }, [hierarchical]);
+
+  const interpretation = useMemo(() => {
+    const baseline = scenarios.find((s) => s.scenario === "Baseline");
+    const selected = scenarios.find((s) => s.scenario === "Selected policy");
+    const optimized = scenarios.find((s) => s.scenario === "Optimized");
+    const best = optimized || selected;
+    const start = values().at(-1) ?? baseline?.trajectory?.[0]?.adoption ?? 0;
+    const dominantAllocation = optimization?.best?.allocation || selectedAllocation;
+    const dominantLever = Object.entries(dominantAllocation).sort((a: any, b: any) => b[1] - a[1])[0];
+    const beta = bayesian?.parameters?.beta;
+    const gamma = bayesian?.parameters?.gamma;
+    const delta = bayesian?.parameters?.delta;
+    const widest = [
+      ["diffusion", beta?.q95 - beta?.q05],
+      ["intervention response", gamma?.q95 - gamma?.q05],
+      ["resistance", delta?.q95 - delta?.q05],
+    ].filter((x: any) => Number.isFinite(x[1])).sort((a: any, b: any) => b[1] - a[1])[0];
+
+    if (!scenarios.length) {
+      return {
+        headline: "Run scenarios to generate an interpretation.",
+        adoptionChange: "n/a",
+        recommendation: "Use Run full analysis or Run backend scenarios to produce model-based recommendations.",
+        driver: "n/a",
+        risk: "n/a",
+        evidence: "No scenario outputs are available yet.",
+      };
+    }
+
+    const gainVsBaseline = best && baseline ? best.final_adoption - baseline.final_adoption : undefined;
+    const selectedGain = selected && baseline ? selected.final_adoption - baseline.final_adoption : undefined;
+    const optimizedGain = optimized && baseline ? optimized.final_adoption - baseline.final_adoption : undefined;
+
+    return {
+      headline: best
+        ? `${best.scenario} reaches final adoption of ${fmt(best.final_adoption)}.`
+        : "Scenario comparison is available.",
+      adoptionChange: `${fmt(start)} → ${fmt(best?.final_adoption)} (${gainVsBaseline && gainVsBaseline >= 0 ? "+" : ""}${fmt(gainVsBaseline)} vs baseline)`,
+      recommendation: optimizedGain !== undefined && selectedGain !== undefined && optimizedGain > selectedGain
+        ? "The optimized allocation outperforms the selected policy. Use it as the preferred planning case, subject to field validation."
+        : "The selected policy is close to the optimized outcome. Validate feasibility and cost before using it operationally.",
+      driver: dominantLever ? `${allocationLabel(dominantLever[0])} is the largest recommended lever (${fmt(dominantLever[1] as number, 2)}).` : "No dominant lever identified.",
+      risk: widest ? `Largest parameter uncertainty appears in ${widest[0]}; treat related projections cautiously.` : "Uncertainty cannot be assessed until Bayesian inference is run.",
+      evidence: `Baseline=${fmt(baseline?.final_adoption)}, Selected=${fmt(selected?.final_adoption)}, Optimized=${fmt(optimized?.final_adoption)}.`,
+    };
+  }, [scenarios, optimization, bayesian, trustCampaign, subsidy, supplyChain, series]);
 
   async function runBackendScenarios(nextParams = params, opt = optimization) {
     setScenarioLoading(true);
@@ -174,6 +228,16 @@ export default function AnalysisPage() {
 
     let y = 60;
     doc.setFontSize(12);
+    doc.text("Decision interpretation", 14, y);
+    y += 8;
+    doc.setFontSize(10);
+    [interpretation.headline, interpretation.adoptionChange, interpretation.driver, interpretation.risk, interpretation.recommendation].forEach((line) => {
+      doc.text(doc.splitTextToSize(line, 180), 14, y);
+      y += 9;
+    });
+
+    y += 4;
+    doc.setFontSize(12);
     doc.text("Scenario outcomes", 14, y);
     y += 8;
     doc.setFontSize(10);
@@ -187,7 +251,7 @@ export default function AnalysisPage() {
     doc.text("Recommended policy package", 14, y);
     y += 8;
     doc.setFontSize(9);
-    const packageText = JSON.stringify(policy || {}, null, 2).slice(0, 2200);
+    const packageText = JSON.stringify(policy || {}, null, 2).slice(0, 1800);
     doc.text(doc.splitTextToSize(packageText, 180), 14, y);
     doc.save("nidm-policy-report.pdf");
   }
@@ -218,6 +282,16 @@ export default function AnalysisPage() {
       </div>
 
       <div className="analysis-grid">
+        <div className="card">
+          <h2>Decision interpretation</h2>
+          <h3>{interpretation.headline}</h3>
+          <p><strong>Projected change:</strong> {interpretation.adoptionChange}</p>
+          <p><strong>Key driver:</strong> {interpretation.driver}</p>
+          <p><strong>Risk signal:</strong> {interpretation.risk}</p>
+          <p><strong>Recommendation:</strong> {interpretation.recommendation}</p>
+          <p><strong>Evidence:</strong> {interpretation.evidence}</p>
+        </div>
+
         <div className="card chart-card">
           <h2>Backend-driven scenario comparison</h2>
           {scenarioChart.length ? (
