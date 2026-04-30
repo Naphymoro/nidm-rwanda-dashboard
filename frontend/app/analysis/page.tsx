@@ -100,7 +100,7 @@ export default function AnalysisPage() {
     const uncertainty = [["diffusion", bayesian?.parameters?.beta?.q95 - bayesian?.parameters?.beta?.q05], ["intervention response", bayesian?.parameters?.gamma?.q95 - bayesian?.parameters?.gamma?.q05], ["resistance", bayesian?.parameters?.delta?.q95 - bayesian?.parameters?.delta?.q05]].filter((x: any) => Number.isFinite(x[1])).sort((a: any, b: any) => b[1] - a[1]);
     const widest = uncertainty[0];
     const highUncertainty = widest && widest[1] > 0.2;
-    if (!scenarios.length) return { headline: "Live preview is active. Run analysis to validate with backend simulation.", adoptionChange: `${fmt(start)} → ${fmt(previewFinal)} (${previewDelta && previewDelta >= 0 ? "+" : ""}${fmt(previewDelta)} preview)`, recommendation: "Adjust sliders to preview policy direction, then run full analysis for calibrated ranking.", uncertaintyAdvice: "No Bayesian uncertainty assessment yet.", traceability: ["Traceability appears after policy allocation is selected."], driver: "Preview uses selected levers only.", evidence: "No backend scenario outputs yet.", confidence: "Preview" };
+    if (!scenarios.length) return { headline: "Live preview is active. Run analysis to validate with backend simulation.", adoptionChange: `${fmt(start)} → ${fmt(previewFinal)} (${previewDelta && previewDelta >= 0 ? "+" : ""}${fmt(previewDelta)} preview)`, recommendation: "Adjust sliders to preview policy direction, then run full analysis for calibrated ranking.", uncertaintyAdvice: "No Bayesian uncertainty assessment yet.", traceability: ["Traceability appears after policy allocation is selected."], driver: "Preview uses selected levers only.", evidence: "No backend scenario outputs yet.", confidence: "Preview", highUncertainty: false };
     const baselineGain = best && baseline ? best.final_adoption - baseline.final_adoption : undefined;
     const traceKey = dominantLever?.[0] as keyof typeof narrativeTrace;
     return {
@@ -112,8 +112,32 @@ export default function AnalysisPage() {
       traceability: narrativeTrace[traceKey] || ["Traceability will improve when real narratives are linked to the model run."],
       evidence: `Baseline=${fmt(baseline?.final_adoption)}, Selected=${fmt(selected?.final_adoption)}, Optimized=${fmt(optimized?.final_adoption)}.`,
       confidence: highUncertainty ? "Provisional" : "Moderate",
+      highUncertainty,
     };
   }, [scenarios, scenarioRanking, optimization, bayesian, trustCampaign, subsidy, supplyChain, series, previewFinal, previewDelta]);
+
+  const assistant = useMemo(() => {
+    const top = scenarioRanking[0];
+    const second = scenarioRanking[1];
+    const actions: string[] = [];
+    const alerts: string[] = [];
+    const checks: string[] = [];
+    if (!scenarios.length) {
+      actions.push("Run full analysis to convert the live preview into model-backed recommendations.");
+      actions.push("Use sliders to test intervention direction before spending compute on the full pipeline.");
+      checks.push("Confirm the adoption time series is ordered from oldest to newest.");
+    } else {
+      if (top) actions.push(`Prioritize ${top.scenario} for the current planning case.`);
+      if (top && second && top.score - second.score < 0.03) alerts.push("Top scenarios are close; compare feasibility and implementation risk before choosing.");
+      if (interpretation.highUncertainty) alerts.push("Recommendation confidence is provisional; collect validation data around the uncertain parameter before scaling.");
+      if (top?.cost && top.cost > budget) alerts.push("Top scenario cost exceeds current budget setting; reduce intensity or increase available budget.");
+      const bestLever = Object.entries(optimization?.best?.allocation || selectedAllocation).sort((a: any, b: any) => b[1] - a[1])[0]?.[0];
+      if (bestLever) actions.push(`Prepare an implementation note for ${allocationLabel(bestLever)} because it is currently the dominant lever.`);
+      checks.push("Export the PDF report after reviewing the ranked scenarios.");
+    }
+    if (actions.length === 0) actions.push("No immediate action detected.");
+    return { alerts, actions, checks };
+  }, [scenarios, scenarioRanking, interpretation, optimization, selectedAllocation, budget]);
 
   async function runBackendScenarios(nextParams = params, opt = optimization) {
     setScenarioLoading(true); setError("");
@@ -153,8 +177,8 @@ export default function AnalysisPage() {
     doc.setFontSize(10); doc.text(`Observed adoption series: ${series}`, 14, 30); doc.text(`Budget: ${budget.toFixed(2)}`, 14, 38); doc.text(`Selected controls: trust=${trustCampaign.toFixed(2)}, subsidy=${subsidy.toFixed(2)}, supply=${supplyChain.toFixed(2)}`, 14, 46);
     let y = 60; doc.setFontSize(12); doc.text("Decision recommendation", 14, y); y += 8; doc.setFontSize(10);
     [interpretation.headline, interpretation.adoptionChange, interpretation.driver, interpretation.uncertaintyAdvice, interpretation.recommendation].forEach((line) => { doc.text(doc.splitTextToSize(line, 180), 14, y); y += 9; });
-    y += 4; doc.setFontSize(12); doc.text("Scenario ranking", 14, y); y += 8;
-    scenarioRanking.forEach((s, i) => { doc.text(`${i + 1}. ${s.scenario}: score=${fmt(s.score)}, adoption=${fmt(s.final_adoption)}, cost=${fmt(s.cost)}`, 14, y); y += 7; });
+    y += 4; doc.setFontSize(12); doc.text("Autonomous assistant", 14, y); y += 8;
+    [...assistant.alerts, ...assistant.actions, ...assistant.checks].forEach((line) => { doc.text(doc.splitTextToSize(`- ${line}`, 180), 14, y); y += 8; });
     doc.save("nidm-policy-report.pdf");
   }
 
@@ -162,7 +186,7 @@ export default function AnalysisPage() {
     <section className="analysis-page" style={{ padding: 20 }}>
       <header style={{ marginBottom: 16 }}>
         <h1>Policy Analysis Workflow</h1>
-        <p>Decision-first interface for simulation, uncertainty, traceability, and policy ranking. Demo data is used until field data is available.</p>
+        <p>Autonomous decision assistant for simulation, uncertainty, traceability, policy ranking, and next-best actions.</p>
       </header>
       {error && <p className="error">{error}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "280px minmax(360px, 1fr) minmax(420px, 1.4fr)", gap: 16, alignItems: "start" }}>
@@ -187,15 +211,22 @@ export default function AnalysisPage() {
 
         <main style={{ display: "grid", gap: 16 }}>
           <section className="card" style={{ border: "2px solid #2563eb" }}>
-            <h2>Recommended decision</h2>
+            <h2>Autonomous decision assistant</h2>
             <h3>{interpretation.headline}</h3>
             <p><strong>Expected change:</strong> {interpretation.adoptionChange}</p>
             <p><strong>Confidence:</strong> {interpretation.confidence}</p>
             <p><strong>Primary lever:</strong> {interpretation.driver}</p>
             <p><strong>Uncertainty:</strong> {interpretation.uncertaintyAdvice}</p>
             <p><strong>Recommendation:</strong> {interpretation.recommendation}</p>
-            <p><strong>Evidence:</strong> {interpretation.evidence}</p>
           </section>
+
+          <section className="card">
+            <h2>Next-best actions</h2>
+            {assistant.alerts.length > 0 && <><h3 style={{ fontSize: 16 }}>Alerts</h3><ul>{assistant.alerts.map((a, i) => <li key={`a-${i}`}>{a}</li>)}</ul></>}
+            <h3 style={{ fontSize: 16 }}>Recommended actions</h3><ul>{assistant.actions.map((a, i) => <li key={`r-${i}`}>{a}</li>)}</ul>
+            <h3 style={{ fontSize: 16 }}>Checks before decision</h3><ul>{assistant.checks.map((a, i) => <li key={`c-${i}`}>{a}</li>)}</ul>
+          </section>
+
           <section className="card">
             <h2>Scenario ranking</h2>
             {scenarioRanking.length ? <table><thead><tr><th>Rank</th><th>Scenario</th><th>Adoption</th><th>Cost</th><th>Score</th></tr></thead><tbody>{scenarioRanking.map((s, i) => <tr key={s.scenario} onMouseEnter={() => setFocusedScenario(s.scenario)} onMouseLeave={() => setFocusedScenario(null)}><td>{i + 1}</td><td>{s.scenario}</td><td>{fmt(s.final_adoption)}</td><td>{fmt(s.cost)}</td><td>{fmt(s.score)}</td></tr>)}</tbody></table> : <p>No ranking yet.</p>}
@@ -204,7 +235,7 @@ export default function AnalysisPage() {
         </main>
 
         <aside style={{ display: "grid", gap: 16 }}>
-          <section className="card chart-card"><h2>Scenario comparison</h2>{scenarioChart.length ? <ResponsiveContainer width="100%" height={260}><LineChart data={scenarioChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" /><YAxis domain={[0, 1]} /><Tooltip /><Legend />{scenarios.map((s) => <Line key={s.scenario} type="monotone" dataKey={s.scenario} strokeWidth={focusedScenario === s.scenario || !focusedScenario ? 3 : 1} opacity={focusedScenario && focusedScenario !== s.scenario ? 0.28 : 1} dataKey={s.scenario} dot={false} />)}</LineChart></ResponsiveContainer> : <p>Run scenarios to view trajectories.</p>}</section>
+          <section className="card chart-card"><h2>Scenario comparison</h2>{scenarioChart.length ? <ResponsiveContainer width="100%" height={260}><LineChart data={scenarioChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" /><YAxis domain={[0, 1]} /><Tooltip /><Legend />{scenarios.map((s) => <Line key={s.scenario} type="monotone" strokeWidth={focusedScenario === s.scenario || !focusedScenario ? 3 : 1} opacity={focusedScenario && focusedScenario !== s.scenario ? 0.28 : 1} dataKey={s.scenario} dot={false} />)}</LineChart></ResponsiveContainer> : <p>Run scenarios to view trajectories.</p>}</section>
           <section className="card chart-card"><h2>Bayesian credible band</h2>{bayesianChart.length ? <ResponsiveContainer width="100%" height={220}><LineChart data={bayesianChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" /><YAxis domain={[0, 1]} /><Tooltip /><Legend /><Line type="monotone" dataKey="upper" strokeWidth={1} dot={false} /><Line type="monotone" dataKey="mean" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="lower" strokeWidth={1} dot={false} /></LineChart></ResponsiveContainer> : <p>No Bayesian run yet.</p>}</section>
           <section className="card chart-card"><h2>Policy allocation</h2><ResponsiveContainer width="100%" height={220}><BarChart data={allocationChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis domain={[0, 1]} /><Tooltip /><Bar dataKey="value" /></BarChart></ResponsiveContainer></section>
           <section className="card chart-card"><h2>Multi-country comparison</h2>{countryChart.length ? <ResponsiveContainer width="100%" height={220}><BarChart data={countryChart}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="country" /><YAxis /><Tooltip /><Legend /><Bar dataKey="beta" /><Bar dataKey="gamma" /><Bar dataKey="delta" /></BarChart></ResponsiveContainer> : <p>Run multi-country demo.</p>}</section>
