@@ -8,10 +8,11 @@ from .encoding import encode_narrative
 from .database import Base, engine, get_db
 from . import models
 from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
+from .modelling import run_digital_twin
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NIDM API", version="0.5")
+app = FastAPI(title="NIDM API", version="0.6")
 
 @app.get("/")
 def root():
@@ -76,16 +77,12 @@ def encode(records: List[NarrativeRecord], db: Session = Depends(get_db)):
 
 @app.post("/simulate", response_model=SimulationResult)
 def simulate(req: SimulationRequest, db: Session = Depends(get_db)):
-    trajectory = []
-    value = 0.1
-    for t in range(req.horizon_days):
-        value = min(1.0, value + 0.002)
-        trajectory.append({"day": t, "adoption": value})
+    trajectory = run_digital_twin(req.model_mode, req.horizon_days, req.parameters)
 
     result = SimulationResult(
         model_mode=req.model_mode,
         trajectory=trajectory,
-        assumptions={"note": "placeholder model"},
+        assumptions={"note": "narrative-coupled digital twin"},
     )
 
     db.add(models.SimulationRun(
