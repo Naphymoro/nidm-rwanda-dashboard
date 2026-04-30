@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -6,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Radar,
   RadarChart,
@@ -24,12 +26,15 @@ import {
   FileSpreadsheet,
   FileText,
   Sparkles,
+  Download,
+  Loader2,
 } from "lucide-react";
 import {
   ParsedNarrative,
   compareNarratives,
   DimensionDiff,
 } from "@/lib/narrativeParser";
+import { buildComparisonFilename, exportElementToPdf } from "@/lib/pdfExport";
 
 interface NarrativeCompareProps {
   a: ParsedNarrative | null;
@@ -205,6 +210,32 @@ export default function NarrativeCompare({
     return compareNarratives(a, b);
   }, [a, b]);
 
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!a || !b || !exportRef.current || exporting) return;
+    setExporting(true);
+    const toastId = toast.loading("Rendering PDF...");
+    try {
+      const filename = buildComparisonFilename(a.label, b.label);
+      await exportElementToPdf(exportRef.current, {
+        filename,
+        title: `NIDM Comparison: ${a.label} vs ${b.label}`,
+        subject: "Side-by-side narrative comparison report",
+      });
+      toast.success("PDF downloaded", { id: toastId, description: filename });
+    } catch (err) {
+      console.error("PDF export failed", err);
+      toast.error("PDF export failed", {
+        id: toastId,
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const radarData = useMemo(() => {
     if (!a || !b) return [];
     return [
@@ -234,16 +265,36 @@ export default function NarrativeCompare({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto glass-dark border-border/60">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl neon-text">
-            <Sparkles className="w-5 h-5 text-accent" />
-            Side-by-Side Narrative Comparison
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Compare two narratives across the four NIDM scoring dimensions and the
-            composite narrative-strength score Φ.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="flex items-center gap-2 text-xl neon-text">
+                <Sparkles className="w-5 h-5 text-accent" />
+                Side-by-Side Narrative Comparison
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Compare two narratives across the four NIDM scoring dimensions and the
+                composite narrative-strength score Φ.
+              </DialogDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleExport}
+              disabled={exporting}
+              className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold mt-1 shrink-0"
+              data-export-ignore
+              title="Download this comparison as a PDF"
+            >
+              {exporting ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-1.5" />
+              )}
+              {exporting ? "Rendering..." : "Export PDF"}
+            </Button>
+          </div>
         </DialogHeader>
 
+        <div ref={exportRef} className="space-y-4 p-1">
         {/* Verdict strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
           <div className="bg-background/40 rounded-md p-3 border border-border/40">
@@ -376,6 +427,7 @@ export default function NarrativeCompare({
         <div className="sr-only">
           <WinnerBadge winner={comparison.phiWinner} side="a" />
           <WinnerBadge winner={comparison.phiWinner} side="b" />
+        </div>
         </div>
       </DialogContent>
     </Dialog>

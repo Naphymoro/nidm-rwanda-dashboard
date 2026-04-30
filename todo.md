@@ -79,3 +79,11 @@
 - [x] Show selection slot indicators (A/B) and cap selection at 2 (rolling replacement)
 - [x] Add 8 vitest tests for compareNarratives (64 total passing)
 - [x] Save checkpoint
+
+## Phase 13: PDF Export for Comparison
+- [x] Install jspdf + html2canvas
+- [x] Create pdfExport.ts utility with multi-page-safe canvas-to-PDF and filename builder
+- [x] Add Export PDF button to NarrativeCompare with loading state and toast feedback
+- [x] Wrap captured region in ref so radar + bars render fully (no scroll clipping)
+- [x] Add 10 vitest tests for buildComparisonFilename (74 total passing)
+- [x] Save checkpoint
