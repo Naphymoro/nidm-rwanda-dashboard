@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from sqlalchemy.orm import Session
 
@@ -10,10 +11,21 @@ from . import models
 from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
 from .modelling import run_digital_twin
 from .pipeline import run_experiment_pipeline
+from .api_routes import router as analytics_router
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NIDM API", version="0.7")
+app = FastAPI(title="NIDM API", version="0.8")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 
 @app.get("/")
 def root():
@@ -79,20 +91,17 @@ def encode(records: List[NarrativeRecord], db: Session = Depends(get_db)):
 @app.post("/simulate", response_model=SimulationResult)
 def simulate(req: SimulationRequest, db: Session = Depends(get_db)):
     trajectory = run_digital_twin(req.model_mode, req.horizon_days, req.parameters)
-
     result = SimulationResult(
         model_mode=req.model_mode,
         trajectory=trajectory,
         assumptions={"note": "narrative-coupled digital twin"},
     )
-
     db.add(models.SimulationRun(
         model_mode=req.model_mode,
         parameters=req.parameters,
         result=trajectory,
     ))
     db.commit()
-
     return result
 
 @app.post("/pipeline/run")
