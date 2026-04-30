@@ -9,10 +9,11 @@ from .database import Base, engine, get_db
 from . import models
 from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
 from .modelling import run_digital_twin
+from .pipeline import run_experiment_pipeline
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NIDM API", version="0.6")
+app = FastAPI(title="NIDM API", version="0.7")
 
 @app.get("/")
 def root():
@@ -93,6 +94,10 @@ def simulate(req: SimulationRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return result
+
+@app.post("/pipeline/run")
+def run_pipeline(records: List[NarrativeRecord]):
+    return run_experiment_pipeline(records)
 
 @app.post("/evaluate/encoding")
 def eval_encoding(req: EncodingEvaluationRequest):
