@@ -17,8 +17,10 @@ const narrativeTrace = {
   supply_chain: ["Fuel access and maintenance gaps can reduce continued use after initial adoption.", "Last-mile supply reliability and repair capacity reduce resistance over time."],
 };
 type Scenario = { scenario: string; allocation: Record<string, number>; cost: number; final_adoption: number; trajectory: { day: number; adoption: number }[] };
+type ChatMessage = { role: "assistant" | "user"; text: string };
 function fmt(value: number | undefined, digits = 3) { return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "n/a"; }
 function allocationLabel(key: string) { return key.replace(/_/g, " "); }
+function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
 function simulatePreview(start: number, allocation: Record<string, number>, horizon = 60) {
   let adoption = Math.max(0, Math.min(1, start));
   const influence = 0.035 + 0.035 * allocation.demand_generation + 0.045 * allocation.consumer_subsidy + 0.03 * allocation.supply_chain;
@@ -42,6 +44,10 @@ export default function AnalysisPage() {
   const [hierarchical, setHierarchical] = useState<any>(null);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [focusedScenario, setFocusedScenario] = useState<string | null>(null);
+  const [assistantInput, setAssistantInput] = useState("");
+  const [assistantMessages, setAssistantMessages] = useState<ChatMessage[]>([
+    { role: "assistant", text: "I can adjust levers, run analysis, compare scenarios, export a report, or apply a recommended policy plan. Try: 'increase subsidy', 'run full analysis', or 'what should I do next?'" },
+  ]);
   const [loading, setLoading] = useState(false);
   const [countryLoading, setCountryLoading] = useState(false);
   const [scenarioLoading, setScenarioLoading] = useState(false);
@@ -54,6 +60,21 @@ export default function AnalysisPage() {
   const livePreview = useMemo(() => simulatePreview(lastObserved, selectedAllocation), [lastObserved, trustCampaign, subsidy, supplyChain]);
   const previewFinal = livePreview.at(-1)?.live_preview;
   const previewDelta = typeof previewFinal === "number" ? previewFinal - lastObserved : undefined;
+
+  const suggestedPolicy = useMemo(() => {
+    const weakPreview = (previewDelta ?? 0) < 0.18;
+    const affordabilityHeavy = subsidy < 0.65;
+    const supplyWeak = supplyChain < 0.45;
+    return {
+      demand_generation: clamp01(weakPreview ? Math.max(trustCampaign, 0.55) : trustCampaign),
+      consumer_subsidy: clamp01(affordabilityHeavy ? Math.max(subsidy, 0.7) : subsidy),
+      supply_chain: clamp01(supplyWeak ? Math.max(supplyChain, 0.5) : supplyChain),
+    };
+  }, [previewDelta, trustCampaign, subsidy, supplyChain]);
+
+  const suggestedPreview = useMemo(() => simulatePreview(lastObserved, suggestedPolicy), [lastObserved, suggestedPolicy]);
+  const suggestedFinal = suggestedPreview.at(-1)?.live_preview;
+  const suggestedLift = typeof suggestedFinal === "number" && typeof previewFinal === "number" ? suggestedFinal - previewFinal : undefined;
 
   const bayesianChart = useMemo(() => {
     const mean = bayesian?.trajectory?.mean || [];
@@ -124,7 +145,7 @@ export default function AnalysisPage() {
     const checks: string[] = [];
     if (!scenarios.length) {
       actions.push("Run full analysis to convert the live preview into model-backed recommendations.");
-      actions.push("Use sliders to test intervention direction before spending compute on the full pipeline.");
+      actions.push(`Apply self-driving plan: subsidy ${fmt(suggestedPolicy.consumer_subsidy, 2)}, trust ${fmt(suggestedPolicy.demand_generation, 2)}, supply ${fmt(suggestedPolicy.supply_chain, 2)}.`);
       checks.push("Confirm the adoption time series is ordered from oldest to newest.");
     } else {
       if (top) actions.push(`Prioritize ${top.scenario} for the current planning case.`);
@@ -137,7 +158,7 @@ export default function AnalysisPage() {
     }
     if (actions.length === 0) actions.push("No immediate action detected.");
     return { alerts, actions, checks };
-  }, [scenarios, scenarioRanking, interpretation, optimization, selectedAllocation, budget]);
+  }, [scenarios, scenarioRanking, interpretation, optimization, selectedAllocation, budget, suggestedPolicy]);
 
   async function runBackendScenarios(nextParams = params, opt = optimization) {
     setScenarioLoading(true); setError("");
@@ -171,6 +192,31 @@ export default function AnalysisPage() {
     finally { setCountryLoading(false); }
   }
 
+  function applySelfDrivingPlan() {
+    setTrustCampaign(suggestedPolicy.demand_generation);
+    setSubsidy(suggestedPolicy.consumer_subsidy);
+    setSupplyChain(suggestedPolicy.supply_chain);
+    setAssistantMessages((m) => [...m, { role: "assistant", text: `Applied self-driving plan. Expected preview lift vs current setup: ${suggestedLift && suggestedLift >= 0 ? "+" : ""}${fmt(suggestedLift)}.` }]);
+  }
+
+  async function handleAssistantCommand() {
+    const command = assistantInput.trim();
+    if (!command) return;
+    const lower = command.toLowerCase();
+    setAssistantMessages((m) => [...m, { role: "user", text: command }]);
+    setAssistantInput("");
+
+    if (lower.includes("increase") && lower.includes("subsid")) { setSubsidy((v) => clamp01(v + 0.1)); setAssistantMessages((m) => [...m, { role: "assistant", text: "Increased subsidy by 0.10 and refreshed the live preview." }]); return; }
+    if ((lower.includes("reduce") || lower.includes("decrease")) && lower.includes("subsid")) { setSubsidy((v) => clamp01(v - 0.1)); setAssistantMessages((m) => [...m, { role: "assistant", text: "Reduced subsidy by 0.10 and refreshed the live preview." }]); return; }
+    if (lower.includes("increase") && (lower.includes("trust") || lower.includes("campaign"))) { setTrustCampaign((v) => clamp01(v + 0.1)); setAssistantMessages((m) => [...m, { role: "assistant", text: "Increased trust campaign intensity by 0.10." }]); return; }
+    if (lower.includes("supply") && lower.includes("increase")) { setSupplyChain((v) => clamp01(v + 0.1)); setAssistantMessages((m) => [...m, { role: "assistant", text: "Increased supply-chain strengthening by 0.10." }]); return; }
+    if (lower.includes("apply") || lower.includes("recommend") || lower.includes("self")) { applySelfDrivingPlan(); return; }
+    if (lower.includes("scenario")) { setAssistantMessages((m) => [...m, { role: "assistant", text: "Running backend scenarios now." }]); await runBackendScenarios(); return; }
+    if (lower.includes("analysis") || lower.includes("optimize") || lower.includes("optimise")) { setAssistantMessages((m) => [...m, { role: "assistant", text: "Running full analysis: Bayesian inference, optimization, mapping, and scenarios." }]); await runAnalysis(); return; }
+    if (lower.includes("export") || lower.includes("pdf")) { exportPDF(); setAssistantMessages((m) => [...m, { role: "assistant", text: "Exported the current policy report." }]); return; }
+    setAssistantMessages((m) => [...m, { role: "assistant", text: assistant.actions[0] || interpretation.recommendation }]);
+  }
+
   function exportPDF() {
     const doc = new jsPDF();
     doc.setFontSize(16); doc.text("NIDM Policy Analysis Report", 14, 18);
@@ -186,7 +232,7 @@ export default function AnalysisPage() {
     <section className="analysis-page" style={{ padding: 20 }}>
       <header style={{ marginBottom: 16 }}>
         <h1>Policy Analysis Workflow</h1>
-        <p>Autonomous decision assistant for simulation, uncertainty, traceability, policy ranking, and next-best actions.</p>
+        <p>Conversational, self-driving decision assistant for simulation, uncertainty, traceability, policy ranking, and next-best actions.</p>
       </header>
       {error && <p className="error">{error}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "280px minmax(360px, 1fr) minmax(420px, 1.4fr)", gap: 16, alignItems: "start" }}>
@@ -201,8 +247,10 @@ export default function AnalysisPage() {
           <div className="card" style={{ padding: 12, boxShadow: "none" }}>
             <h2>Live preview</h2>
             <p><strong>Projected:</strong> {fmt(lastObserved)} → {fmt(previewFinal)} ({previewDelta && previewDelta >= 0 ? "+" : ""}{fmt(previewDelta)})</p>
+            <p><strong>Assistant plan:</strong> {fmt(lastObserved)} → {fmt(suggestedFinal)} ({suggestedLift && suggestedLift >= 0 ? "+" : ""}{fmt(suggestedLift)} vs current)</p>
             <ResponsiveContainer width="100%" height={120}><LineChart data={livePreview}><XAxis dataKey="day" hide /><YAxis domain={[0, 1]} hide /><Tooltip /><Line type="monotone" dataKey="live_preview" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer>
           </div>
+          <button onClick={applySelfDrivingPlan}>Apply assistant plan</button>
           <button onClick={runAnalysis} disabled={loading}>{loading ? "Running..." : "Run full analysis"}</button>
           <button onClick={() => runBackendScenarios()} disabled={scenarioLoading}>{scenarioLoading ? "Running..." : "Run scenarios"}</button>
           <button onClick={runMultiCountry} disabled={countryLoading}>{countryLoading ? "Running..." : "Multi-country demo"}</button>
@@ -211,13 +259,24 @@ export default function AnalysisPage() {
 
         <main style={{ display: "grid", gap: 16 }}>
           <section className="card" style={{ border: "2px solid #2563eb" }}>
-            <h2>Autonomous decision assistant</h2>
+            <h2>Conversational decision co-pilot</h2>
             <h3>{interpretation.headline}</h3>
             <p><strong>Expected change:</strong> {interpretation.adoptionChange}</p>
             <p><strong>Confidence:</strong> {interpretation.confidence}</p>
             <p><strong>Primary lever:</strong> {interpretation.driver}</p>
             <p><strong>Uncertainty:</strong> {interpretation.uncertaintyAdvice}</p>
             <p><strong>Recommendation:</strong> {interpretation.recommendation}</p>
+          </section>
+
+          <section className="card">
+            <h2>Ask the assistant</h2>
+            <div style={{ display: "grid", gap: 8, maxHeight: 180, overflow: "auto", marginBottom: 10 }}>
+              {assistantMessages.slice(-6).map((m, i) => <p key={i}><strong>{m.role === "assistant" ? "Assistant" : "You"}:</strong> {m.text}</p>)}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+              <textarea value={assistantInput} onChange={(e) => setAssistantInput(e.target.value)} rows={2} placeholder="Ask: increase subsidy, run full analysis, export PDF, what should I do next?" />
+              <button onClick={handleAssistantCommand}>Send</button>
+            </div>
           </section>
 
           <section className="card">
