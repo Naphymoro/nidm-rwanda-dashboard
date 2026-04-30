@@ -1,0 +1,4 @@
+body { margin:0; font-family: system-ui; background:#0f172a; color:white; }
+.shell { display:flex; height:100vh; }
+.sidebar { width:220px; background:#020617; padding:20px; }
+.content { flex:1; padding:24px; }
