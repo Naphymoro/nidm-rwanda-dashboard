@@ -24,6 +24,21 @@ const demoCountries = {
   Nigeria: [0.08, 0.1, 0.13, 0.17, 0.21, 0.25, 0.3, 0.34],
 };
 
+const narrativeTrace = {
+  demand_generation: [
+    "Low confidence in new cooking technologies requires trusted community demonstrations.",
+    "Peer champions and radio messaging can reduce misinformation and improve trust.",
+  ],
+  consumer_subsidy: [
+    "Affordability barriers appear where upfront stove or fuel costs delay adoption.",
+    "Subsidy intensity should target lower-income households first to improve equity.",
+  ],
+  supply_chain: [
+    "Fuel access and maintenance gaps can reduce continued use after initial adoption.",
+    "Last-mile supply reliability and repair capacity reduce resistance over time.",
+  ],
+};
+
 type Scenario = {
   scenario: string;
   allocation: Record<string, number>;
@@ -57,11 +72,7 @@ export default function AnalysisPage() {
   const [scenarioLoading, setScenarioLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const values = () =>
-    series
-      .split(",")
-      .map((x) => Number(x.trim()))
-      .filter((x) => !Number.isNaN(x));
+  const values = () => series.split(",").map((x) => Number(x.trim())).filter((x) => !Number.isNaN(x));
 
   const selectedAllocation = {
     demand_generation: trustCampaign,
@@ -103,51 +114,70 @@ export default function AnalysisPage() {
     }));
   }, [hierarchical]);
 
+  const scenarioRanking = useMemo(() => {
+    return [...scenarios]
+      .map((s) => {
+        const efficiency = s.cost > 0 ? s.final_adoption / s.cost : s.final_adoption;
+        const adoptionScore = s.final_adoption;
+        const costPenalty = Math.min(1, s.cost);
+        const robustnessPenalty = bayesian?.parameters?.gamma ? (bayesian.parameters.gamma.q95 - bayesian.parameters.gamma.q05) : 0.1;
+        const score = adoptionScore - 0.18 * costPenalty - 0.12 * robustnessPenalty;
+        return { ...s, efficiency, score };
+      })
+      .sort((a, b) => b.score - a.score);
+  }, [scenarios, bayesian]);
+
   const interpretation = useMemo(() => {
     const baseline = scenarios.find((s) => s.scenario === "Baseline");
     const selected = scenarios.find((s) => s.scenario === "Selected policy");
     const optimized = scenarios.find((s) => s.scenario === "Optimized");
-    const best = optimized || selected;
+    const best = scenarioRanking[0] || optimized || selected;
     const start = values().at(-1) ?? baseline?.trajectory?.[0]?.adoption ?? 0;
     const dominantAllocation = optimization?.best?.allocation || selectedAllocation;
     const dominantLever = Object.entries(dominantAllocation).sort((a: any, b: any) => b[1] - a[1])[0];
     const beta = bayesian?.parameters?.beta;
     const gamma = bayesian?.parameters?.gamma;
     const delta = bayesian?.parameters?.delta;
-    const widest = [
+    const uncertainty = [
       ["diffusion", beta?.q95 - beta?.q05],
       ["intervention response", gamma?.q95 - gamma?.q05],
       ["resistance", delta?.q95 - delta?.q05],
-    ].filter((x: any) => Number.isFinite(x[1])).sort((a: any, b: any) => b[1] - a[1])[0];
+    ].filter((x: any) => Number.isFinite(x[1])).sort((a: any, b: any) => b[1] - a[1]);
+    const widest = uncertainty[0];
+    const highUncertainty = widest && widest[1] > 0.2;
 
     if (!scenarios.length) {
       return {
         headline: "Run scenarios to generate an interpretation.",
         adoptionChange: "n/a",
         recommendation: "Use Run full analysis or Run backend scenarios to produce model-based recommendations.",
+        uncertaintyAdvice: "No uncertainty assessment yet.",
+        traceability: ["No narrative traceability available until a policy allocation is selected."],
         driver: "n/a",
         risk: "n/a",
         evidence: "No scenario outputs are available yet.",
       };
     }
 
-    const gainVsBaseline = best && baseline ? best.final_adoption - baseline.final_adoption : undefined;
-    const selectedGain = selected && baseline ? selected.final_adoption - baseline.final_adoption : undefined;
-    const optimizedGain = optimized && baseline ? optimized.final_adoption - baseline.final_adoption : undefined;
+    const baselineGain = best && baseline ? best.final_adoption - baseline.final_adoption : undefined;
+    const traceKey = dominantLever?.[0] as keyof typeof narrativeTrace;
+    const traceability = narrativeTrace[traceKey] || ["Traceability will improve when real narratives are linked to the model run."];
 
     return {
-      headline: best
-        ? `${best.scenario} reaches final adoption of ${fmt(best.final_adoption)}.`
-        : "Scenario comparison is available.",
-      adoptionChange: `${fmt(start)} → ${fmt(best?.final_adoption)} (${gainVsBaseline && gainVsBaseline >= 0 ? "+" : ""}${fmt(gainVsBaseline)} vs baseline)`,
-      recommendation: optimizedGain !== undefined && selectedGain !== undefined && optimizedGain > selectedGain
-        ? "The optimized allocation outperforms the selected policy. Use it as the preferred planning case, subject to field validation."
-        : "The selected policy is close to the optimized outcome. Validate feasibility and cost before using it operationally.",
+      headline: best ? `${best.scenario} ranks highest with final adoption of ${fmt(best.final_adoption)}.` : "Scenario comparison is available.",
+      adoptionChange: `${fmt(start)} → ${fmt(best?.final_adoption)} (${baselineGain && baselineGain >= 0 ? "+" : ""}${fmt(baselineGain)} vs baseline)`,
+      recommendation: highUncertainty
+        ? "Recommendation is provisional: uncertainty is high, so use the top-ranked scenario as a planning hypothesis and prioritize validation data."
+        : "Recommendation is comparatively stable under current assumptions. Use the top-ranked scenario as the preferred planning case, subject to field validation.",
+      uncertaintyAdvice: widest
+        ? `${highUncertainty ? "High" : "Moderate/low"} uncertainty detected in ${widest[0]} (90% width ${fmt(widest[1] as number)}).`
+        : "Run Bayesian inference to quantify uncertainty.",
       driver: dominantLever ? `${allocationLabel(dominantLever[0])} is the largest recommended lever (${fmt(dominantLever[1] as number, 2)}).` : "No dominant lever identified.",
       risk: widest ? `Largest parameter uncertainty appears in ${widest[0]}; treat related projections cautiously.` : "Uncertainty cannot be assessed until Bayesian inference is run.",
+      traceability,
       evidence: `Baseline=${fmt(baseline?.final_adoption)}, Selected=${fmt(selected?.final_adoption)}, Optimized=${fmt(optimized?.final_adoption)}.`,
     };
-  }, [scenarios, optimization, bayesian, trustCampaign, subsidy, supplyChain, series]);
+  }, [scenarios, scenarioRanking, optimization, bayesian, trustCampaign, subsidy, supplyChain, series]);
 
   async function runBackendScenarios(nextParams = params, opt = optimization) {
     setScenarioLoading(true);
@@ -181,21 +211,17 @@ export default function AnalysisPage() {
     try {
       const bayes = await post("/analytics/bayesian", values());
       setBayesian(bayes);
-
       const learned = {
         beta: bayes?.parameters?.beta?.mean ?? params.beta,
         gamma: bayes?.parameters?.gamma?.mean ?? params.gamma,
         delta: bayes?.parameters?.delta?.mean ?? params.delta,
       };
       setParams(learned);
-
       const opt = await post("/analytics/multi-objective", learned);
       setOptimization(opt);
-
       const allocation = opt?.best?.allocation || selectedAllocation;
       const mapped = await post("/analytics/policy-map", allocation);
       setPolicy(mapped);
-
       await runBackendScenarios(learned, opt);
     } catch (e: any) {
       setError(e?.message || "Analysis failed. Check NEXT_PUBLIC_API_URL.");
@@ -225,34 +251,31 @@ export default function AnalysisPage() {
     doc.text(`Observed adoption series: ${series}`, 14, 30);
     doc.text(`Budget: ${budget.toFixed(2)}`, 14, 38);
     doc.text(`Selected controls: trust=${trustCampaign.toFixed(2)}, subsidy=${subsidy.toFixed(2)}, supply=${supplyChain.toFixed(2)}`, 14, 46);
-
     let y = 60;
     doc.setFontSize(12);
     doc.text("Decision interpretation", 14, y);
     y += 8;
     doc.setFontSize(10);
-    [interpretation.headline, interpretation.adoptionChange, interpretation.driver, interpretation.risk, interpretation.recommendation].forEach((line) => {
+    [interpretation.headline, interpretation.adoptionChange, interpretation.driver, interpretation.uncertaintyAdvice, interpretation.recommendation].forEach((line) => {
       doc.text(doc.splitTextToSize(line, 180), 14, y);
       y += 9;
     });
-
     y += 4;
     doc.setFontSize(12);
-    doc.text("Scenario outcomes", 14, y);
+    doc.text("Scenario ranking", 14, y);
     y += 8;
-    doc.setFontSize(10);
-    scenarios.forEach((s) => {
-      doc.text(`${s.scenario}: final adoption=${s.final_adoption.toFixed(3)}, cost=${s.cost.toFixed(3)}`, 14, y);
+    scenarioRanking.forEach((s, i) => {
+      doc.text(`${i + 1}. ${s.scenario}: score=${fmt(s.score)}, final adoption=${fmt(s.final_adoption)}, cost=${fmt(s.cost)}`, 14, y);
       y += 7;
     });
-
-    y += 6;
+    y += 4;
     doc.setFontSize(12);
-    doc.text("Recommended policy package", 14, y);
+    doc.text("Narrative traceability", 14, y);
     y += 8;
-    doc.setFontSize(9);
-    const packageText = JSON.stringify(policy || {}, null, 2).slice(0, 1800);
-    doc.text(doc.splitTextToSize(packageText, 180), 14, y);
+    interpretation.traceability.forEach((t) => {
+      doc.text(doc.splitTextToSize(`- ${t}`, 180), 14, y);
+      y += 9;
+    });
     doc.save("nidm-policy-report.pdf");
   }
 
@@ -283,13 +306,24 @@ export default function AnalysisPage() {
 
       <div className="analysis-grid">
         <div className="card">
-          <h2>Decision interpretation</h2>
+          <h2>Uncertainty-aware recommendation</h2>
           <h3>{interpretation.headline}</h3>
           <p><strong>Projected change:</strong> {interpretation.adoptionChange}</p>
           <p><strong>Key driver:</strong> {interpretation.driver}</p>
-          <p><strong>Risk signal:</strong> {interpretation.risk}</p>
+          <p><strong>Uncertainty:</strong> {interpretation.uncertaintyAdvice}</p>
           <p><strong>Recommendation:</strong> {interpretation.recommendation}</p>
           <p><strong>Evidence:</strong> {interpretation.evidence}</p>
+        </div>
+
+        <div className="card">
+          <h2>Narrative traceability</h2>
+          <p>These are current evidence templates until real narratives are linked to each model run.</p>
+          <ul>{interpretation.traceability.map((item, i) => <li key={i}>{item}</li>)}</ul>
+        </div>
+
+        <div className="card">
+          <h2>Scenario ranking</h2>
+          <pre>{scenarioRanking.length ? JSON.stringify(scenarioRanking.map(({ scenario, score, final_adoption, cost, efficiency, allocation }) => ({ scenario, score, final_adoption, cost, efficiency, allocation })), null, 2) : "No scenario ranking yet"}</pre>
         </div>
 
         <div className="card chart-card">
@@ -339,11 +373,6 @@ export default function AnalysisPage() {
               <Bar dataKey="value" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-
-        <div className="card">
-          <h2>Scenario outcomes</h2>
-          <pre>{scenarios.length ? JSON.stringify(scenarios.map(({ scenario, cost, final_adoption, allocation }) => ({ scenario, cost, final_adoption, allocation })), null, 2) : "No scenario run yet"}</pre>
         </div>
 
         <div className="card">
