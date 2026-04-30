@@ -225,3 +225,89 @@ export function sortNarratives(
   });
   return copy;
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Comparison helpers
+// ────────────────────────────────────────────────────────────────────────────
+
+export type DimensionKey = "E" | "C" | "tau" | "kappa";
+
+export const DIMENSION_LABELS: Record<DimensionKey, string> = {
+  E: "Emotional Salience (E)",
+  C: "Cultural Resonance (C)",
+  tau: "Trust Alignment (τ)",
+  kappa: "Narrative Arc Strength (κ)",
+};
+
+export interface DimensionDiff {
+  dimension: DimensionKey;
+  label: string;
+  a: number;
+  b: number;
+  delta: number; // b - a
+  winner: "a" | "b" | "tie";
+}
+
+export interface NarrativeComparison {
+  a: ParsedNarrative;
+  b: ParsedNarrative;
+  phiDelta: number;            // b.phi - a.phi
+  phiWinner: "a" | "b" | "tie";
+  dimensionDiffs: DimensionDiff[];
+  aWins: number;               // dimensions where a > b
+  bWins: number;               // dimensions where b > a
+  ties: number;
+  largestGap: DimensionDiff;   // dimension with greatest |delta|
+}
+
+const TIE_THRESHOLD = 1e-6;
+
+function pickWinner(a: number, b: number): "a" | "b" | "tie" {
+  if (Math.abs(a - b) < TIE_THRESHOLD) return "tie";
+  return a > b ? "a" : "b";
+}
+
+/**
+ * Build a structured side-by-side comparison between two narratives.
+ * Computes per-dimension deltas, the overall Φ winner, and the dimension
+ * with the largest absolute gap so the UI can highlight it.
+ */
+export function compareNarratives(
+  a: ParsedNarrative,
+  b: ParsedNarrative
+): NarrativeComparison {
+  const dims: DimensionKey[] = ["E", "C", "tau", "kappa"];
+
+  const dimensionDiffs: DimensionDiff[] = dims.map((dim) => {
+    const av = a[dim];
+    const bv = b[dim];
+    return {
+      dimension: dim,
+      label: DIMENSION_LABELS[dim],
+      a: av,
+      b: bv,
+      delta: Math.round((bv - av) * 10000) / 10000,
+      winner: pickWinner(av, bv),
+    };
+  });
+
+  const aWins = dimensionDiffs.filter((d) => d.winner === "a").length;
+  const bWins = dimensionDiffs.filter((d) => d.winner === "b").length;
+  const ties = dimensionDiffs.filter((d) => d.winner === "tie").length;
+
+  const largestGap = dimensionDiffs.reduce((best, cur) =>
+    Math.abs(cur.delta) > Math.abs(best.delta) ? cur : best
+  );
+
+  return {
+    a,
+    b,
+    phiDelta: Math.round((b.phi - a.phi) * 10000) / 10000,
+    phiWinner: pickWinner(a.phi, b.phi),
+    dimensionDiffs,
+    aWins,
+    bWins,
+    ties,
+    largestGap,
+  };
+}

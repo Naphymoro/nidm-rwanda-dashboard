@@ -239,3 +239,102 @@ describe("sortNarratives", () => {
     expect(items.map((i) => i.id)).toEqual(before);
   });
 });
+
+import { compareNarratives } from "./narrativeParser";
+
+function makeNarrative(
+  overrides: Partial<ParsedNarrative> = {}
+): ParsedNarrative {
+  return {
+    id: "x",
+    key: "k",
+    label: "L",
+    type: "story",
+    quote: "",
+    E: 0.5,
+    C: 0.5,
+    tau: 0.5,
+    kappa: 0.5,
+    phi: 0.5,
+    targets: "all",
+    source: "csv",
+    uploadedAt: 0,
+    ...overrides,
+  };
+}
+
+describe("compareNarratives", () => {
+  it("declares B the Φ winner when its Φ is higher", () => {
+    const a = makeNarrative({ id: "a", phi: 0.4 });
+    const b = makeNarrative({ id: "b", phi: 0.7 });
+    const result = compareNarratives(a, b);
+    expect(result.phiWinner).toBe("b");
+    expect(result.phiDelta).toBeCloseTo(0.3, 4);
+  });
+
+  it("declares A the Φ winner when its Φ is higher", () => {
+    const a = makeNarrative({ id: "a", phi: 0.9 });
+    const b = makeNarrative({ id: "b", phi: 0.6 });
+    const result = compareNarratives(a, b);
+    expect(result.phiWinner).toBe("a");
+    expect(result.phiDelta).toBeCloseTo(-0.3, 4);
+  });
+
+  it("declares a tie when Φ values are equal within tolerance", () => {
+    const a = makeNarrative({ phi: 0.5 });
+    const b = makeNarrative({ phi: 0.5 });
+    const result = compareNarratives(a, b);
+    expect(result.phiWinner).toBe("tie");
+    expect(result.phiDelta).toBe(0);
+  });
+
+  it("returns one diff entry per dimension in fixed order", () => {
+    const a = makeNarrative();
+    const b = makeNarrative();
+    const result = compareNarratives(a, b);
+    expect(result.dimensionDiffs).toHaveLength(4);
+    expect(result.dimensionDiffs.map((d) => d.dimension)).toEqual([
+      "E",
+      "C",
+      "tau",
+      "kappa",
+    ]);
+  });
+
+  it("computes per-dimension delta = b - a", () => {
+    const a = makeNarrative({ E: 0.2, C: 0.6, tau: 0.5, kappa: 0.5 });
+    const b = makeNarrative({ E: 0.8, C: 0.3, tau: 0.5, kappa: 0.5 });
+    const result = compareNarratives(a, b);
+    const eDiff = result.dimensionDiffs.find((d) => d.dimension === "E")!;
+    const cDiff = result.dimensionDiffs.find((d) => d.dimension === "C")!;
+    expect(eDiff.delta).toBeCloseTo(0.6, 4);
+    expect(eDiff.winner).toBe("b");
+    expect(cDiff.delta).toBeCloseTo(-0.3, 4);
+    expect(cDiff.winner).toBe("a");
+  });
+
+  it("counts dimension wins for both sides plus ties", () => {
+    const a = makeNarrative({ E: 0.9, C: 0.1, tau: 0.5, kappa: 0.4 });
+    const b = makeNarrative({ E: 0.2, C: 0.8, tau: 0.5, kappa: 0.6 });
+    const result = compareNarratives(a, b);
+    expect(result.aWins).toBe(1); // E
+    expect(result.bWins).toBe(2); // C, kappa
+    expect(result.ties).toBe(1);  // tau
+  });
+
+  it("identifies the dimension with the largest absolute gap", () => {
+    const a = makeNarrative({ E: 0.1, C: 0.5, tau: 0.5, kappa: 0.5 });
+    const b = makeNarrative({ E: 0.9, C: 0.5, tau: 0.5, kappa: 0.55 });
+    const result = compareNarratives(a, b);
+    expect(result.largestGap.dimension).toBe("E");
+    expect(Math.abs(result.largestGap.delta)).toBeCloseTo(0.8, 4);
+  });
+
+  it("preserves original narrative references on the result", () => {
+    const a = makeNarrative({ id: "a-id" });
+    const b = makeNarrative({ id: "b-id" });
+    const result = compareNarratives(a, b);
+    expect(result.a).toBe(a);
+    expect(result.b).toBe(b);
+  });
+});

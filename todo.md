@@ -61,13 +61,21 @@
 - [x] Create checkpoint for deployment
 
 ## Phase 11: AIMS Colorblind-Friendly Palette & Remaining Features
-- [ ] Replace neon palette with AIMS colors: navy (#1A3668), teal (#00A9B5), gold (#F4A500)
-- [ ] Update simulation chart with colorblind-safe trajectory colors
-- [ ] Add simulation playback controls (play/pause/reset/speed slider)
-- [ ] Build Digital Twin architecture view with animated node-graph
-- [ ] Add Reinforcement Learning insights panel with reward curve
-- [ ] Implement CSV file parsing into structured narratives
-- [ ] Implement TXT/MD narrative file parsing
-- [ ] Build searchable/filterable narrative library
-- [ ] Update vitest tests for new features
-- [ ] Save final checkpoint
+- [x] Replace neon palette with AIMS colors: navy (#1A3668), teal (#00A9B5), gold (#F4A500)
+- [x] Update simulation chart with colorblind-safe trajectory colors and dash patterns
+- [x] Add simulation playback controls (play/pause/reset/step/speed/scrub)
+- [x] Build Digital Twin architecture view with animated SVG node-graph
+- [x] Add Reinforcement Learning insights panel with reward curve
+- [x] Implement CSV file parsing into structured narratives
+- [x] Implement TXT/MD narrative file parsing with heuristic scoring
+- [x] Build searchable/filterable/sortable narrative library
+- [x] Add 30 vitest tests for narrativeParser (56 total passing)
+- [x] Save final checkpoint
+
+## Phase 12: Side-by-Side Narrative Comparison
+- [x] Add comparison helpers (Φ delta, dimension diff, winner-per-dimension) to narrativeParser
+- [x] Build NarrativeCompare modal/dialog with side-by-side cards and radar overlay
+- [x] Add selection checkboxes and Compare button to NarrativeLibrary
+- [x] Show selection slot indicators (A/B) and cap selection at 2 (rolling replacement)
+- [x] Add 8 vitest tests for compareNarratives (64 total passing)
+- [x] Save checkpoint
