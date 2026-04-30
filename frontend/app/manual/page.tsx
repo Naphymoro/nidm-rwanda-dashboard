@@ -5,13 +5,11 @@ import { useState } from "react";
 const sections = [
   "Overview",
   "Model",
-  "Narratives",
   "Inference",
   "Optimization",
   "Scenarios",
-  "Causality",
-  "Data",
-  "Tutorial",
+  "Worked Example",
+  "Diagrams",
   "Guidelines",
 ];
 
@@ -30,99 +28,92 @@ export default function ManualPage() {
     <div style={{ display: "flex", height: "100vh" }}>
       <aside style={{ width: 260, borderRight: "1px solid #ddd", padding: 16 }}>
         <h3>NIDM Manual</h3>
-
         <div style={{ marginBottom: 16 }}>
-          <button onClick={() => setMode("policy")} style={{ marginRight: 8 }}>
-            Policy View
-          </button>
+          <button onClick={() => setMode("policy")} style={{ marginRight: 8 }}>Policy View</button>
           <button onClick={() => setMode("technical")}>Technical View</button>
         </div>
-
         {sections.map((s) => (
-          <div
-            key={s}
-            onClick={() => setActive(s)}
-            style={{ cursor: "pointer", padding: 8, fontWeight: active === s ? "bold" : "normal" }}
-          >
+          <div key={s} onClick={() => setActive(s)} style={{ cursor: "pointer", padding: 8, fontWeight: active === s ? "bold" : "normal" }}>
             {s}
           </div>
         ))}
       </aside>
 
       <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
+
         {active === "Overview" && (
           <Section
             title="Overview"
-            technical={<p>NIDM integrates narrative encoding, Bayesian inference, optimization, and simulation into a unified computational framework.</p>}
-            policy={<p>This tool helps you understand what drives adoption and which policies are likely to work best.</p>}
+            technical={<p>This system integrates narrative encoding, Bayesian inference, and optimal control of adoption dynamics.</p>}
+            policy={<p>This tool helps identify what policies will increase adoption and why.</p>}
           />
         )}
 
         {active === "Model" && (
           <Section
-            title="Model"
+            title="Mathematical Model"
             technical={<div>
               <p>Core equation:</p>
               <pre>{`dA/dt = βA(1-A) + γ(1-A) - δA`}</pre>
-              <p>β = diffusion, γ = intervention effect, δ = resistance</p>
+              <p>β: diffusion, γ: intervention, δ: resistance</p>
             </div>}
-            policy={<p>Adoption grows through peer influence and policy support, but can slow due to barriers.</p>}
-          />
-        )}
-
-        {active === "Narratives" && (
-          <Section
-            title="Narratives"
-            technical={<p>Narratives are encoded into structured variables influencing model parameters.</p>}
-            policy={<p>Community stories reveal trust, barriers, and affordability issues that shape outcomes.</p>}
+            policy={<p>Adoption increases through social influence and policy support but slows due to barriers.</p>}
           />
         )}
 
         {active === "Inference" && (
           <Section
-            title="Inference"
-            technical={<p>Bayesian inference updates parameter distributions using observed data.</p>}
-            policy={<p>The system learns from data and improves its understanding over time.</p>}
+            title="Bayesian Inference"
+            technical={<div>
+              <pre>{`p(θ|data) ∝ p(data|θ)p(θ)`}</pre>
+              <p>Posterior distributions quantify uncertainty.</p>
+            </div>}
+            policy={<p>The system learns from data and updates its confidence about outcomes.</p>}
           />
         )}
 
         {active === "Optimization" && (
           <Section
             title="Optimization"
-            technical={<p>Multi-objective optimization maximizes adoption under constraints.</p>}
-            policy={<p>The system suggests the best mix of interventions within your budget.</p>}
+            technical={<div>
+              <pre>{`max A_final - λ Cost + α Equity`}</pre>
+              <p>Multi-objective optimization balances outcomes.</p>
+            </div>}
+            policy={<p>The system finds the best policy mix within your constraints.</p>}
           />
         )}
 
         {active === "Scenarios" && (
           <Section
-            title="Scenarios"
-            technical={<p>Scenario simulation evaluates trajectories under different parameter settings.</p>}
-            policy={<p>You can compare different strategies before making decisions.</p>}
+            title="Scenario Simulation"
+            technical={<p>Policies map to parameters → trajectories.</p>}
+            policy={<p>You can compare different strategies before acting.</p>}
           />
         )}
 
-        {active === "Causality" && (
+        {active === "Worked Example" && (
           <Section
-            title="Causality"
-            technical={<p>Counterfactual methods estimate causal impact of interventions.</p>}
-            policy={<p>The system helps you understand what actually causes change.</p>}
+            title="Worked Example"
+            technical={<div>
+              <pre>{`Input: [0.12,0.15,0.18,0.22]
+→ Bayesian inference → parameters
+→ Optimization → allocation
+→ Simulation → trajectories`}</pre>
+            </div>}
+            policy={<ol>
+              <li>Enter data</li>
+              <li>Run analysis</li>
+              <li>Compare scenarios</li>
+              <li>Select best policy</li>
+            </ol>}
           />
         )}
 
-        {active === "Data" && (
+        {active === "Diagrams" && (
           <Section
-            title="Data"
-            technical={<p>Requires narrative, adoption, and intervention datasets.</p>}
-            policy={<p>Better data leads to better insights.</p>}
-          />
-        )}
-
-        {active === "Tutorial" && (
-          <Section
-            title="Tutorial"
-            technical={<ol><li>Input data</li><li>Run inference</li><li>Run optimization</li><li>Analyze outputs</li></ol>}
-            policy={<ol><li>Enter your data</li><li>Run analysis</li><li>Compare results</li><li>Export report</li></ol>}
+            title="System Diagram"
+            technical={<pre>{`Narratives → Encoding → Parameters → Simulation → Optimization → Policy`}</pre>}
+            policy={<p>The system converts stories into decisions through a structured pipeline.</p>}
           />
         )}
 
@@ -130,9 +121,10 @@ export default function ManualPage() {
           <Section
             title="Guidelines"
             technical={<ul><li>Check uncertainty</li><li>Validate assumptions</li></ul>}
-            policy={<ul><li>Compare scenarios</li><li>Avoid single-number conclusions</li><li>Use outputs as guidance</li></ul>}
+            policy={<ul><li>Compare scenarios</li><li>Avoid single values</li></ul>}
           />
         )}
+
       </main>
     </div>
   );
