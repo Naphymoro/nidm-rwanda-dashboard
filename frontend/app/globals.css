@@ -1,0 +1,10 @@
+body { margin:0; font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0; }
+.shell { display:flex; height:100vh; }
+.sidebar { width:220px; background:#020617; padding:20px; border-right:1px solid #1e293b; }
+.sidebar .brand { font-weight:bold; margin-bottom:20px; }
+.sidebar a { display:block; margin:8px 0; color:#94a3b8; text-decoration:none; }
+.sidebar a:hover { color:#e2e8f0; }
+.content { flex:1; padding:24px; overflow:auto; }
+.card { background:#020617; border:1px solid #1e293b; padding:16px; border-radius:12px; margin-bottom:16px; }
+button { background:#2563eb; border:none; padding:8px 12px; color:white; border-radius:8px; cursor:pointer; }
+textarea { background:#020617; color:#e2e8f0; border:1px solid #1e293b; }
