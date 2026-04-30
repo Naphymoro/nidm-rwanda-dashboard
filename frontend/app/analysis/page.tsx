@@ -1,25 +1,36 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, BarChart, Bar } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import jsPDF from "jspdf";
 import { post } from "../../lib/api";
 
 const defaultSeries = "0.12,0.15,0.18,0.22,0.27,0.31,0.36,0.41";
+
 const demoCountries = {
   Rwanda: [0.12, 0.15, 0.18, 0.22, 0.27, 0.31, 0.36, 0.41],
   Kenya: [0.18, 0.2, 0.23, 0.28, 0.32, 0.37, 0.43, 0.49],
   Nigeria: [0.08, 0.1, 0.13, 0.17, 0.21, 0.25, 0.3, 0.34],
 };
 
-function projectSeries(start: number, influence: number, horizon = 24) {
-  let adoption = start;
-  const rows = [];
-  for (let day = 1; day <= horizon; day++) {
-    adoption = Math.min(1, adoption + influence * adoption * (1 - adoption));
-    rows.push({ day, adoption });
-  }
-  return rows;
-}
+type Scenario = {
+  scenario: string;
+  allocation: Record<string, number>;
+  cost: number;
+  final_adoption: number;
+  trajectory: { day: number; adoption: number }[];
+};
 
 export default function AnalysisPage() {
   const [series, setSeries] = useState(defaultSeries);
@@ -32,11 +43,23 @@ export default function AnalysisPage() {
   const [optimization, setOptimization] = useState<any>(null);
   const [policy, setPolicy] = useState<any>(null);
   const [hierarchical, setHierarchical] = useState<any>(null);
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(false);
   const [countryLoading, setCountryLoading] = useState(false);
+  const [scenarioLoading, setScenarioLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const values = () => series.split(",").map((x) => Number(x.trim())).filter((x) => !Number.isNaN(x));
+  const values = () =>
+    series
+      .split(",")
+      .map((x) => Number(x.trim()))
+      .filter((x) => !Number.isNaN(x));
+
+  const selectedAllocation = {
+    demand_generation: trustCampaign,
+    consumer_subsidy: subsidy,
+    supply_chain: supplyChain,
+  };
 
   const bayesianChart = useMemo(() => {
     const mean = bayesian?.trajectory?.mean || [];
@@ -46,23 +69,21 @@ export default function AnalysisPage() {
   }, [bayesian]);
 
   const allocationChart = useMemo(() => {
-    const allocation = optimization?.best?.allocation || { demand_generation: trustCampaign, consumer_subsidy: subsidy, supply_chain: supplyChain };
+    const allocation = optimization?.best?.allocation || selectedAllocation;
     return Object.keys(allocation).map((key) => ({ name: key.replace("_", " "), value: allocation[key] }));
   }, [optimization, trustCampaign, subsidy, supplyChain]);
 
   const scenarioChart = useMemo(() => {
-    const last = values().at(-1) ?? 0.25;
-    const baseline = projectSeries(last, 0.07);
-    const user = projectSeries(last, 0.07 + 0.04 * trustCampaign + 0.05 * subsidy + 0.035 * supplyChain);
-    const optimizedInfluence = optimization?.best?.final_adoption ? 0.16 : 0.13;
-    const optimized = projectSeries(last, optimizedInfluence);
-    return baseline.map((row, i) => ({
-      day: row.day,
-      baseline: row.adoption,
-      selected_policy: user[i].adoption,
-      optimized: optimized[i].adoption,
-    }));
-  }, [series, trustCampaign, subsidy, supplyChain, optimization]);
+    if (!scenarios.length) return [];
+    const maxLength = Math.max(...scenarios.map((s) => s.trajectory.length));
+    return Array.from({ length: maxLength }, (_, i) => {
+      const row: Record<string, number> = { day: i + 1 };
+      scenarios.forEach((scenario) => {
+        row[scenario.scenario] = scenario.trajectory[i]?.adoption ?? null;
+      });
+      return row;
+    });
+  }, [scenarios]);
 
   const countryChart = useMemo(() => {
     const countries = hierarchical?.countries || {};
@@ -74,30 +95,30 @@ export default function AnalysisPage() {
     }));
   }, [hierarchical]);
 
-  function exportReport() {
-    const report = [
-      "NIDM Policy Analysis Report",
-      "===========================",
-      `Observed adoption series: ${series}`,
-      `Budget setting: ${budget}`,
-      `Manual policy controls: trust campaign=${trustCampaign}, subsidy=${subsidy}, supply chain=${supplyChain}`,
-      "",
-      "Bayesian parameters:",
-      JSON.stringify(bayesian?.parameters || {}, null, 2),
-      "",
-      "Optimized allocation:",
-      JSON.stringify(optimization?.best || {}, null, 2),
-      "",
-      "Policy package:",
-      JSON.stringify(policy || {}, null, 2),
-    ].join("\n");
-    const blob = new Blob([report], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "nidm-policy-report.txt";
-    a.click();
-    URL.revokeObjectURL(url);
+  async function runBackendScenarios(nextParams = params, opt = optimization) {
+    setScenarioLoading(true);
+    setError("");
+    try {
+      const optimizedAllocation = opt?.best?.allocation || {
+        demand_generation: 0.7,
+        consumer_subsidy: 0.8,
+        supply_chain: 0.6,
+      };
+      const res = await post("/analytics/scenario-simulate", {
+        base_params: nextParams,
+        horizon: 180,
+        scenarios: {
+          Baseline: { demand_generation: 0, consumer_subsidy: 0, supply_chain: 0 },
+          "Selected policy": selectedAllocation,
+          Optimized: optimizedAllocation,
+        },
+      });
+      setScenarios(res.scenarios || []);
+    } catch (e: any) {
+      setError(e?.message || "Scenario simulation failed. Check NEXT_PUBLIC_API_URL.");
+    } finally {
+      setScenarioLoading(false);
+    }
   }
 
   async function runAnalysis() {
@@ -106,17 +127,22 @@ export default function AnalysisPage() {
     try {
       const bayes = await post("/analytics/bayesian", values());
       setBayesian(bayes);
+
       const learned = {
         beta: bayes?.parameters?.beta?.mean ?? params.beta,
         gamma: bayes?.parameters?.gamma?.mean ?? params.gamma,
         delta: bayes?.parameters?.delta?.mean ?? params.delta,
       };
       setParams(learned);
+
       const opt = await post("/analytics/multi-objective", learned);
       setOptimization(opt);
-      const allocation = opt?.best?.allocation || { demand_generation: trustCampaign, consumer_subsidy: subsidy, supply_chain: supplyChain };
+
+      const allocation = opt?.best?.allocation || selectedAllocation;
       const mapped = await post("/analytics/policy-map", allocation);
       setPolicy(mapped);
+
+      await runBackendScenarios(learned, opt);
     } catch (e: any) {
       setError(e?.message || "Analysis failed. Check NEXT_PUBLIC_API_URL.");
     } finally {
@@ -137,6 +163,35 @@ export default function AnalysisPage() {
     }
   }
 
+  function exportPDF() {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("NIDM Policy Analysis Report", 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Observed adoption series: ${series}`, 14, 30);
+    doc.text(`Budget: ${budget.toFixed(2)}`, 14, 38);
+    doc.text(`Selected controls: trust=${trustCampaign.toFixed(2)}, subsidy=${subsidy.toFixed(2)}, supply=${supplyChain.toFixed(2)}`, 14, 46);
+
+    let y = 60;
+    doc.setFontSize(12);
+    doc.text("Scenario outcomes", 14, y);
+    y += 8;
+    doc.setFontSize(10);
+    scenarios.forEach((s) => {
+      doc.text(`${s.scenario}: final adoption=${s.final_adoption.toFixed(3)}, cost=${s.cost.toFixed(3)}`, 14, y);
+      y += 7;
+    });
+
+    y += 6;
+    doc.setFontSize(12);
+    doc.text("Recommended policy package", 14, y);
+    y += 8;
+    doc.setFontSize(9);
+    const packageText = JSON.stringify(policy || {}, null, 2).slice(0, 2200);
+    doc.text(doc.splitTextToSize(packageText, 180), 14, y);
+    doc.save("nidm-policy-report.pdf");
+  }
+
   return (
     <section className="analysis-page">
       <header>
@@ -155,26 +210,30 @@ export default function AnalysisPage() {
         </div>
         <div className="button-row">
           <button onClick={runAnalysis} disabled={loading}>{loading ? "Running..." : "Run full analysis"}</button>
+          <button onClick={() => runBackendScenarios()} disabled={scenarioLoading}>{scenarioLoading ? "Running..." : "Run backend scenarios"}</button>
           <button onClick={runMultiCountry} disabled={countryLoading}>{countryLoading ? "Running..." : "Run multi-country demo"}</button>
-          <button onClick={exportReport}>Export policymaker report</button>
+          <button onClick={exportPDF}>Export PDF report</button>
         </div>
         {error && <p className="error">{error}</p>}
       </div>
 
       <div className="analysis-grid">
         <div className="card chart-card">
-          <h2>Scenario comparison</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={scenarioChart}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <YAxis domain={[0, 1]} />
-              <Tooltip />
-              <Line type="monotone" dataKey="baseline" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="selected_policy" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="optimized" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <h2>Backend-driven scenario comparison</h2>
+          {scenarioChart.length ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={scenarioChart}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis domain={[0, 1]} />
+                <Tooltip />
+                <Legend />
+                {scenarios.map((scenario) => (
+                  <Line key={scenario.scenario} type="monotone" dataKey={scenario.scenario} strokeWidth={2} dot={false} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <p>Run backend scenarios to compare Baseline, Selected policy, and Optimized trajectories.</p>}
         </div>
 
         <div className="card chart-card">
@@ -186,24 +245,31 @@ export default function AnalysisPage() {
                 <XAxis dataKey="day" />
                 <YAxis domain={[0, 1]} />
                 <Tooltip />
+                <Legend />
                 <Line type="monotone" dataKey="upper" strokeWidth={1} dot={false} />
                 <Line type="monotone" dataKey="mean" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="lower" strokeWidth={1} dot={false} />
               </LineChart>
             </ResponsiveContainer>
-          ) : <p>No run yet</p>}
+          ) : <p>No Bayesian run yet.</p>}
         </div>
 
         <div className="card chart-card">
           <h2>Optimized policy allocation</h2>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={allocationChart}>
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis domain={[0, 1]} />
               <Tooltip />
               <Bar dataKey="value" />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="card">
+          <h2>Scenario outcomes</h2>
+          <pre>{scenarios.length ? JSON.stringify(scenarios.map(({ scenario, cost, final_adoption, allocation }) => ({ scenario, cost, final_adoption, allocation })), null, 2) : "No scenario run yet"}</pre>
         </div>
 
         <div className="card">
@@ -216,15 +282,17 @@ export default function AnalysisPage() {
           {countryChart.length ? (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={countryChart}>
+                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="country" />
                 <YAxis />
                 <Tooltip />
+                <Legend />
                 <Bar dataKey="beta" />
                 <Bar dataKey="gamma" />
                 <Bar dataKey="delta" />
               </BarChart>
             </ResponsiveContainer>
-          ) : <p>Run multi-country demo</p>}
+          ) : <p>Run multi-country demo.</p>}
         </div>
       </div>
     </section>
