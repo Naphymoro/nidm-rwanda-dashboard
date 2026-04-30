@@ -7,10 +7,11 @@ from .ingestion import normalize_text_input, normalize_csv, normalize_pdf
 from .encoding import encode_narrative
 from .database import Base, engine, get_db
 from . import models
+from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NIDM API", version="0.4")
+app = FastAPI(title="NIDM API", version="0.5")
 
 @app.get("/")
 def root():
@@ -95,6 +96,14 @@ def simulate(req: SimulationRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return result
+
+@app.post("/evaluate/encoding")
+def eval_encoding(req: EncodingEvaluationRequest):
+    return evaluate_encoding(req)
+
+@app.post("/evaluate/simulation")
+def eval_simulation(req: SimulationEvaluationRequest):
+    return evaluate_simulation(req)
 
 @app.get("/narratives")
 def get_narratives(db: Session = Depends(get_db)):
