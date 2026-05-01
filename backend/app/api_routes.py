@@ -1,11 +1,14 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Dict, List
+from sqlalchemy.orm import Session
 
 from .calibration import calibrate_parameters
-from .bayesian import run_bayesian_inference, adoption_forward
+from .bayesian import run_bayesian_inference, adoption_forward, simulate_with_priors
 from .optimization import optimize_policy, multi_objective_optimization, q_learning_policy, map_intervention_to_policy_package, POLICY_CATALOG
 from .hierarchical_bayes import fit_hierarchical_countries
+from .bayesian_learning import get_latest_priors, update_priors_from_feedback
+from .database import get_db
 
 router = APIRouter()
 
@@ -16,14 +19,42 @@ class ScenarioRequest(BaseModel):
     horizon: int = 180
 
 
+class PriorSimulationRequest(BaseModel):
+    horizon: int = 180
+    initial_adoption: float = 0.1
+    draws: int = 200
+
+
 @router.post("/calibrate")
 def calibrate(data: list[float]):
     return calibrate_parameters(data)
 
 
 @router.post("/bayesian")
-def bayesian(data: list[float]):
-    return run_bayesian_inference(data)
+def bayesian(data: list[float], db: Session = Depends(get_db)):
+    priors = get_latest_priors(db)
+    return run_bayesian_inference(data, priors=priors)
+
+
+@router.get("/priors")
+def priors(db: Session = Depends(get_db)):
+    return {"priors": get_latest_priors(db)}
+
+
+@router.post("/update-priors")
+def update_priors(db: Session = Depends(get_db)):
+    return update_priors_from_feedback(db)
+
+
+@router.post("/simulate-priors")
+def simulate_priors(req: PriorSimulationRequest, db: Session = Depends(get_db)):
+    priors = get_latest_priors(db)
+    return simulate_with_priors(
+        priors=priors,
+        horizon=req.horizon,
+        initial_adoption=req.initial_adoption,
+        draws=req.draws,
+    )
 
 
 @router.post("/optimize")
@@ -47,8 +78,9 @@ def policy_map(allocation: dict):
 
 
 @router.post("/hierarchical")
-def hierarchical(data: dict):
-    return fit_hierarchical_countries(data)
+def hierarchical(data: dict, db: Session = Depends(get_db)):
+    priors = get_latest_priors(db)
+    return fit_hierarchical_countries(data, priors=priors)
 
 
 @router.post("/scenario-simulate")
