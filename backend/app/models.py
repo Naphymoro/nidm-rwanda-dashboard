@@ -31,3 +31,36 @@ class SimulationRun(Base):
     model_mode = Column(String)
     parameters = Column(JSON)
     result = Column(JSON)
+
+
+class LearningFeedback(Base):
+    __tablename__ = "learning_feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+    decision = Column(Text)
+    outcome = Column(String, index=True)
+    note = Column(Text)
+    context = Column(JSON)
+    created_at = Column(String, index=True)
+
+
+class RetrainingJob(Base):
+    __tablename__ = "retraining_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    status = Column(String, index=True)
+    reason = Column(Text)
+    metrics = Column(JSON)
+    created_at = Column(String, index=True)
+    completed_at = Column(String, nullable=True)
+
+
+class BayesianPriorState(Base):
+    __tablename__ = "bayesian_prior_state"
+
+    id = Column(Integer, primary_key=True, index=True)
+    country = Column(String, index=True, default="global")
+    version = Column(Integer, index=True)
+    priors = Column(JSON)
+    evidence_summary = Column(JSON)
+    created_at = Column(String, index=True)
