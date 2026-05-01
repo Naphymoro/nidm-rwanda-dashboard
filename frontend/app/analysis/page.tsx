@@ -18,6 +18,7 @@ const narrativeTrace = {
 };
 type Scenario = { scenario: string; allocation: Record<string, number>; cost: number; final_adoption: number; trajectory: { day: number; adoption: number }[] };
 type ChatMessage = { role: "assistant" | "user"; text: string };
+type Feedback = { decision: string; outcome: "helpful" | "too_aggressive" | "too_costly" | "needs_data"; note: string; timestamp: string };
 function fmt(value: number | undefined, digits = 3) { return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "n/a"; }
 function allocationLabel(key: string) { return key.replace(/_/g, " "); }
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
@@ -45,8 +46,10 @@ export default function AnalysisPage() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [focusedScenario, setFocusedScenario] = useState<string | null>(null);
   const [assistantInput, setAssistantInput] = useState("");
+  const [learningMode, setLearningMode] = useState(true);
+  const [feedbackLog, setFeedbackLog] = useState<Feedback[]>([]);
   const [assistantMessages, setAssistantMessages] = useState<ChatMessage[]>([
-    { role: "assistant", text: "I can adjust levers, run analysis, compare scenarios, export a report, or apply a recommended policy plan. Try: 'increase subsidy', 'run full analysis', or 'what should I do next?'" },
+    { role: "assistant", text: "I monitor preview lift, budget risk, uncertainty, and feedback. I can adjust levers, run analysis, compare scenarios, export reports, or apply a recommended policy plan." },
   ]);
   const [loading, setLoading] = useState(false);
   const [countryLoading, setCountryLoading] = useState(false);
@@ -57,6 +60,17 @@ export default function AnalysisPage() {
   const selectedAllocation = { demand_generation: trustCampaign, consumer_subsidy: subsidy, supply_chain: supplyChain };
   const lastObserved = values().at(-1) ?? 0.25;
 
+  const learningAdjustment = useMemo(() => {
+    const costly = feedbackLog.filter((f) => f.outcome === "too_costly").length;
+    const aggressive = feedbackLog.filter((f) => f.outcome === "too_aggressive").length;
+    const needsData = feedbackLog.filter((f) => f.outcome === "needs_data").length;
+    return {
+      costCaution: Math.min(0.2, costly * 0.04),
+      aggressionCaution: Math.min(0.15, aggressive * 0.03),
+      dataCaution: needsData > 0,
+    };
+  }, [feedbackLog]);
+
   const livePreview = useMemo(() => simulatePreview(lastObserved, selectedAllocation), [lastObserved, trustCampaign, subsidy, supplyChain]);
   const previewFinal = livePreview.at(-1)?.live_preview;
   const previewDelta = typeof previewFinal === "number" ? previewFinal - lastObserved : undefined;
@@ -65,12 +79,14 @@ export default function AnalysisPage() {
     const weakPreview = (previewDelta ?? 0) < 0.18;
     const affordabilityHeavy = subsidy < 0.65;
     const supplyWeak = supplyChain < 0.45;
+    const caution = learningMode ? learningAdjustment.aggressionCaution : 0;
+    const costCaution = learningMode ? learningAdjustment.costCaution : 0;
     return {
-      demand_generation: clamp01(weakPreview ? Math.max(trustCampaign, 0.55) : trustCampaign),
-      consumer_subsidy: clamp01(affordabilityHeavy ? Math.max(subsidy, 0.7) : subsidy),
-      supply_chain: clamp01(supplyWeak ? Math.max(supplyChain, 0.5) : supplyChain),
+      demand_generation: clamp01((weakPreview ? Math.max(trustCampaign, 0.55) : trustCampaign) - caution),
+      consumer_subsidy: clamp01((affordabilityHeavy ? Math.max(subsidy, 0.7) : subsidy) - costCaution),
+      supply_chain: clamp01((supplyWeak ? Math.max(supplyChain, 0.5) : supplyChain) - caution / 2),
     };
-  }, [previewDelta, trustCampaign, subsidy, supplyChain]);
+  }, [previewDelta, trustCampaign, subsidy, supplyChain, learningMode, learningAdjustment]);
 
   const suggestedPreview = useMemo(() => simulatePreview(lastObserved, suggestedPolicy), [lastObserved, suggestedPolicy]);
   const suggestedFinal = suggestedPreview.at(-1)?.live_preview;
@@ -106,9 +122,10 @@ export default function AnalysisPage() {
   const scenarioRanking = useMemo(() => [...scenarios].map((s) => {
     const efficiency = s.cost > 0 ? s.final_adoption / s.cost : s.final_adoption;
     const robustnessPenalty = bayesian?.parameters?.gamma ? (bayesian.parameters.gamma.q95 - bayesian.parameters.gamma.q05) : 0.1;
-    const score = s.final_adoption - 0.18 * Math.min(1, s.cost) - 0.12 * robustnessPenalty;
+    const learningPenalty = learningMode ? learningAdjustment.costCaution + learningAdjustment.aggressionCaution : 0;
+    const score = s.final_adoption - 0.18 * Math.min(1, s.cost) - 0.12 * robustnessPenalty - learningPenalty;
     return { ...s, efficiency, score };
-  }).sort((a, b) => b.score - a.score), [scenarios, bayesian]);
+  }).sort((a, b) => b.score - a.score), [scenarios, bayesian, learningMode, learningAdjustment]);
 
   const interpretation = useMemo(() => {
     const baseline = scenarios.find((s) => s.scenario === "Baseline");
@@ -121,21 +138,32 @@ export default function AnalysisPage() {
     const uncertainty = [["diffusion", bayesian?.parameters?.beta?.q95 - bayesian?.parameters?.beta?.q05], ["intervention response", bayesian?.parameters?.gamma?.q95 - bayesian?.parameters?.gamma?.q05], ["resistance", bayesian?.parameters?.delta?.q95 - bayesian?.parameters?.delta?.q05]].filter((x: any) => Number.isFinite(x[1])).sort((a: any, b: any) => b[1] - a[1]);
     const widest = uncertainty[0];
     const highUncertainty = widest && widest[1] > 0.2;
-    if (!scenarios.length) return { headline: "Live preview is active. Run analysis to validate with backend simulation.", adoptionChange: `${fmt(start)} → ${fmt(previewFinal)} (${previewDelta && previewDelta >= 0 ? "+" : ""}${fmt(previewDelta)} preview)`, recommendation: "Adjust sliders to preview policy direction, then run full analysis for calibrated ranking.", uncertaintyAdvice: "No Bayesian uncertainty assessment yet.", traceability: ["Traceability appears after policy allocation is selected."], driver: "Preview uses selected levers only.", evidence: "No backend scenario outputs yet.", confidence: "Preview", highUncertainty: false };
+    if (!scenarios.length) return { headline: "Proactive monitor active. Run analysis when ready.", adoptionChange: `${fmt(start)} → ${fmt(previewFinal)} (${previewDelta && previewDelta >= 0 ? "+" : ""}${fmt(previewDelta)} preview)`, recommendation: "Use live preview to explore. Apply assistant plan if the lift is weak, then run full analysis for validation.", uncertaintyAdvice: learningAdjustment.dataCaution ? "Feedback indicates more validation data is needed before operational decisions." : "No Bayesian uncertainty assessment yet.", traceability: ["Traceability appears after policy allocation is selected."], driver: "Preview uses selected levers only.", evidence: "No backend scenario outputs yet.", confidence: "Monitoring", highUncertainty: false };
     const baselineGain = best && baseline ? best.final_adoption - baseline.final_adoption : undefined;
     const traceKey = dominantLever?.[0] as keyof typeof narrativeTrace;
     return {
       headline: best ? `${best.scenario} is currently the top-ranked strategy.` : "Scenario comparison is available.",
       adoptionChange: `${fmt(start)} → ${fmt(best?.final_adoption)} (${baselineGain && baselineGain >= 0 ? "+" : ""}${fmt(baselineGain)} vs baseline)`,
-      recommendation: highUncertainty ? "Use this as a planning hypothesis and prioritize validation data before operational rollout." : "Use the top-ranked scenario as the preferred planning case, subject to field validation.",
+      recommendation: highUncertainty || learningAdjustment.dataCaution ? "Use this as a planning hypothesis and prioritize validation data before operational rollout." : "Use the top-ranked scenario as the preferred planning case, subject to field validation.",
       uncertaintyAdvice: widest ? `${highUncertainty ? "High" : "Moderate/low"} uncertainty in ${widest[0]} (90% width ${fmt(widest[1] as number)}).` : "Run Bayesian inference to quantify uncertainty.",
       driver: dominantLever ? `${allocationLabel(dominantLever[0])} is the largest lever (${fmt(dominantLever[1] as number, 2)}).` : "No dominant lever identified.",
       traceability: narrativeTrace[traceKey] || ["Traceability will improve when real narratives are linked to the model run."],
       evidence: `Baseline=${fmt(baseline?.final_adoption)}, Selected=${fmt(selected?.final_adoption)}, Optimized=${fmt(optimized?.final_adoption)}.`,
-      confidence: highUncertainty ? "Provisional" : "Moderate",
+      confidence: highUncertainty || learningAdjustment.dataCaution ? "Provisional" : "Moderate",
       highUncertainty,
     };
-  }, [scenarios, scenarioRanking, optimization, bayesian, trustCampaign, subsidy, supplyChain, series, previewFinal, previewDelta]);
+  }, [scenarios, scenarioRanking, optimization, bayesian, trustCampaign, subsidy, supplyChain, series, previewFinal, previewDelta, learningAdjustment]);
+
+  const proactiveSignals = useMemo(() => {
+    const signals: string[] = [];
+    if ((previewDelta ?? 0) < 0.12) signals.push("Preview lift is weak; assistant recommends increasing intervention strength or running full analysis.");
+    if (subsidy > budget) signals.push("Subsidy intensity is higher than the budget setting; review feasibility.");
+    if (learningAdjustment.costCaution > 0) signals.push("Learning memory: prior feedback marked recommendations as too costly, so suggestions are now more conservative.");
+    if (learningAdjustment.aggressionCaution > 0) signals.push("Learning memory: prior feedback marked recommendations as too aggressive, so intensities are dampened.");
+    if (learningAdjustment.dataCaution) signals.push("Learning memory: prior feedback requested more data; recommendations are flagged as provisional.");
+    if (signals.length === 0) signals.push("No immediate risk signal detected. Continue exploration or run full analysis.");
+    return signals;
+  }, [previewDelta, subsidy, budget, learningAdjustment]);
 
   const assistant = useMemo(() => {
     const top = scenarioRanking[0];
@@ -199,13 +227,18 @@ export default function AnalysisPage() {
     setAssistantMessages((m) => [...m, { role: "assistant", text: `Applied self-driving plan. Expected preview lift vs current setup: ${suggestedLift && suggestedLift >= 0 ? "+" : ""}${fmt(suggestedLift)}.` }]);
   }
 
+  function captureFeedback(outcome: Feedback["outcome"]) {
+    const entry = { decision: interpretation.headline, outcome, note: interpretation.recommendation, timestamp: new Date().toISOString() };
+    setFeedbackLog((items) => [entry, ...items].slice(0, 10));
+    setAssistantMessages((m) => [...m, { role: "assistant", text: `Feedback recorded: ${outcome}. Future suggestions will adjust accordingly.` }]);
+  }
+
   async function handleAssistantCommand() {
     const command = assistantInput.trim();
     if (!command) return;
     const lower = command.toLowerCase();
     setAssistantMessages((m) => [...m, { role: "user", text: command }]);
     setAssistantInput("");
-
     if (lower.includes("increase") && lower.includes("subsid")) { setSubsidy((v) => clamp01(v + 0.1)); setAssistantMessages((m) => [...m, { role: "assistant", text: "Increased subsidy by 0.10 and refreshed the live preview." }]); return; }
     if ((lower.includes("reduce") || lower.includes("decrease")) && lower.includes("subsid")) { setSubsidy((v) => clamp01(v - 0.1)); setAssistantMessages((m) => [...m, { role: "assistant", text: "Reduced subsidy by 0.10 and refreshed the live preview." }]); return; }
     if (lower.includes("increase") && (lower.includes("trust") || lower.includes("campaign"))) { setTrustCampaign((v) => clamp01(v + 0.1)); setAssistantMessages((m) => [...m, { role: "assistant", text: "Increased trust campaign intensity by 0.10." }]); return; }
@@ -223,8 +256,10 @@ export default function AnalysisPage() {
     doc.setFontSize(10); doc.text(`Observed adoption series: ${series}`, 14, 30); doc.text(`Budget: ${budget.toFixed(2)}`, 14, 38); doc.text(`Selected controls: trust=${trustCampaign.toFixed(2)}, subsidy=${subsidy.toFixed(2)}, supply=${supplyChain.toFixed(2)}`, 14, 46);
     let y = 60; doc.setFontSize(12); doc.text("Decision recommendation", 14, y); y += 8; doc.setFontSize(10);
     [interpretation.headline, interpretation.adoptionChange, interpretation.driver, interpretation.uncertaintyAdvice, interpretation.recommendation].forEach((line) => { doc.text(doc.splitTextToSize(line, 180), 14, y); y += 9; });
-    y += 4; doc.setFontSize(12); doc.text("Autonomous assistant", 14, y); y += 8;
-    [...assistant.alerts, ...assistant.actions, ...assistant.checks].forEach((line) => { doc.text(doc.splitTextToSize(`- ${line}`, 180), 14, y); y += 8; });
+    y += 4; doc.setFontSize(12); doc.text("Proactive monitor", 14, y); y += 8;
+    proactiveSignals.forEach((line) => { doc.text(doc.splitTextToSize(`- ${line}`, 180), 14, y); y += 8; });
+    y += 2; doc.setFontSize(12); doc.text("Learning memory", 14, y); y += 8;
+    feedbackLog.slice(0, 4).forEach((f) => { doc.text(doc.splitTextToSize(`- ${f.outcome}: ${f.note}`, 180), 14, y); y += 8; });
     doc.save("nidm-policy-report.pdf");
   }
 
@@ -232,7 +267,7 @@ export default function AnalysisPage() {
     <section className="analysis-page" style={{ padding: 20 }}>
       <header style={{ marginBottom: 16 }}>
         <h1>Policy Analysis Workflow</h1>
-        <p>Conversational, self-driving decision assistant for simulation, uncertainty, traceability, policy ranking, and next-best actions.</p>
+        <p>Proactive, continuously learning decision assistant for simulation, uncertainty, traceability, policy ranking, and next-best actions.</p>
       </header>
       {error && <p className="error">{error}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "280px minmax(360px, 1fr) minmax(420px, 1.4fr)", gap: 16, alignItems: "start" }}>
@@ -244,6 +279,7 @@ export default function AnalysisPage() {
           <label>Trust campaign {trustCampaign.toFixed(2)}<input type="range" min="0" max="1" step="0.05" value={trustCampaign} onChange={(e) => setTrustCampaign(Number(e.target.value))} /></label>
           <label>Subsidy {subsidy.toFixed(2)}<input type="range" min="0" max="1" step="0.05" value={subsidy} onChange={(e) => setSubsidy(Number(e.target.value))} /></label>
           <label>Supply chain {supplyChain.toFixed(2)}<input type="range" min="0" max="1" step="0.05" value={supplyChain} onChange={(e) => setSupplyChain(Number(e.target.value))} /></label>
+          <label><input type="checkbox" checked={learningMode} onChange={(e) => setLearningMode(e.target.checked)} /> Learning mode</label>
           <div className="card" style={{ padding: 12, boxShadow: "none" }}>
             <h2>Live preview</h2>
             <p><strong>Projected:</strong> {fmt(lastObserved)} → {fmt(previewFinal)} ({previewDelta && previewDelta >= 0 ? "+" : ""}{fmt(previewDelta)})</p>
@@ -259,13 +295,18 @@ export default function AnalysisPage() {
 
         <main style={{ display: "grid", gap: 16 }}>
           <section className="card" style={{ border: "2px solid #2563eb" }}>
-            <h2>Conversational decision co-pilot</h2>
+            <h2>Proactive decision assistant</h2>
             <h3>{interpretation.headline}</h3>
             <p><strong>Expected change:</strong> {interpretation.adoptionChange}</p>
             <p><strong>Confidence:</strong> {interpretation.confidence}</p>
             <p><strong>Primary lever:</strong> {interpretation.driver}</p>
             <p><strong>Uncertainty:</strong> {interpretation.uncertaintyAdvice}</p>
             <p><strong>Recommendation:</strong> {interpretation.recommendation}</p>
+          </section>
+
+          <section className="card">
+            <h2>Proactive monitor</h2>
+            <ul>{proactiveSignals.map((signal, i) => <li key={i}>{signal}</li>)}</ul>
           </section>
 
           <section className="card">
@@ -277,6 +318,17 @@ export default function AnalysisPage() {
               <textarea value={assistantInput} onChange={(e) => setAssistantInput(e.target.value)} rows={2} placeholder="Ask: increase subsidy, run full analysis, export PDF, what should I do next?" />
               <button onClick={handleAssistantCommand}>Send</button>
             </div>
+          </section>
+
+          <section className="card">
+            <h2>Learning feedback</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              <button onClick={() => captureFeedback("helpful")}>Helpful</button>
+              <button onClick={() => captureFeedback("too_aggressive")}>Too aggressive</button>
+              <button onClick={() => captureFeedback("too_costly")}>Too costly</button>
+              <button onClick={() => captureFeedback("needs_data")}>Needs data</button>
+            </div>
+            <p>{feedbackLog.length ? `${feedbackLog.length} feedback item(s) stored for this session.` : "No feedback yet. Feedback adjusts future suggestions during this session."}</p>
           </section>
 
           <section className="card">
