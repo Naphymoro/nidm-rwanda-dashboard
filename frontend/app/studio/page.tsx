@@ -1,11 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { post } from "../../lib/api";
 
 const navigation = ["Command", "Ingest", "Encode", "Simulate", "Explore", "Evaluate"];
 
+type SimPoint = { x: number; y: number };
+type BackendStatus = "local preview" | "running backend" | "backend connected" | "backend unavailable";
+
 function clamp(value: number) {
   return Math.max(0, Math.min(1, value));
+}
+
+function normalizeTrajectory(raw: any): SimPoint[] {
+  const source = Array.isArray(raw?.trajectory) ? raw.trajectory : Array.isArray(raw) ? raw : [];
+  const points = source.map((item: any, index: number) => {
+    const value = typeof item === "number" ? item : item?.adoption ?? item?.value ?? item?.y ?? item?.state?.adoption ?? 0;
+    return { x: index, y: clamp(Number(value) || 0) };
+  });
+  return points.length ? points : [];
 }
 
 function generatePath(trust: number, subsidy: number, supply: number) {
@@ -18,11 +31,11 @@ function generatePath(trust: number, subsidy: number, supply: number) {
   });
 }
 
-function pathFromSeries(series: { x: number; y: number }[]) {
+function pathFromSeries(series: SimPoint[]) {
   const width = 680;
   const height = 260;
   return series.map((point, index) => {
-    const x = (point.x / Math.max(1, series.length - 1)) * width;
+    const x = (index / Math.max(1, series.length - 1)) * width;
     const y = height - point.y * height;
     return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
@@ -34,13 +47,54 @@ export default function StudioPage() {
   const [subsidy, setSubsidy] = useState(0.62);
   const [supply, setSupply] = useState(0.38);
   const [learning, setLearning] = useState(true);
+  const [backendSeries, setBackendSeries] = useState<SimPoint[] | null>(null);
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("local preview");
+  const [backendMessage, setBackendMessage] = useState("Using local preview until backend simulation is run.");
 
-  const series = useMemo(() => generatePath(trust, subsidy, supply), [trust, subsidy, supply]);
+  const localSeries = useMemo(() => generatePath(trust, subsidy, supply), [trust, subsidy, supply]);
+  const series = backendSeries?.length ? backendSeries : localSeries;
   const trajectory = pathFromSeries(series);
   const final = series.at(-1)?.y ?? 0;
   const lift = final - 0.32;
   const dominant = subsidy >= trust && subsidy >= supply ? "Subsidy" : trust >= supply ? "Trust" : "Supply";
   const risk = subsidy > 0.72 ? "Budget pressure" : supply < 0.3 ? "Supply risk" : "Operationally balanced";
+
+  async function runBackendSimulation() {
+    setBackendStatus("running backend");
+    setBackendMessage("Running FastAPI simulation on Render...");
+    try {
+      const response = await post("/simulate", {
+        model_mode: "policy",
+        horizon_days: 52,
+        parameters: {
+          initial_adoption: 0.32,
+          trust_campaign: trust,
+          consumer_subsidy: subsidy,
+          supply_chain: supply,
+          learning_enabled: learning,
+          beta: 0.25 + trust * 0.16,
+          gamma: 0.12 + subsidy * 0.18,
+          delta: Math.max(0.02, 0.12 - supply * 0.06),
+        },
+      });
+      const normalized = normalizeTrajectory(response);
+      if (!normalized.length) throw new Error("Backend returned no trajectory data.");
+      setBackendSeries(normalized);
+      setBackendStatus("backend connected");
+      setBackendMessage("Live backend simulation is driving the cockpit.");
+      setActive("Simulate");
+    } catch (error: any) {
+      setBackendSeries(null);
+      setBackendStatus("backend unavailable");
+      setBackendMessage(error?.message || "Backend unavailable. Local preview remains active.");
+    }
+  }
+
+  function resetPreview() {
+    setBackendSeries(null);
+    setBackendStatus("local preview");
+    setBackendMessage("Using local preview until backend simulation is run.");
+  }
 
   return (
     <main className="screen">
@@ -71,11 +125,11 @@ export default function StudioPage() {
             <h1>Policy simulation cockpit</h1>
             <p className="subhead">A clean command interface for narrative ingestion, AI encoding, Bayesian simulation, and decision-ready recommendations.</p>
           </div>
-          <div className="statusBlock">
+          <div className={`statusBlock ${backendStatus === "backend unavailable" ? "warn" : ""}`}>
             <span className="pulse" />
             <div>
-              <strong>System online</strong>
-              <p>Adaptive twin active</p>
+              <strong>{backendStatus}</strong>
+              <p>{backendMessage}</p>
             </div>
           </div>
         </header>
@@ -83,7 +137,7 @@ export default function StudioPage() {
         <section className="kpiGrid">
           <Metric label="Narratives" value="12,480" delta="+18.2%" />
           <Metric label="AI confidence" value="87.4%" delta="+6.1%" />
-          <Metric label="Scenario lift" value={`+${(lift * 100).toFixed(1)}%`} delta="live" />
+          <Metric label="Scenario lift" value={`+${(lift * 100).toFixed(1)}%`} delta={backendSeries ? "backend" : "preview"} />
           <Metric label="Countries" value="03" delta="RW · KE · NG" />
         </section>
 
@@ -123,11 +177,12 @@ export default function StudioPage() {
                 <h2>Policy levers</h2>
               </div>
             </div>
-            <Slider label="Trust campaign" value={trust} setValue={setTrust} />
-            <Slider label="Consumer subsidy" value={subsidy} setValue={setSubsidy} />
-            <Slider label="Supply chain" value={supply} setValue={setSupply} />
-            <label className="toggle"><input type="checkbox" checked={learning} onChange={(event) => setLearning(event.target.checked)} /> Adaptive learning enabled</label>
-            <button className="primary">Run decision pass</button>
+            <Slider label="Trust campaign" value={trust} setValue={(value) => { setTrust(value); resetPreview(); }} />
+            <Slider label="Consumer subsidy" value={subsidy} setValue={(value) => { setSubsidy(value); resetPreview(); }} />
+            <Slider label="Supply chain" value={supply} setValue={(value) => { setSupply(value); resetPreview(); }} />
+            <label className="toggle"><input type="checkbox" checked={learning} onChange={(event) => { setLearning(event.target.checked); resetPreview(); }} /> Adaptive learning enabled</label>
+            <button className="primary" onClick={runBackendSimulation} disabled={backendStatus === "running backend"}>{backendStatus === "running backend" ? "Running..." : "Run backend simulation"}</button>
+            <button onClick={resetPreview}>Reset local preview</button>
           </article>
         </section>
 
@@ -136,11 +191,12 @@ export default function StudioPage() {
             <p className="eyebrow">Recommendation</p>
             <h2>{dominant} led strategy</h2>
             <p>Prioritize {dominant.toLowerCase()} while monitoring {risk.toLowerCase()}. Current projected adoption reaches <strong>{final.toFixed(3)}</strong> with a lift of <strong>{(lift * 100).toFixed(1)}%</strong>.</p>
-            <div className="actions"><button className="primary">Apply strategy</button><button>Export brief</button></div>
+            <p className="backendNote">Simulation source: <strong>{backendSeries ? "Render FastAPI backend" : "local preview model"}</strong></p>
+            <div className="actions"><button className="primary" onClick={runBackendSimulation}>Apply strategy</button><button>Export brief</button></div>
           </article>
           <article className="panel scenarioStack">
             <p className="eyebrow">Scenario ranking</p>
-            <Scenario rank="01" title="Optimized" value={final + 0.05} active />
+            <Scenario rank="01" title="Optimized" value={clamp(final + 0.05)} active />
             <Scenario rank="02" title="Selected" value={final} />
             <Scenario rank="03" title="Baseline" value={0.47} />
           </article>
@@ -149,7 +205,7 @@ export default function StudioPage() {
             <ul>
               <li>{learning ? "Learning mode is active and will adapt recommendations." : "Learning mode is paused."}</li>
               <li>{risk === "Operationally balanced" ? "No major feasibility alert detected." : risk}</li>
-              <li>Traceability layer ready for narrative evidence.</li>
+              <li>{backendStatus === "backend connected" ? "Backend simulation connected successfully." : backendMessage}</li>
             </ul>
           </article>
         </section>
@@ -165,6 +221,7 @@ export default function StudioPage() {
         nav { display: grid; gap: 8px; }
         button { border: 1px solid rgba(148, 163, 184, .16); background: rgba(15, 23, 42, .68); color: #edf4ff; border-radius: 14px; padding: 11px 13px; font-weight: 800; cursor: pointer; transition: .18s ease; }
         button:hover { transform: translateY(-1px); border-color: rgba(56, 189, 248, .55); box-shadow: 0 12px 32px rgba(37, 99, 235, .2); }
+        button:disabled { opacity: .6; cursor: wait; transform: none; }
         nav button { text-align: left; }
         .navActive, .primary { background: linear-gradient(135deg, #2563eb, #22d3ee); border-color: rgba(147, 197, 253, .45); }
         .railCard { margin-top: auto; border: 1px solid rgba(148, 163, 184, .16); border-radius: 18px; padding: 16px; background: rgba(15, 23, 42, .66); }
@@ -175,9 +232,12 @@ export default function StudioPage() {
         h1 { font-size: clamp(34px, 4vw, 60px); line-height: .95; letter-spacing: -.075em; margin: 0 0 12px; }
         h2 { margin: 0; letter-spacing: -.045em; font-size: 24px; }
         .subhead { color: #9fb2c9; font-size: 16px; max-width: 760px; line-height: 1.55; margin: 0; }
-        .statusBlock { display: flex; gap: 10px; align-items: center; border: 1px solid rgba(34, 197, 94, .22); background: rgba(34, 197, 94, .08); color: #bbf7d0; padding: 12px 14px; border-radius: 18px; min-width: 210px; }
-        .statusBlock p { margin: 2px 0 0; color: #86efac; font-size: 12px; }
+        .statusBlock { display: flex; gap: 10px; align-items: center; border: 1px solid rgba(34, 197, 94, .22); background: rgba(34, 197, 94, .08); color: #bbf7d0; padding: 12px 14px; border-radius: 18px; min-width: 260px; max-width: 360px; }
+        .statusBlock.warn { border-color: rgba(245, 158, 11, .35); background: rgba(245, 158, 11, .08); color: #fcd34d; }
+        .statusBlock p { margin: 2px 0 0; color: #86efac; font-size: 12px; line-height: 1.35; }
+        .statusBlock.warn p { color: #fde68a; }
         .pulse { width: 10px; height: 10px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 0 6px rgba(34, 197, 94, .12); }
+        .warn .pulse { background: #f59e0b; box-shadow: 0 0 0 6px rgba(245, 158, 11, .12); }
         .kpiGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
         .panel, .metric { border: 1px solid rgba(148, 163, 184, .16); background: linear-gradient(180deg, rgba(15, 23, 42, .82), rgba(2, 6, 23, .72)); border-radius: 22px; box-shadow: 0 24px 70px rgba(0, 0, 0, .34); backdrop-filter: blur(18px); }
         .metric { padding: 16px; transition: .18s ease; animation: fadeUp .45s ease both; }
@@ -201,6 +261,7 @@ export default function StudioPage() {
         .toggle { display: flex; align-items: center; gap: 8px; }
         .bottomGrid { display: grid; grid-template-columns: 1.1fr .9fr .9fr; gap: 18px; }
         .recommendation p, .monitor li { color: #9fb2c9; line-height: 1.65; }
+        .backendNote { color: #bfdbfe !important; }
         .actions { display: flex; gap: 10px; margin-top: 16px; }
         .scenarioStack { display: grid; gap: 10px; }
         .scenario { display: grid; grid-template-columns: 42px 1fr auto; gap: 10px; align-items: center; border: 1px solid rgba(148, 163, 184, .14); border-radius: 16px; padding: 10px; background: rgba(2, 6, 23, .42); }
