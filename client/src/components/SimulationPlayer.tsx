@@ -110,34 +110,37 @@ export default function SimulationPlayer({
       />
 
       {/* Playback Control Bar */}
-      <Card className="glass-dark border-border/50 p-5">
+      <Card className="nidm-card p-5">
         <div className="flex flex-col gap-4">
           {/* Top Row: transport buttons + speed */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
                 onClick={handleReset}
-                className="bg-background/40 border-border/60 hover:bg-primary/10 hover:border-primary"
+                className="border-[var(--bdr)] bg-[var(--deep)] text-[var(--t2)] hover:border-[var(--bdrV)] hover:bg-[var(--well)]"
                 title="Reset to start"
               >
                 <RotateCcw className="w-4 h-4" />
               </Button>
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
                 onClick={handleStepBack}
                 disabled={currentIndex === 0}
-                className="bg-background/40 border-border/60 hover:bg-primary/10 hover:border-primary"
+                className="border-[var(--bdr)] bg-[var(--deep)] text-[var(--t2)] hover:border-[var(--bdrV)] hover:bg-[var(--well)]"
                 title="Step back"
               >
                 <SkipBack className="w-4 h-4" />
               </Button>
               <Button
+                type="button"
                 size="lg"
                 onClick={handlePlayPause}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 glow-primary px-6"
+                className="border-[rgba(32,201,151,.35)] bg-[rgba(32,201,151,.14)] px-6 text-[var(--verdant)] hover:bg-[rgba(32,201,151,.2)]"
                 title={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? (
@@ -151,20 +154,22 @@ export default function SimulationPlayer({
                 )}
               </Button>
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
                 onClick={handleStepForward}
                 disabled={currentIndex === maxIndex}
-                className="bg-background/40 border-border/60 hover:bg-primary/10 hover:border-primary"
+                className="border-[var(--bdr)] bg-[var(--deep)] text-[var(--t2)] hover:border-[var(--bdrV)] hover:bg-[var(--well)]"
                 title="Step forward"
               >
                 <SkipForward className="w-4 h-4" />
               </Button>
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
                 onClick={handleSkipToEnd}
-                className="bg-background/40 border-border/60 hover:bg-accent/10 hover:border-accent"
+                className="border-[var(--bdr)] bg-[var(--deep)] text-[var(--t2)] hover:border-[var(--bdrV)] hover:bg-[var(--well)]"
                 title="Skip to end"
               >
                 <FastForward className="w-4 h-4" />
@@ -173,16 +178,17 @@ export default function SimulationPlayer({
 
             {/* Speed selector */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Speed</span>
-              <div className="flex bg-background/40 border border-border/60 rounded-md p-1">
+              <span className="font-mono-data text-xs text-[var(--t3)]">Speed</span>
+              <div className="flex rounded-md border border-[var(--bdr)] bg-[var(--deep)] p-1">
                 {SPEED_OPTIONS.map((s) => (
                   <button
                     key={s}
+                    type="button"
                     onClick={() => setSpeed(s)}
                     className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
                       speed === s
-                        ? "bg-primary text-primary-foreground glow-primary"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-[var(--card)] text-[var(--indigoL)]"
+                        : "text-[var(--t3)] hover:text-[var(--t1)]"
                     }`}
                   >
                     {s}x
@@ -194,7 +200,7 @@ export default function SimulationPlayer({
 
           {/* Scrub Bar */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground font-mono w-16">
+            <span className="font-mono-data w-16 text-xs text-[var(--t3)]">
               t = {currentPoint?.time.toFixed(1) ?? "0.0"}
             </span>
             <div className="flex-1 relative">
@@ -204,37 +210,34 @@ export default function SimulationPlayer({
                 max={maxIndex}
                 value={currentIndex}
                 onChange={handleScrub}
-                className="w-full h-2 bg-background/60 rounded-lg appearance-none cursor-pointer accent-primary"
-                style={{
-                  background: `linear-gradient(to right, #00A9B5 0%, #00A9B5 ${progressPct}%, rgba(255,255,255,0.1) ${progressPct}%, rgba(255,255,255,0.1) 100%)`,
-                }}
+                style={{ "--pct": `${progressPct}%`, "--indigoL": "var(--verdant)" } as React.CSSProperties}
               />
             </div>
-            <span className="text-xs text-muted-foreground font-mono w-20 text-right">
+            <span className="font-mono-data w-20 text-right text-xs text-[var(--t3)]">
               {currentIndex} / {maxIndex}
             </span>
           </div>
 
           {/* Live compartment readouts */}
           {currentPoint && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pt-2 border-t border-border/40">
+            <div className="grid grid-cols-2 gap-2 border-t border-[var(--bdr)] pt-2 md:grid-cols-5">
               {(Object.keys(COMPARTMENT_COLORS) as Array<keyof typeof COMPARTMENT_COLORS>).map(
                 (key) => (
                   <div
                     key={key}
-                    className="bg-background/30 rounded-md p-2 border border-border/40"
+                    className="rounded-md border border-[var(--bdr)] bg-[var(--deep)] p-2"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: COMPARTMENT_COLORS[key] }}
                       />
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span className="font-mono-data text-[10px] uppercase tracking-wider text-[var(--t3)]">
                         {key}
                       </span>
                     </div>
                     <p
-                      className="text-lg font-bold font-mono"
+                      className="font-mono-data text-lg font-bold"
                       style={{ color: COMPARTMENT_COLORS[key] }}
                     >
                       {(currentPoint[key] * 100).toFixed(1)}%

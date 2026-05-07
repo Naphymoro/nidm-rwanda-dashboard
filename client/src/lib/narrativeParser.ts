@@ -17,7 +17,7 @@ export interface ParsedNarrative {
   kappa: number;
   phi: number;
   targets: string;
-  source: "csv" | "narrative";
+  source: "csv" | "narrative" | "sdmx";
   uploadedAt: number;
 }
 
@@ -184,6 +184,167 @@ export function parseNarrativeText(
   });
 }
 
+type AnyRecord = Record<string, unknown>;
+
+function readString(record: AnyRecord, keys: string[], fallback = ""): string {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
+  }
+  return fallback;
+}
+
+function readNestedRecord(record: AnyRecord, key: string): AnyRecord {
+  const value = record[key];
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as AnyRecord)
+    : {};
+}
+
+function recordToNarrative(record: AnyRecord, index: number, filename: string): ParsedNarrative {
+  const dimensions = readNestedRecord(record, "dimensions");
+  const measures = readNestedRecord(record, "measures");
+  const attributes = readNestedRecord(record, "attributes");
+
+  const key =
+    readString(record, ["key", "id"]) ||
+    readString(dimensions, ["narrative", "key", "id"]) ||
+    `${filename}-${index + 1}`;
+  const label =
+    readString(record, ["label", "name"]) ||
+    readString(attributes, ["label", "name"]) ||
+    key;
+  const quote =
+    readString(record, ["quote", "body", "text", "value"]) ||
+    readString(attributes, ["quote", "body", "text"]) ||
+    "";
+  const type =
+    readString(record, ["type", "storyType"]) ||
+    readString(dimensions, ["type"], "narrative");
+  const targets =
+    readString(record, ["targets", "target"]) ||
+    readString(dimensions, ["target", "targets"], "all");
+
+  const E = clamp01(safeNumber(String(measures.E ?? record.E ?? record.e ?? 0.5)));
+  const C = clamp01(safeNumber(String(measures.C ?? record.C ?? record.c ?? 0.5)));
+  const tau = clamp01(safeNumber(String(measures.tau ?? record.tau ?? record.TAU ?? 0.5)));
+  const kappa = clamp01(safeNumber(String(measures.kappa ?? record.kappa ?? 0.5)));
+  const phiValue = measures.phi ?? record.phi;
+  const phi = phiValue === undefined
+    ? computePhi(E, C, tau, kappa)
+    : clamp01(safeNumber(String(phiValue)));
+
+  return {
+    id: `${filename}-${index}-${Date.now()}`,
+    key,
+    label,
+    type,
+    quote: quote.length > 420 ? quote.slice(0, 417) + "..." : quote,
+    E,
+    C,
+    tau,
+    kappa,
+    phi,
+    targets,
+    source: "sdmx",
+    uploadedAt: Date.now(),
+  };
+}
+
+function extractJsonRecords(payload: unknown): AnyRecord[] {
+  if (Array.isArray(payload)) return payload.filter((item): item is AnyRecord => !!item && typeof item === "object");
+  if (!payload || typeof payload !== "object") return [];
+
+  const root = payload as AnyRecord;
+  const direct =
+    root.narratives ??
+    root.observations ??
+    readNestedRecord(root, "data").narratives ??
+    readNestedRecord(root, "data").observations;
+
+  if (Array.isArray(direct)) {
+    return direct.filter((item): item is AnyRecord => !!item && typeof item === "object");
+  }
+
+  const dataSets = root.dataSets;
+  if (Array.isArray(dataSets) && dataSets.length > 0) {
+    const observations = (dataSets[0] as AnyRecord).observations;
+    if (Array.isArray(observations)) {
+      return observations.filter((item): item is AnyRecord => !!item && typeof item === "object");
+    }
+
+    if (observations && typeof observations === "object") {
+      return Object.entries(observations as Record<string, unknown>).map(([key, value]) => {
+        if (Array.isArray(value)) {
+          return {
+            key,
+            E: value[0],
+            C: value[1],
+            tau: value[2],
+            kappa: value[3],
+            phi: value[4],
+          };
+        }
+        if (value && typeof value === "object") {
+          return { key, ...(value as AnyRecord) };
+        }
+        return { key };
+      });
+    }
+  }
+
+  return [];
+}
+
+function parseAttributes(input: string): AnyRecord {
+  const attrs: AnyRecord = {};
+  const attrPattern = /([\w:-]+)\s*=\s*"([^"]*)"/g;
+  let match: RegExpExecArray | null;
+  while ((match = attrPattern.exec(input)) !== null) {
+    attrs[match[1]] = match[2];
+  }
+  return attrs;
+}
+
+function extractXmlNarratives(content: string): AnyRecord[] {
+  const records: AnyRecord[] = [];
+  const nodePattern = /<(Narrative|narrative|Observation|observation|Obs)\b([^>]*)>([\s\S]*?)<\/\1>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = nodePattern.exec(content)) !== null) {
+    const attrs = parseAttributes(match[2]);
+    const body = match[3].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    records.push({ ...attrs, quote: attrs.quote ?? attrs.text ?? body });
+  }
+
+  return records;
+}
+
+/**
+ * Parse a lightweight SDMX-style JSON/XML exchange into NIDM narratives.
+ * The dashboard emits and accepts the same narrative observation shape:
+ * dimensions identify narrative/type/target/source and measures carry
+ * E, C, tau, kappa, and phi values.
+ */
+export function parseSdmxNarratives(content: string, filename: string): ParsedNarrative[] {
+  const trimmed = content.trim();
+  if (!trimmed) return [];
+
+  let records: AnyRecord[] = [];
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      records = extractJsonRecords(JSON.parse(trimmed));
+    } catch {
+      records = [];
+    }
+  } else if (trimmed.startsWith("<")) {
+    records = extractXmlNarratives(trimmed);
+  }
+
+  return records.map((record, index) => recordToNarrative(record, index, filename));
+}
+
 /**
  * Filter and sort utilities for the narrative library.
  */
@@ -192,7 +353,7 @@ export type SortKey = "phi" | "label" | "uploadedAt";
 export function filterNarratives(
   list: ParsedNarrative[],
   query: string,
-  source: "all" | "csv" | "narrative",
+  source: "all" | ParsedNarrative["source"],
   minPhi: number
 ): ParsedNarrative[] {
   const q = query.trim().toLowerCase();

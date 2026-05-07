@@ -2,7 +2,7 @@ from typing import Dict, List
 
 from .encoding import encode_narrative
 from .modelling import run_digital_twin
-from .schemas import EncodedNarrative, ModelMode, NarrativeRecord
+from .schemas import EncodedNarrative, EncodingMode, ModelMode, NarrativeRecord
 
 
 def aggregate_encoding_parameters(encoded: List[EncodedNarrative]) -> Dict[str, float]:
@@ -33,9 +33,10 @@ def aggregate_encoding_parameters(encoded: List[EncodedNarrative]) -> Dict[str, 
 def run_experiment_pipeline(
     records: List[NarrativeRecord],
     model_mode: ModelMode = ModelMode.hybrid,
+    encoding_mode: EncodingMode = EncodingMode.ai,
     horizon_days: int = 180,
 ) -> Dict:
-    encoded = [encode_narrative(record) for record in records]
+    encoded = [encode_narrative(record, mode=encoding_mode) for record in records]
     parameters = aggregate_encoding_parameters(encoded)
     trajectory = run_digital_twin(model_mode, horizon_days, parameters)
 

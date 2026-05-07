@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { CSSProperties, useMemo, useState } from "react";
+import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { useNIDMMode } from "./DashboardLayout";
 
 interface SensitivityData {
   parameter: string;
@@ -8,7 +8,6 @@ interface SensitivityData {
   min: number;
   max: number;
   step: number;
-  unit: string;
   impact: number;
 }
 
@@ -18,243 +17,142 @@ interface SensitivityAnalysisProps {
 }
 
 const DEFAULT_PARAMETERS: SensitivityData[] = [
-  {
-    parameter: "β (Transmission Rate)",
-    baseline: 0.5,
-    min: 0.1,
-    max: 1.0,
-    step: 0.05,
-    unit: "",
-    impact: 0.85,
-  },
-  {
-    parameter: "γ (Recovery Rate)",
-    baseline: 0.3,
-    min: 0.05,
-    max: 0.8,
-    step: 0.05,
-    unit: "",
-    impact: 0.42,
-  },
-  {
-    parameter: "ι (Inoculation Rate)",
-    baseline: 0.2,
-    min: 0.0,
-    max: 0.6,
-    step: 0.05,
-    unit: "",
-    impact: 0.68,
-  },
-  {
-    parameter: "Φ (Narrative Strength)",
-    baseline: 0.65,
-    min: 0.2,
-    max: 1.0,
-    step: 0.05,
-    unit: "",
-    impact: 0.72,
-  },
+  { parameter: "beta transmission", baseline: 0.5, min: 0.1, max: 1.0, step: 0.05, impact: 0.85 },
+  { parameter: "gamma recovery", baseline: 0.3, min: 0.05, max: 0.8, step: 0.05, impact: 0.42 },
+  { parameter: "iota inoculation", baseline: 0.2, min: 0.0, max: 0.6, step: 0.05, impact: 0.68 },
+  { parameter: "Phi strength", baseline: 0.65, min: 0.2, max: 1.0, step: 0.05, impact: 0.72 },
 ];
+
+function impactColor(value: number) {
+  if (value < 0.1) return "var(--verdant)";
+  if (value < 0.25) return "var(--gold)";
+  if (value < 0.5) return "var(--flame)";
+  return "var(--violet)";
+}
 
 export default function SensitivityAnalysis({
   parameters = DEFAULT_PARAMETERS,
-  title = "Sensitivity Analysis",
+  title = "Sensitivity analysis",
 }: SensitivityAnalysisProps) {
+  const { mode } = useNIDMMode();
   const [values, setValues] = useState<Record<string, number>>(
-    parameters.reduce((acc, p) => ({ ...acc, [p.parameter]: p.baseline }), {})
+    parameters.reduce((acc, param) => ({ ...acc, [param.parameter]: param.baseline }), {})
   );
 
-  const handleParameterChange = (parameter: string, value: number) => {
-    setValues((prev) => ({ ...prev, [parameter]: value }));
-  };
-
-  const handleReset = () => {
-    setValues(
-      parameters.reduce((acc, p) => ({ ...acc, [p.parameter]: p.baseline }), {})
-    );
-  };
-
-  // Generate heatmap data
   const heatmapData = useMemo(() => {
     return parameters.map((param) => {
       const current = values[param.parameter];
-      const deviation = ((current - param.baseline) / param.baseline) * 100;
+      const deviation = ((current - param.baseline) / Math.max(0.001, param.baseline)) * 100;
       const impact = param.impact * Math.abs(deviation) / 100;
-      return {
-        parameter: param.parameter,
-        current,
-        baseline: param.baseline,
-        deviation,
-        impact,
-        color: getHeatmapColor(impact),
-      };
+      return { ...param, current, deviation, impact };
     });
-  }, [values, parameters]);
+  }, [parameters, values]);
 
-  const getHeatmapColor = (impact: number): string => {
-    if (impact < 10) return "bg-green-900/30 border-green-500/50";
-    if (impact < 25) return "bg-yellow-900/30 border-yellow-500/50";
-    if (impact < 50) return "bg-orange-900/30 border-orange-500/50";
-    return "bg-red-900/30 border-red-500/50";
-  };
+  const averageImpact = heatmapData.reduce((sum, item) => sum + item.impact, 0) / heatmapData.length;
+  const maxImpact = Math.max(...heatmapData.map((item) => item.impact));
 
-  const getImpactColor = (impact: number): string => {
-    if (impact < 10) return "text-green-400";
-    if (impact < 25) return "text-yellow-400";
-    if (impact < 50) return "text-orange-400";
-    return "text-red-400";
-  };
+  const explainer = {
+    novice: "Move one parameter at a time to see which assumptions create the biggest shift in model behavior.",
+    policy: "Sensitivity results identify which intervention assumptions need stronger evidence before decisions are made.",
+    expert: "Deviation is normalized against baseline and multiplied by each parameter impact coefficient.",
+  }[mode];
+
+  function reset() {
+    setValues(parameters.reduce((acc, param) => ({ ...acc, [param.parameter]: param.baseline }), {}));
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="glass-dark border border-border/50 rounded-lg p-6 glow-secondary">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold neon-text">{title}</h3>
-          <Button
-            onClick={handleReset}
-            className="text-sm bg-primary/20 hover:bg-primary/30 text-primary"
+    <div className="animate-page-in space-y-6">
+      <section className={`explainer ${mode === "expert" ? "science" : mode}`}>{explainer}</section>
+
+      <section className="nidm-card p-5">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-[var(--flame)]" />
+            <h2 className="font-syne text-xl font-bold">{title}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={reset}
+            className="flex items-center gap-2 rounded-lg border border-[var(--bdr)] bg-[var(--deep)] px-3 py-2 text-xs font-semibold text-[var(--t2)]"
           >
-            Reset to Baseline
-          </Button>
+            <RotateCcw className="h-4 w-4" />
+            Reset baseline
+          </button>
         </div>
 
-        {/* Parameter Sliders */}
-        <div className="space-y-6 mb-8">
-          {parameters.map((param) => (
-            <div key={param.parameter} className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-foreground">
-                  {param.parameter}
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-primary">
-                    {values[param.parameter].toFixed(3)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    (baseline: {param.baseline.toFixed(3)})
-                  </span>
-                </div>
-              </div>
+        <div className="grid gap-6 xl:grid-cols-[1fr_.95fr]">
+          <div className="space-y-6">
+            {parameters.map((param) => {
+              const value = values[param.parameter];
+              const pct = ((value - param.min) / (param.max - param.min)) * 100;
 
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min={param.min}
-                  max={param.max}
-                  step={param.step}
-                  value={values[param.parameter]}
-                  onChange={(e) =>
-                    handleParameterChange(param.parameter, parseFloat(e.target.value))
-                  }
-                  className="flex-1 h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
-                />
-                <span className="text-xs text-muted-foreground w-16 text-right">
-                  {param.min.toFixed(2)} - {param.max.toFixed(2)}
-                </span>
-              </div>
-
-              {/* Impact indicator */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.abs(
-                          ((values[param.parameter] - param.baseline) /
-                            param.baseline) *
-                            100
-                        )
-                      )}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground w-12 text-right">
-                  {(
-                    ((values[param.parameter] - param.baseline) /
-                      param.baseline) *
-                    100
-                  ).toFixed(0)}%
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Heatmap */}
-        <div className="border-t border-border/50 pt-6">
-          <h4 className="text-sm font-semibold text-foreground mb-4">
-            Impact Heatmap
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {heatmapData.map((data) => (
-              <Card
-                key={data.parameter}
-                className={`border p-4 transition-all duration-300 ${data.color}`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground">
-                    {data.parameter}
-                  </span>
-                  <span className={`text-lg font-bold ${getImpactColor(data.impact)}`}>
-                    {data.impact.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>
-                    Current: <span className="font-mono">{data.current.toFixed(3)}</span>
-                  </p>
-                  <p>
-                    Deviation:{" "}
-                    <span className={data.deviation > 0 ? "text-chart-3" : "text-accent"}>
-                      {data.deviation > 0 ? "+" : ""}
-                      {data.deviation.toFixed(1)}%
+              return (
+                <label key={param.parameter} className="block">
+                  <div className="mb-2 flex items-center justify-between gap-4">
+                    <span className="font-mono-data text-xs text-[var(--t2)]">{param.parameter}</span>
+                    <span className="font-mono-data text-xs text-[var(--indigoL)]">
+                      {value.toFixed(3)} <span className="text-[var(--t4)]">base {param.baseline.toFixed(3)}</span>
                     </span>
-                  </p>
-                </div>
-              </Card>
-            ))}
+                  </div>
+                  <input
+                    type="range"
+                    min={param.min}
+                    max={param.max}
+                    step={param.step}
+                    value={value}
+                    onChange={(event) => setValues((current) => ({ ...current, [param.parameter]: Number(event.target.value) }))}
+                    style={{ "--pct": `${pct}%` } as CSSProperties}
+                  />
+                </label>
+              );
+            })}
           </div>
-        </div>
 
-        {/* Summary Statistics */}
-        <div className="border-t border-border/50 pt-6 mt-6">
-          <h4 className="text-sm font-semibold text-foreground mb-4">
-            Sensitivity Summary
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Average Impact</p>
-              <p className="text-2xl font-bold text-primary">
-                {(
-                  heatmapData.reduce((sum, d) => sum + d.impact, 0) /
-                  heatmapData.length
-                ).toFixed(1)}
-                %
-              </p>
-            </div>
-            <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Max Impact</p>
-              <p className="text-2xl font-bold text-accent">
-                {Math.max(...heatmapData.map((d) => d.impact)).toFixed(1)}%
-              </p>
-            </div>
-            <div className="bg-secondary/10 border border-secondary/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">High Sensitivity</p>
-              <p className="text-2xl font-bold text-secondary">
-                {heatmapData.filter((d) => d.impact > 50).length}
-              </p>
-            </div>
-            <div className="bg-chart-4/10 border border-chart-4/20 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground mb-1">Robust Parameters</p>
-              <p className="text-2xl font-bold text-chart-4">
-                {heatmapData.filter((d) => d.impact < 10).length}
-              </p>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <SummaryCard label="Average impact" value={`${(averageImpact * 100).toFixed(1)}%`} accent="var(--indigoL)" />
+            <SummaryCard label="Max impact" value={`${(maxImpact * 100).toFixed(1)}%`} accent="var(--flame)" />
+            <SummaryCard label="High sensitivity" value={heatmapData.filter((item) => item.impact > 0.5).length.toString()} accent="var(--gold)" />
+            <SummaryCard label="Robust parameters" value={heatmapData.filter((item) => item.impact < 0.1).length.toString()} accent="var(--verdant)" />
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        {heatmapData.map((item) => {
+          const color = impactColor(item.impact);
+
+          return (
+            <article key={item.parameter} className="nidm-card p-4" style={{ borderColor: `color-mix(in srgb, ${color} 36%, var(--bdr))` }}>
+              <div className="mb-3 flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-syne text-base font-bold">{item.parameter}</h3>
+                  <p className="mt-1 text-xs text-[var(--t3)]">Baseline {item.baseline.toFixed(3)}</p>
+                </div>
+                <span className="font-mono-data text-lg font-semibold" style={{ color }}>
+                  {(item.impact * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="comp-bar-track">
+                <div className="comp-bar-fill" style={{ width: `${Math.min(100, item.impact * 100)}%`, background: color }} />
+              </div>
+              <div className="mt-3 flex justify-between text-xs text-[var(--t3)]">
+                <span className="font-mono-data">current {item.current.toFixed(3)}</span>
+                <span className="font-mono-data">{item.deviation > 0 ? "+" : ""}{item.deviation.toFixed(1)}%</span>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+    </div>
+  );
+}
+
+function SummaryCard({ label, value, accent }: { label: string; value: string; accent: string }) {
+  return (
+    <div className="rounded-lg border border-[var(--bdr)] bg-[var(--deep)] p-4">
+      <p className="stat-lbl">{label}</p>
+      <p className="font-syne mt-2 text-2xl font-bold" style={{ color: accent }}>{value}</p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 
 interface KPICardProps {
   label: string;
@@ -13,6 +13,14 @@ interface KPICardProps {
   precision?: number;
 }
 
+const COLOR_MAP = {
+  primary: "var(--indigoL)",
+  accent: "var(--violet)",
+  secondary: "var(--verdant)",
+  "chart-1": "var(--gold)",
+  "chart-2": "var(--flame)",
+};
+
 export default function KPICard({
   label,
   value,
@@ -25,6 +33,7 @@ export default function KPICard({
   precision = 2,
 }: KPICardProps) {
   const [displayValue, setDisplayValue] = useState(0);
+  const accent = COLOR_MAP[glowColor];
 
   useEffect(() => {
     if (!animated) {
@@ -33,91 +42,59 @@ export default function KPICard({
     }
 
     let current = 0;
-    const increment = value / 30;
-    const interval = setInterval(() => {
+    const increment = value / 30 || value;
+    const interval = window.setInterval(() => {
       current += increment;
       if (current >= value) {
         setDisplayValue(value);
-        clearInterval(interval);
+        window.clearInterval(interval);
       } else {
         setDisplayValue(current);
       }
-    }, 30);
+    }, 24);
 
-    return () => clearInterval(interval);
+    return () => window.clearInterval(interval);
   }, [value, animated]);
 
-  const glowClasses = {
-    primary: "glow-primary",
-    accent: "glow-accent",
-    secondary: "glow-secondary",
-    "chart-1": "shadow-lg",
-    "chart-2": "shadow-lg",
-  };
-
-  const textColorClasses = {
-    primary: "text-primary",
-    accent: "text-accent",
-    secondary: "text-secondary",
-    "chart-1": "text-chart-1",
-    "chart-2": "text-chart-2",
-  };
-
   return (
-    <div
-      className={`glass-dark border border-border/50 rounded-lg p-6 transition-all duration-300 hover:border-${glowColor}/50 animate-fade-in-up ${
-        glowClasses[glowColor]
-      }`}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-sm text-muted-foreground font-medium">{label}</p>
-        </div>
-        {icon && (
-          <div className={`p-2 bg-${glowColor}/10 rounded-lg ${textColorClasses[glowColor]}`}>
+    <article className="stat-card relative p-5" style={{ boxShadow: `0 18px 50px color-mix(in srgb, ${accent} 11%, transparent)` }}>
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <p className="stat-lbl">{label}</p>
+        {icon ? (
+          <div
+            className="kpi-icon"
+            style={{
+              color: accent,
+              background: `color-mix(in srgb, ${accent} 14%, transparent)`,
+              border: `1px solid color-mix(in srgb, ${accent} 28%, transparent)`,
+            }}
+          >
             {icon}
           </div>
-        )}
+        ) : null}
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-baseline gap-2">
-          <span className={`text-4xl font-bold ${textColorClasses[glowColor]} animate-counter`}>
-            {displayValue.toFixed(precision)}
+      <div className="flex items-end gap-2">
+        <span className="stat-val" style={{ color: accent }}>
+          {displayValue.toFixed(precision)}
+        </span>
+        {unit ? <span className="font-mono-data pb-1 text-xs text-[var(--t3)]">{unit}</span> : null}
+      </div>
+
+      {trend !== "neutral" && trendValue !== 0 ? (
+        <div className="mt-3 flex items-center gap-1 text-xs">
+          {trend === "up" ? (
+            <TrendingUp className="h-4 w-4 text-[var(--verdant)]" />
+          ) : (
+            <TrendingDown className="h-4 w-4 text-[var(--flame)]" />
+          )}
+          <span className="font-mono-data font-semibold" style={{ color: trend === "up" ? "var(--verdant)" : "var(--flame)" }}>
+            {trend === "up" ? "+" : ""}
+            {trendValue.toFixed(1)}%
           </span>
-          {unit && <span className="text-lg text-muted-foreground">{unit}</span>}
+          <span className="text-[var(--t3)]">vs last period</span>
         </div>
-
-        {trend !== "neutral" && trendValue !== 0 && (
-          <div className="flex items-center gap-1 text-sm">
-            {trend === "up" ? (
-              <>
-                <TrendingUp className="w-4 h-4 text-chart-3" />
-                <span className="text-chart-3 font-medium">
-                  +{trendValue.toFixed(1)}%
-                </span>
-              </>
-            ) : (
-              <>
-                <TrendingDown className="w-4 h-4 text-destructive" />
-                <span className="text-destructive font-medium">
-                  {trendValue.toFixed(1)}%
-                </span>
-              </>
-            )}
-            <span className="text-muted-foreground">vs last period</span>
-          </div>
-        )}
-      </div>
-
-      {/* Animated background pulse */}
-      <div
-        className="absolute inset-0 rounded-lg opacity-0 animate-pulse pointer-events-none"
-        style={{
-          background: `radial-gradient(circle, var(--color-${glowColor}), transparent)`,
-          opacity: 0.05,
-        }}
-      />
-    </div>
+      ) : null}
+    </article>
   );
 }

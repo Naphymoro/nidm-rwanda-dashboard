@@ -5,6 +5,7 @@ import {
   parseCsvLine,
   parseCsv,
   parseNarrativeText,
+  parseSdmxNarratives,
   filterNarratives,
   sortNarratives,
   ParsedNarrative,
@@ -145,6 +146,39 @@ describe("parseNarrativeText", () => {
     const [n] = parseNarrativeText(long, "t.txt");
     expect(n.quote.length).toBeLessThanOrEqual(280);
     expect(n.quote.endsWith("...")).toBe(true);
+  });
+});
+
+describe("parseSdmxNarratives", () => {
+  it("parses the dashboard SDMX-NIDM JSON observation shape", () => {
+    const payload = {
+      dataSets: [
+        {
+          observations: [
+            {
+              key: "n_001",
+              dimensions: { type: "story", target: "women" },
+              measures: { E: 0.8, C: 0.7, tau: 0.6, kappa: 0.5, phi: 0.67 },
+              attributes: { label: "Health story", quote: "Clean cooking improves health." },
+            },
+          ],
+        },
+      ],
+    };
+    const [row] = parseSdmxNarratives(JSON.stringify(payload), "sdmx.json");
+    expect(row.key).toBe("n_001");
+    expect(row.source).toBe("sdmx");
+    expect(row.targets).toBe("women");
+    expect(row.phi).toBeCloseTo(0.67, 4);
+  });
+
+  it("parses simple XML narrative observations", () => {
+    const xml = '<Narrative key="n_002" label="Trust" E="0.6" C="0.7" tau="0.8" kappa="0.5">Trusted neighbors switched first.</Narrative>';
+    const [row] = parseSdmxNarratives(xml, "sdmx.xml");
+    expect(row.key).toBe("n_002");
+    expect(row.label).toBe("Trust");
+    expect(row.quote).toContain("Trusted neighbors");
+    expect(row.source).toBe("sdmx");
   });
 });
 

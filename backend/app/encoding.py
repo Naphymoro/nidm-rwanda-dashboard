@@ -1,9 +1,17 @@
 import os
-from openai import OpenAI
 from .schemas import EncodedNarrative, EncodingMode, NarrativeRecord
 from .llm_prompts import NARRATIVE_ENCODING_SYSTEM_PROMPT, NARRATIVE_ENCODING_USER_TEMPLATE
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("OPENAI_API_KEY") else None
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+client = (
+    OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    if OpenAI and os.getenv("OPENAI_API_KEY")
+    else None
+)
 
 
 def encode_with_llm(record: NarrativeRecord) -> EncodedNarrative:
@@ -64,7 +72,20 @@ def encode_rule_based(record: NarrativeRecord) -> EncodedNarrative:
     )
 
 
+def encode_hybrid(record: NarrativeRecord) -> EncodedNarrative:
+    encoded = encode_with_llm(record) if client else encode_rule_based(record)
+    return encoded.model_copy(
+        update={
+            "encoding_mode": EncodingMode.hybrid,
+            "reviewer_notes": "Hybrid mode: AI/fallback score prepared for human review before modelling.",
+            "model_notes": f"{encoded.model_notes}; hybrid review layer",
+        }
+    )
+
+
 def encode_narrative(record: NarrativeRecord, mode: EncodingMode = EncodingMode.ai) -> EncodedNarrative:
     if mode == EncodingMode.ai:
         return encode_with_llm(record)
+    if mode == EncodingMode.hybrid:
+        return encode_hybrid(record)
     return encode_rule_based(record)

@@ -277,6 +277,7 @@ export default function NarrativeCompare({
               </DialogDescription>
             </div>
             <Button
+              type="button"
               size="sm"
               onClick={handleExport}
               disabled={exporting}

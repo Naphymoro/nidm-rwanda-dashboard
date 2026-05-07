@@ -34,11 +34,11 @@ interface SimulationChartProps {
  * color-vision deficiency can still tell the five compartments apart.
  */
 export const COMPARTMENT_COLORS = {
-  Susceptible: "#00A9B5", // AIMS Teal
-  Misinformed: "#F4A500", // AIMS Gold
-  Truth: "#56B870",       // Bluish-green (Okabe-Ito)
-  Inoculated: "#1A3668",  // AIMS Navy
-  Resistant: "#D55E00",   // Vermillion (Okabe-Ito)
+  Susceptible: "var(--cS)",
+  Misinformed: "var(--cM)",
+  Truth: "var(--cT)",
+  Inoculated: "var(--cI)",
+  Resistant: "var(--cR)",
 } as const;
 
 const COMPARTMENT_DASH = {
@@ -67,15 +67,16 @@ export default function SimulationChart({
   }, [data]);
 
   return (
-    <div className="glass-dark border border-border/50 rounded-lg p-6 glow-secondary">
+    <div className="nidm-card p-5">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold neon-text">{title}</h3>
+        <h3 className="font-syne text-lg font-bold">{title}</h3>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot" />
-          <span>Live trajectory</span>
+          <span className="twin-pulse" />
+          <span className="font-mono-data text-[var(--t3)]">Live trajectory</span>
         </div>
       </div>
 
+      <div className="rounded-lg bg-[var(--deep)] p-3">
       <ResponsiveContainer width="100%" height={height}>
         <LineChart
           data={chartData}
@@ -83,54 +84,53 @@ export default function SimulationChart({
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="rgba(255, 255, 255, 0.08)"
+            stroke="rgba(255,255,255,.05)"
             vertical={false}
           />
           <XAxis
             dataKey="time"
-            stroke="rgba(255, 255, 255, 0.5)"
+            stroke="rgba(232,236,247,.35)"
             style={{ fontSize: "12px" }}
             label={{
               value: "Time (days)",
               position: "insideBottom",
               offset: -2,
-              fill: "rgba(255,255,255,0.5)",
+              fill: "rgba(232,236,247,.38)",
               fontSize: 11,
             }}
           />
           <YAxis
-            stroke="rgba(255, 255, 255, 0.5)"
+            stroke="rgba(232,236,247,.35)"
             style={{ fontSize: "12px" }}
             label={{
               value: "Population fraction",
               angle: -90,
               position: "insideLeft",
-              fill: "rgba(255,255,255,0.5)",
+              fill: "rgba(232,236,247,.38)",
               fontSize: 11,
             }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "rgba(14, 26, 51, 0.95)",
-              border: "1px solid rgba(0, 169, 181, 0.3)",
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--bdrV)",
               borderRadius: "8px",
-              boxShadow: "0 0 20px rgba(0, 169, 181, 0.25)",
             }}
-            labelStyle={{ color: "rgba(255, 255, 255, 0.9)" }}
-            itemStyle={{ color: "rgba(255, 255, 255, 0.85)" }}
+            labelStyle={{ color: "var(--t1)" }}
+            itemStyle={{ color: "var(--t2)" }}
           />
           <Legend wrapperStyle={{ paddingTop: "20px" }} iconType="line" />
 
           {currentTime !== undefined && (
             <ReferenceLine
               x={Number(currentTime.toFixed(1))}
-              stroke="#F4A500"
+              stroke="var(--gold)"
               strokeDasharray="4 4"
               strokeWidth={1.5}
               label={{
                 value: `t=${currentTime.toFixed(1)}`,
                 position: "top",
-                fill: "#F4A500",
+                fill: "var(--gold)",
                 fontSize: 11,
               }}
             />
@@ -153,6 +153,7 @@ export default function SimulationChart({
           )}
         </LineChart>
       </ResponsiveContainer>
+      </div>
 
       {/* Legend explanation with dash patterns visible */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6 text-xs">
@@ -170,7 +171,7 @@ export default function SimulationChart({
                   strokeDasharray={COMPARTMENT_DASH[key]}
                 />
               </svg>
-              <span className="text-muted-foreground">{key}</span>
+              <span className="font-mono-data text-[10px] text-[var(--t3)]">{key}</span>
             </div>
           )
         )}

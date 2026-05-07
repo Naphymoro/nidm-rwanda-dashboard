@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Copy } from "lucide-react";
+import type { ParsedNarrative } from "@/lib/narrativeParser";
 
 interface NarrativeScore {
   E: number;
@@ -21,7 +22,7 @@ interface Narrative {
 }
 
 interface NarrativeEncodingPanelProps {
-  onNarrativeAdd?: (narrative: Narrative) => void;
+  onNarrativeAdd?: (narrative: ParsedNarrative) => void;
 }
 
 const WEIGHTS = {
@@ -77,7 +78,21 @@ export default function NarrativeEncodingPanel({
     };
 
     setNarratives((prev) => [...prev, newNarrative]);
-    onNarrativeAdd?.(newNarrative);
+    onNarrativeAdd?.({
+      id: newNarrative.id,
+      key: `manual-${newNarrative.id}`,
+      label: newNarrative.label,
+      type: "manual",
+      quote: newNarrative.quote,
+      E: newNarrative.scores.E,
+      C: newNarrative.scores.C,
+      tau: newNarrative.scores.tau,
+      kappa: newNarrative.scores.kappa,
+      phi: newNarrative.phi,
+      targets: "all",
+      source: "narrative",
+      uploadedAt: Date.now(),
+    });
 
     setLabel("");
     setQuote("");
@@ -89,7 +104,7 @@ export default function NarrativeEncodingPanel({
   };
 
   const handleCopyNarrative = (narrative: Narrative) => {
-    const text = `${narrative.label}\n${narrative.quote}\nΦ = ${narrative.phi}`;
+    const text = `${narrative.label}\n${narrative.quote}\nPhi = ${narrative.phi}`;
     navigator.clipboard.writeText(text);
   };
 
@@ -174,10 +189,10 @@ export default function NarrativeEncodingPanel({
               </div>
             </div>
 
-            {/* Trust Alignment (τ) */}
+            {/* Trust Alignment (tau) */}
             <div>
               <label className="block text-sm font-medium text-accent mb-2">
-                Trust Alignment (τ)
+                Trust Alignment (tau)
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -197,10 +212,10 @@ export default function NarrativeEncodingPanel({
               </div>
             </div>
 
-            {/* Narrative Arc Strength (κ) */}
+            {/* Narrative Arc Strength (kappa) */}
             <div>
               <label className="block text-sm font-medium text-chart-4 mb-2">
-                Narrative Arc Strength (κ)
+                Narrative Arc Strength (kappa)
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -228,17 +243,17 @@ export default function NarrativeEncodingPanel({
                 <p className="text-sm text-muted-foreground">
                   Composite Narrative Strength
                 </p>
-                <p className="text-3xl font-bold neon-text mt-2">Φ = {phi.toFixed(4)}</p>
+                <p className="text-3xl font-bold neon-text mt-2">Phi = {phi.toFixed(4)}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground mb-2">
-                  Weights: E(0.3) + C(0.3) + τ(0.2) + κ(0.2)
+                  Weights: E(0.3) + C(0.3) + tau(0.2) + kappa(0.2)
                 </p>
                 <div className="text-sm space-y-1 text-muted-foreground">
                   <p>E: {(WEIGHTS.E * scores.E).toFixed(3)}</p>
                   <p>C: {(WEIGHTS.C * scores.C).toFixed(3)}</p>
-                  <p>τ: {(WEIGHTS.tau * scores.tau).toFixed(3)}</p>
-                  <p>κ: {(WEIGHTS.kappa * scores.kappa).toFixed(3)}</p>
+                  <p>tau: {(WEIGHTS.tau * scores.tau).toFixed(3)}</p>
+                  <p>kappa: {(WEIGHTS.kappa * scores.kappa).toFixed(3)}</p>
                 </div>
               </div>
             </div>
@@ -246,6 +261,7 @@ export default function NarrativeEncodingPanel({
 
           {/* Add Button */}
           <Button
+            type="button"
             onClick={handleAddNarrative}
             className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/80 hover:to-accent/80 text-background font-bold py-3 rounded-lg transition-all duration-200 glow-primary"
           >
@@ -289,13 +305,13 @@ export default function NarrativeEncodingPanel({
                         </p>
                       </div>
                       <div className="bg-accent/10 p-2 rounded">
-                        <p className="text-muted-foreground">τ</p>
+                        <p className="text-muted-foreground">tau</p>
                         <p className="font-bold text-accent">
                           {narrative.scores.tau.toFixed(2)}
                         </p>
                       </div>
                       <div className="bg-chart-4/10 p-2 rounded">
-                        <p className="text-muted-foreground">κ</p>
+                        <p className="text-muted-foreground">kappa</p>
                         <p className="font-bold text-chart-4">
                           {narrative.scores.kappa.toFixed(2)}
                         </p>
@@ -306,12 +322,13 @@ export default function NarrativeEncodingPanel({
                         Narrative Strength
                       </p>
                       <p className="text-lg font-bold text-primary">
-                        Φ = {narrative.phi.toFixed(4)}
+                        Phi = {narrative.phi.toFixed(4)}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={() => handleCopyNarrative(narrative)}
                       className="p-2 hover:bg-primary/20 rounded-lg transition-colors text-primary"
                       title="Copy narrative"
@@ -319,6 +336,7 @@ export default function NarrativeEncodingPanel({
                       <Copy className="w-4 h-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleDeleteNarrative(narrative.id)}
                       className="p-2 hover:bg-destructive/20 rounded-lg transition-colors text-destructive"
                       title="Delete narrative"
