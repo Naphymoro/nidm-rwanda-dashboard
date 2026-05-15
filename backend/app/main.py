@@ -1,18 +1,27 @@
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException
+from datetime import datetime, timezone
+import os
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from typing import List
+from fastapi.responses import HTMLResponse, FileResponse
+from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from .schemas import EncodingMode, NarrativeRecord, SimulationRequest, SimulationResult, EncodedNarrative
 from .ingestion import normalize_text_input, normalize_csv, normalize_pdf
-from .encoding import encode_narrative
+from .encoding import encode_narrative, llm_provider_status, supported_llm_providers
 from .database import Base, engine, get_db
 from . import models
 from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
-from .modelling import run_digital_twin
+from .modelling import model_assumptions, run_digital_twin
 from .pipeline import run_experiment_pipeline
+from .storage import app_paths, diagnostics, ensure_app_dirs, make_full_backup, make_support_bundle, resource_path
+from .validation import VALIDATION_DATASET, evaluate_encoder_against_validation, validation_status
 from .workflow_ui import MANUAL_HTML, WORKFLOW_UI_HTML
+
+if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
+    ensure_app_dirs()
+
+STRESS_TEST_INSTRUCTIONS_PATH = resource_path("docs", "ndim_stress_test_corpus_instructions.html")
 
 try:
     from .api_routes import router as analytics_router
@@ -56,6 +65,26 @@ def root():
 def api_status():
     return {"message": "NDIM Engine backend running"}
 
+
+@app.get("/desktop/paths")
+def desktop_paths():
+    return {
+        "paths": {key: str(value) for key, value in app_paths().items()},
+        "diagnostics": diagnostics(create_dirs=False),
+    }
+
+
+@app.get("/desktop/support-bundle")
+def desktop_support_bundle():
+    bundle = make_support_bundle()
+    return FileResponse(bundle, media_type="application/zip", filename=bundle.name)
+
+
+@app.get("/desktop/full-backup")
+def desktop_full_backup():
+    bundle = make_full_backup()
+    return FileResponse(bundle, media_type="application/zip", filename=bundle.name)
+
 @app.get("/manual", response_class=HTMLResponse)
 def manual():
     return HTMLResponse(
@@ -66,6 +95,16 @@ def manual():
         },
     )
 
+@app.get("/stress-test-corpus")
+def stress_test_corpus():
+    if not STRESS_TEST_INSTRUCTIONS_PATH.exists():
+        raise HTTPException(status_code=404, detail="Stress-test corpus instructions not found")
+    return FileResponse(
+        STRESS_TEST_INSTRUCTIONS_PATH,
+        media_type="text/html",
+        headers={"Cache-Control": "no-store, max-age=0", "Pragma": "no-cache"},
+    )
+
 @app.get("/analytics/status")
 def analytics_status():
     if analytics_router:
@@ -74,6 +113,173 @@ def analytics_status():
         "available": False,
         "reason": analytics_import_error or "advanced analytics dependencies are unavailable",
     }
+
+
+@app.get("/llm/providers")
+def llm_providers(provider: str = "openai"):
+    return {
+        "providers": supported_llm_providers(),
+        "status": llm_provider_status(provider),
+        "secret_policy": "API keys may be supplied per request via X-NDIM-LLM-Key. Secrets are not returned by this endpoint.",
+    }
+
+
+def _now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+@app.post("/ledger/sync")
+def sync_ledger(payload: Dict[str, Any], db: Session = Depends(get_db)):
+    records = payload.get("records", [])
+    ledger = payload.get("ledger", [])
+    project = payload.get("project", {})
+    settings = payload.get("settings", {})
+    synced = 0
+    for item in records:
+        narrative_id = item.get("narrative_id")
+        if not narrative_id:
+            continue
+        route_metadata = {
+            key: item.get(key)
+            for key in [
+                "question_id",
+                "knowledge_type",
+                "knowledge_holder",
+                "community_validation",
+                "attribution",
+                "location_precision",
+                "contributor_type",
+                "feed_sources",
+                "citizen_confidence",
+                "validation_status",
+            ]
+            if item.get(key) not in (None, "")
+        }
+        existing = db.get(models.EvidenceLedgerRecord, narrative_id)
+        uncommit_history = existing.uncommit_history if existing and isinstance(existing.uncommit_history, list) else []
+        governance = {
+            "scan": item.get("scan"),
+            "reviewer_signature": item.get("reviewer_signature"),
+            "repository_mode": item.get("repository_mode"),
+            "batch_digest": payload.get("batch_digest"),
+            "master_repository": {
+                "status": item.get("master_repository_status"),
+                "anchor_hash": item.get("master_anchor_hash"),
+                "event_hash": item.get("master_event_hash"),
+                "decision_hash": item.get("master_decision_hash"),
+                "reviewer": item.get("master_reviewer"),
+                "reviewed_at": item.get("master_reviewed_at"),
+                "blockchain_status": item.get("master_blockchain_status"),
+                "package": payload.get("master_repository"),
+            },
+        }
+        record = models.EvidenceLedgerRecord(
+            narrative_id=narrative_id,
+            text=item.get("text") or "",
+            evidence_route=item.get("evidence_mode") or project.get("evidence_mode"),
+            evidence_route_label=item.get("evidence_mode_label") or project.get("evidence_mode_label"),
+            country=item.get("country") or project.get("country"),
+            admin_unit=item.get("admin_unit") or project.get("admin_unit"),
+            admin_path=project.get("admin_unit"),
+            source_type=project.get("source_type"),
+            source_name=item.get("source_name") or project.get("source_name"),
+            language=project.get("language"),
+            period=project.get("period"),
+            consent_tier=item.get("consent") or settings.get("consent"),
+            visibility_tier=item.get("visibility") or settings.get("visibility"),
+            sensitivity_level=item.get("sensitivity"),
+            content_hash=item.get("content_hash"),
+            evidence_hash=item.get("evidence_hash"),
+            review_status=item.get("status") or "pending_review",
+            reviewer_name=item.get("reviewer") or settings.get("reviewer"),
+            reviewer_role=settings.get("reviewer_role"),
+            review_reason=item.get("review_reason"),
+            repository_bucket=item.get("repository_bucket"),
+            committed_at=item.get("committed_at"),
+            uncommit_history=uncommit_history,
+            route_metadata=route_metadata,
+            governance=governance,
+            created_at=existing.created_at if existing and existing.created_at else _now(),
+            updated_at=_now(),
+        )
+        if existing and item.get("status") == "pending_review" and existing.review_status in {"accepted_committed", "rejected_committed"}:
+            uncommit_history.append({"at": _now(), "from_status": existing.review_status, "reason": "synced uncommit"})
+            record.uncommit_history = uncommit_history
+        db.merge(record)
+        synced += 1
+    for event in ledger:
+        event_hash = event.get("event_hash")
+        if not event_hash or db.query(models.GovernanceLedgerEvent).filter_by(event_hash=event_hash).first():
+            continue
+        db.add(
+            models.GovernanceLedgerEvent(
+                event_hash=event_hash,
+                previous_hash=event.get("previous_hash"),
+                action=event.get("action"),
+                detail=event.get("detail"),
+                target_hash=event.get("target_hash"),
+                actor=event.get("actor"),
+                role=event.get("role"),
+                occurred_at=event.get("at") or _now(),
+                payload=event,
+            )
+        )
+    db.commit()
+    counts = {
+        "active_review": db.query(models.EvidenceLedgerRecord).filter(~models.EvidenceLedgerRecord.review_status.in_(["approved_pending_commit", "rejected_pending_commit", "accepted_committed", "rejected_committed"])).count(),
+        "pending_commit": db.query(models.EvidenceLedgerRecord).filter(models.EvidenceLedgerRecord.review_status.in_(["approved_pending_commit", "rejected_pending_commit"])).count(),
+        "accepted": db.query(models.EvidenceLedgerRecord).filter_by(review_status="accepted_committed").count(),
+        "rejected": db.query(models.EvidenceLedgerRecord).filter_by(review_status="rejected_committed").count(),
+    }
+    return {"synced_records": synced, "repository_counts": counts}
+
+
+@app.get("/ledger/records")
+def ledger_records(db: Session = Depends(get_db)):
+    rows = db.query(models.EvidenceLedgerRecord).order_by(models.EvidenceLedgerRecord.updated_at.desc()).all()
+    output = []
+    for row in rows:
+        master = {}
+        if isinstance(row.governance, dict):
+            master = row.governance.get("master_repository") or {}
+        output.append(
+            {
+                "narrative_id": row.narrative_id,
+                "evidence_route": row.evidence_route,
+                "evidence_route_label": row.evidence_route_label,
+                "country": row.country,
+                "admin_unit": row.admin_unit,
+                "source_name": row.source_name,
+                "review_status": row.review_status,
+                "repository_bucket": row.repository_bucket,
+                "evidence_hash": row.evidence_hash,
+                "consent_tier": row.consent_tier,
+                "visibility_tier": row.visibility_tier,
+                "sensitivity_level": row.sensitivity_level,
+                "master_repository_status": master.get("status"),
+                "master_anchor_hash": master.get("anchor_hash"),
+                "master_decision_hash": master.get("decision_hash"),
+                "master_blockchain_status": master.get("blockchain_status"),
+                "updated_at": row.updated_at,
+            }
+        )
+    return output
+
+
+@app.get("/validation/status")
+def get_validation_status():
+    return validation_status()
+
+
+@app.get("/validation/dataset")
+def get_validation_dataset():
+    return {"records": VALIDATION_DATASET}
+
+
+@app.post("/validation/evaluate")
+def evaluate_validation(predictions: List[Dict[str, Any]]):
+    return evaluate_encoder_against_validation(predictions)
+
 
 @app.post("/ingest/text", response_model=List[NarrativeRecord])
 def ingest_text(narrative: str, db: Session = Depends(get_db)):
@@ -137,9 +343,24 @@ def encode(
     records: List[NarrativeRecord],
     mode: EncodingMode = EncodingMode.ai,
     provider: str = "openai",
+    x_ndim_llm_key: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Key"),
+    x_ndim_llm_provider: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Provider"),
+    x_ndim_llm_base_url: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Base-URL"),
+    x_ndim_llm_model: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Model"),
     db: Session = Depends(get_db),
 ):
-    encoded = [encode_narrative(r, mode=mode) for r in records]
+    selected_provider = x_ndim_llm_provider or provider
+    encoded = [
+        encode_narrative(
+            r,
+            mode=mode,
+            provider=selected_provider,
+            api_key=x_ndim_llm_key,
+            base_url=x_ndim_llm_base_url,
+            model=x_ndim_llm_model,
+        )
+        for r in records
+    ]
     for e in encoded:
         db.add(models.Encoding(
             narrative_id=e.narrative_id,
@@ -158,7 +379,7 @@ def simulate(req: SimulationRequest, db: Session = Depends(get_db)):
     result = SimulationResult(
         model_mode=req.model_mode,
         trajectory=trajectory,
-        assumptions={"note": "narrative-coupled digital twin"},
+        assumptions=model_assumptions(req.model_mode, req.parameters),
     )
     db.add(models.SimulationRun(
         model_mode=req.model_mode,
@@ -169,8 +390,23 @@ def simulate(req: SimulationRequest, db: Session = Depends(get_db)):
     return result
 
 @app.post("/pipeline/run")
-def run_pipeline(records: List[NarrativeRecord], mode: EncodingMode = EncodingMode.ai, provider: str = "openai"):
-    return run_experiment_pipeline(records, encoding_mode=mode)
+def run_pipeline(
+    records: List[NarrativeRecord],
+    mode: EncodingMode = EncodingMode.ai,
+    provider: str = "openai",
+    x_ndim_llm_key: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Key"),
+    x_ndim_llm_provider: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Provider"),
+    x_ndim_llm_base_url: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Base-URL"),
+    x_ndim_llm_model: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Model"),
+):
+    return run_experiment_pipeline(
+        records,
+        encoding_mode=mode,
+        provider=x_ndim_llm_provider or provider,
+        api_key=x_ndim_llm_key,
+        base_url=x_ndim_llm_base_url,
+        model=x_ndim_llm_model,
+    )
 
 @app.post("/evaluate/encoding")
 def eval_encoding(req: EncodingEvaluationRequest):

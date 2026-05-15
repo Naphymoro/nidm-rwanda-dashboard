@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NDIM Synthetic Narrative Stress-Test Corpus Instructions</title>
+    <style>
+      :root {
+        --paper: #f7f3ed;
+        --ink: #14110e;
+        --muted: #6f6254;
+        --line: #d8cbbb;
+        --panel: #fffdf9;
+        --accent: #111111;
+        --soft: #eee7dc;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Myriad Pro", "Segoe UI", Arial, sans-serif;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 34px 20px 70px;
+      }
+      a { color: var(--ink); font-weight: 800; }
+      h1, h2, h3 { line-height: 1.15; margin: 0; }
+      h1 { font-size: clamp(2rem, 5vw, 4.5rem); letter-spacing: -0.03em; }
+      h2 { font-size: 1.45rem; margin-top: 34px; }
+      h3 { font-size: 1rem; margin-top: 16px; }
+      p { color: var(--muted); margin: 10px 0 0; }
+      code {
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 2px 6px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      th, td {
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--soft);
+        color: var(--ink);
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      tr:last-child td { border-bottom: 0; }
+      ol, ul { margin: 12px 0 0; padding-left: 22px; color: var(--muted); }
+      li { margin: 8px 0; }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+        margin-bottom: 34px;
+      }
+      .button {
+        border: 1px solid var(--ink);
+        border-radius: 999px;
+        padding: 10px 14px;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr);
+        gap: 24px;
+        align-items: end;
+      }
+      .note, .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+      }
+      .note strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 14px;
+      }
+      .metric {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+      }
+      .metric strong {
+        display: block;
+        font-size: 1.7rem;
+        color: var(--accent);
+      }
+      .phase {
+        margin-top: 18px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+      }
+      .phase h3 {
+        font-size: 1.18rem;
+        margin-top: 0;
+      }
+      .phase-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .phase-grid div {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .phase-grid strong {
+        display: block;
+        color: var(--ink);
+        margin-bottom: 4px;
+      }
+      @media (max-width: 760px) {
+        .top, .hero { display: block; }
+        .button { display: inline-block; margin-top: 12px; }
+        .grid, .phase-grid { grid-template-columns: 1fr; }
+        table { display: block; overflow-x: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="top">
+        <strong>NDIM Engine</strong>
+        <a class="button" href="/">Back to tool</a>
+      </div>
+
+      <section class="hero">
+        <div>
+          <h1>Synthetic Narrative Stress-Test Corpus</h1>
+          <p>
+            Use these files to test the real NDIM Evidence-to-Policy Workbench. The app should not load these automatically.
+            Select a file through the normal intake control, check SDMX readiness, inspect the narrative ledger,
+            then run the same encoding, modelling, feedback, and policy steps used for field evidence.
+          </p>
+        </div>
+        <aside class="note">
+          <strong>Data status</strong>
+          <p>All records are synthetic Rwanda clean-cooking narratives. They contain no real personal data and should not be treated as field findings.</p>
+        </aside>
+      </section>
+
+      <div class="grid">
+        <div class="metric"><strong>6 CSVs</strong><span>10 records per evidence route.</span></div>
+        <div class="metric"><strong>1 TXT</strong><span>One rich open-story file for text upload testing.</span></div>
+        <div class="metric"><strong>60+ records</strong><span>Structured interviews expand further through Q1-Q5.</span></div>
+      </div>
+
+      <h2>Where The Files Are</h2>
+      <p>Open the repository folder <code>stress_test_corpus/</code>. In Stage 1 of the tool, use the <strong>Step 2 / Load evidence file or sample</strong> panel and click <strong>Open text or CSV file</strong> to upload one file at a time.</p>
+
+      <h2>Workbench Controls</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Control</th>
+            <th>Use it for</th>
+            <th>What to verify</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Workflow buttons</td>
+            <td>Jump between Evidence, Encode, Model, Learn, Synthesize, and Export.</td>
+            <td>Each stage should preserve the evidence ledger and show the next required action.</td>
+          </tr>
+          <tr>
+            <td>Evidence route selector</td>
+            <td>Select structured interview, open story, indigenous knowledge, citizen science, crowdsourced batch, or social media feeds.</td>
+            <td>The route explanation and route-specific metadata fields should update immediately.</td>
+          </tr>
+          <tr>
+            <td>Step 6 readiness panel</td>
+            <td>Check route, place, source, period, evidence body, and staged record readiness before using the Stage button.</td>
+            <td>No record should move into modelling until the evidence body and core metadata are present.</td>
+          </tr>
+          <tr>
+            <td>Narrative repository ledger</td>
+            <td>Click <strong>Open narrative repository</strong> for the workbench snippet or <strong>Open full repository</strong> for active, accepted, and rejected repository sections.</td>
+            <td>Narrative IDs should be clickable. Empty state means evidence has not been staged yet. Accepted records are the only records that move into encoding and modelling.</td>
+          </tr>
+          <tr>
+            <td>Activity log</td>
+            <td>Open the reasoning trace only when you need to audit what the system did.</td>
+            <td>The main workbench should remain usable when the activity drawer is closed.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Evidence route to choose</th>
+            <th>What it stress-tests</th>
+            <th>Expected intake behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ndim_stress_structured_interview_rwanda.csv</code></td>
+            <td>Structured interview</td>
+            <td>Enumerator metadata, respondent profile, Q1-Q5 narrative fields, post-interview coding.</td>
+            <td>10 interview rows should expand into Q1-Q5 governed observations.</td>
+          </tr>
+          <tr>
+            <td><code>ndim_stress_open_story_rwanda.csv</code></td>
+            <td>Open story</td>
+            <td>Multi-paragraph narratives with lived barriers, social context, and clean-cooking adoption tension.</td>
+            <td>Each row should remain a separate narrative record with source, period, language, and location metadata.</td>
+          </tr>
+          <tr>
+            <td><code>ndim_stress_indigenous_knowledge_rwanda.csv</code></td>
+            <td>Indigenous knowledge</td>
+            <td>Knowledge type, knowledge holder, cultural sensitivity, attribution, and community validation.</td>
+            <td>The SDMX gate should preserve governance fields before any policy interpretation.</td>
+          </tr>
+          <tr>
+            <td><code>ndim_stress_citizen_science_rwanda.csv</code></td>
+            <td>Citizen science report</td>
+            <td>Observation date, contributor type, confidence, validation status, and rapid local signals.</td>
+            <td>Records should remain reviewable when confidence or validation is weak.</td>
+          </tr>
+          <tr>
+            <td><code>ndim_stress_crowdsourced_batch_rwanda.csv</code></td>
+            <td>Crowdsourced batch</td>
+            <td>Batch import, row-level provenance, deduplication thinking, and story-by-story review.</td>
+            <td>Each row should create its own narrative record, hash, scorecard, and approval trail.</td>
+          </tr>
+          <tr>
+            <td><code>ndim_stress_experimental_feed_rwanda.csv</code></td>
+            <td>Social Media Feeds</td>
+            <td>Social, radio, WhatsApp-summary, and professional-feed items that require caution.</td>
+            <td>Records should be held as experimental signals until reviewed and validated.</td>
+          </tr>
+          <tr>
+            <td><code>ndim_stress_bonus_open_story_kamegeri.txt</code></td>
+            <td>Open story</td>
+            <td>Text upload, manual interpretation, and non-CSV narrative handling.</td>
+            <td>The user should paste or upload the text, then verify metadata manually in the intake form.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Full Stress-Test Walkthrough</h2>
+      <p>
+        The stress test should use the real workflow. Do not preload narratives. Start from Stage 1, upload one corpus file,
+        check that the repository ledger is created, then move through governance, encoding, modelling, learning,
+        synthesis, inoculation, and policy output.
+      </p>
+
+      <section class="phase">
+        <h3>1. Narrative ingestion</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Choose the evidence route, then click <strong>Open text or CSV file</strong> in Step 2 and select the matching file from <code>stress_test_corpus/</code>. Use <strong>Load one sample story</strong> only for a quick single-story manual intake test.</p></div>
+          <div><strong>Expect to see</strong><p>Country, administrative units, language, source, period, route fields, and narrative text should populate or remain editable.</p></div>
+          <div><strong>Interpretation</strong><p>The tool is turning a field source into a structured observation without deciding yet whether the evidence is trustworthy.</p></div>
+          <div><strong>Policy implication</strong><p>Good policy starts with traceable provenance: who said what, where, when, and under which consent conditions.</p></div>
+          <div><strong>Watch for</strong><p>Wrong route, missing district/sector, blank source name, or a CSV that collapses many narratives into one text block.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>2. SDMX gate and governance review</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Check Step 6 readiness immediately below the narrative body, then click <strong>Stage and validate</strong>. In the SDMX gate, review visibility, consent, repository target, and risk threshold.</p></div>
+          <div><strong>Expect to see</strong><p>Governed records, content hashes, scan status, approval queue, and a contract table showing required fields.</p></div>
+          <div><strong>Interpretation</strong><p>The gate is an evidence firewall. It separates raw narrative collection from model-ready observations.</p></div>
+          <div><strong>Policy implication</strong><p>Records with weak consent, poor provenance, or high injection risk should not drive official policy claims.</p></div>
+          <div><strong>Watch for</strong><p>Flagged records, missing hashes, private records being treated as public, or source fields that are too vague to audit later.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>3. Narrative repository / evidence ledger</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>After staging, go to the SDMX gate. In the approval queue, click <strong>Approve</strong> or <strong>Reject</strong>. Then click <strong>Commit reviewed records</strong>. Use <strong>Open full repository</strong> to inspect active review, accepted, and rejected sections.</p></div>
+          <div><strong>Expect to see</strong><p>Before commit, reviewed records stay in the active approval queue as pending commit. After commit, approved records disappear from the queue and appear in the accepted repository; rejected records appear in the rejected repository. Accepted or rejected rows have an <strong>Uncommit</strong> button.</p></div>
+          <div><strong>Interpretation</strong><p>The active review queue is a review workspace. The accepted repository is the model-ready evidence set. The rejected repository is an audit-preserved exclusion set. Uncommit is a correction path when a decision needs to be reopened.</p></div>
+          <div><strong>Policy implication</strong><p>Only accepted repository records should influence encoding, modelling, and policy output. Rejected records still matter for audit because they explain what evidence was excluded and why.</p></div>
+          <div><strong>Watch for</strong><p>Approving but forgetting to commit, accepted records without seals, rejected records being encoded, duplicated rows after batch upload, or route labels that do not match the selected corpus file.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>4. Encoding options: manual, AI, hybrid, and comparison</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Move to Encoding. Select manual, AI, or hybrid. For batches, use story-by-story controls and compare all modes when testing scoring consistency.</p></div>
+          <div><strong>Expect to see</strong><p>Scores for trust, barrier, confidence, adoption stance, and narrative Phi inputs, with justifications and comparison blocks when multiple modes run.</p></div>
+          <div><strong>Interpretation</strong><p>Encoding converts language into model inputs. Manual scores reveal researcher judgement; AI scores reveal machine interpretation; hybrid checks disagreement.</p></div>
+          <div><strong>Policy implication</strong><p>Large disagreement between encoders means the evidence should be reviewed before it affects model dynamics.</p></div>
+          <div><strong>Watch for</strong><p>Unsupported LLM provider, missing user key, skipped score explanations, or batch imports that encode only the first story.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>5. Compartmental model</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Open Model, then run the compartmental model. Review the equations and the S, M, T, I, R population curves.</p></div>
+          <div><strong>Expect to see</strong><p>Aggregate diffusion dynamics: susceptible households, misinformation pressure, trusted adoption, informed adoption, and resistant/inoculated groups.</p></div>
+          <div><strong>Interpretation</strong><p>This model asks how narratives change adoption at population scale. Phi should change transition rates, not replace evidence.</p></div>
+          <div><strong>Policy implication</strong><p>If trusted adoption rises slowly, outreach or trust-building may matter more than equipment availability alone.</p></div>
+          <div><strong>Watch for</strong><p>Running the model before approved evidence exists, over-reading synthetic data, or treating aggregate curves as district-level truth.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>6. Agent-based model</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Run the agent model after the compartmental model. Review household trust, peer influence, outreach, barriers, and network effects.</p></div>
+          <div><strong>Expect to see</strong><p>Local adoption variation and household-level friction that may not appear in aggregate curves.</p></div>
+          <div><strong>Interpretation</strong><p>The agent model explains why two places with similar evidence may respond differently because households influence each other through networks.</p></div>
+          <div><strong>Policy implication</strong><p>Peer demonstrations, trusted messengers, repair access, and women-group networks may shift adoption more than broad messaging.</p></div>
+          <div><strong>Watch for</strong><p>Ignoring low-trust clusters, assuming all households receive information equally, or using agent output without comparing it to the ODE output.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>7. Digital twin feedback</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Run the digital twin feedback stage. Enter or review field feedback such as adoption observations, trust shift, or barrier correction.</p></div>
+          <div><strong>Expect to see</strong><p>The model reruns with feedback-adjusted assumptions and reports how the adoption trajectory changes.</p></div>
+          <div><strong>Interpretation</strong><p>The twin is a learning loop: observations correct the model instead of letting the first simulation become fixed truth.</p></div>
+          <div><strong>Policy implication</strong><p>If feedback lowers adoption expectations, policy should slow down claims, target barriers, or request more evidence.</p></div>
+          <div><strong>Watch for</strong><p>Feedback entered without provenance, feedback that contradicts the ledger, or using the twin as an automatic decision maker.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>8. Bayesian update</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Run Bayesian update after the twin. Review priors, observed evidence, and posterior trust or barrier assumptions.</p></div>
+          <div><strong>Expect to see</strong><p>Prior-to-posterior movement showing how evidence changes uncertainty around trust, barriers, or adoption probability.</p></div>
+          <div><strong>Interpretation</strong><p>Bayesian updating says how much the model should learn from evidence while preserving uncertainty.</p></div>
+          <div><strong>Policy implication</strong><p>Wide uncertainty should produce cautious recommendations, pilot designs, or more data collection rather than a final national claim.</p></div>
+          <div><strong>Watch for</strong><p>Priors that are too confident, posteriors that move without evidence, or treating synthetic corpus results as real posterior knowledge.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>9. RL optimizer</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Run the RL optimizer. Review intervention options, episode rewards, learned policy, and best adoption fraction.</p></div>
+          <div><strong>Expect to see</strong><p>A learning curve and recommended intervention package, usually balancing outreach, subsidy, trust messaging, and support.</p></div>
+          <div><strong>Interpretation</strong><p>RL tests which action packages improve the simulated objective. It is a scenario search tool, not a moral or political authority.</p></div>
+          <div><strong>Policy implication</strong><p>Use RL output to shortlist policies for human review, budget feasibility, equity review, and district consultation.</p></div>
+          <div><strong>Watch for</strong><p>High reward with unrealistic cost, recommendations that ignore governance status, or overfitting to synthetic stress-test narratives.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>10. Regional analysis</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Run regional analysis. Isolate one district or group places to compare narrative signals across locations.</p></div>
+          <div><strong>Expect to see</strong><p>Place-specific differences in barriers, trust, adoption stance, and evidence strength.</p></div>
+          <div><strong>Interpretation</strong><p>Regional analysis asks whether a national intervention should be adapted to local narrative conditions.</p></div>
+          <div><strong>Policy implication</strong><p>A district with safety fear needs different action from a district with cost pressure or repair-access distrust.</p></div>
+          <div><strong>Watch for</strong><p>Small sample sizes, mixing provinces without reason, or ignoring that synthetic records are only test cases.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>11. Knowledge graph</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Build the knowledge graph after records are encoded. Inspect links among stories, places, themes, barriers, motivators, and trusted messengers.</p></div>
+          <div><strong>Expect to see</strong><p>Clusters showing repeated themes from the same location or across locations, such as cost, safety, smoke, time savings, repair trust, or status.</p></div>
+          <div><strong>Interpretation</strong><p>The graph is a qualitative sense-making layer. It shows which ideas travel together and which locations share narrative structure.</p></div>
+          <div><strong>Policy implication</strong><p>If multiple districts connect safety fear with repair distrust, policy should include service guarantees, demonstrations, and trusted local technicians.</p></div>
+          <div><strong>Watch for</strong><p>Graph clusters based on unapproved records, duplicate stories creating false centrality, or ignoring cultural sensitivity fields.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>12. Inoculation lab</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Generate inoculation narratives. Choose audience and tone, then review pre-bunking and refutation drafts. If ODE and agent models have run, click <strong>Apply narrative vaccine to digital twin</strong>.</p></div>
+          <div><strong>Expect to see</strong><p>Counter-narratives plus a model panel showing intervention strength and before, during, and after adoption curves for the compartmental and agent models.</p></div>
+          <div><strong>Interpretation</strong><p>Inoculation theory is at work when people receive a small preview of misinformation plus a clear refutation before the stronger rumor spreads. In the model, that narrative vaccine increases trust/resistance and reduces barrier pressure.</p></div>
+          <div><strong>Policy implication</strong><p>Messages should be locally grounded, evidence-traceable, and delivered through trusted messengers. A higher after-curve suggests the message is worth piloting, not that it is automatically proven.</p></div>
+          <div><strong>Watch for</strong><p>Counter-feeds that stigmatize communities, expose sensitive indigenous knowledge, make claims beyond approved evidence, or are exported without human review.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>13. Policy output</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Run the policy output after synthesis. Review recommendation, evidence trail, uncertainty, governance status, model results, and human review notes.</p></div>
+          <div><strong>Expect to see</strong><p>A human-readable policy brief first, plus HTML/PDF-ready export controls and a separate JSON audit payload with records, hashes, modelling outputs, posterior learning, RL recommendation, inoculation status, and synthesis results.</p></div>
+          <div><strong>Interpretation</strong><p>The policy output should explain what the tool recommends and why, while showing the chain of evidence, uncertainty, and whether the inoculation vaccine changed the digital twin.</p></div>
+          <div><strong>Policy implication</strong><p>The strongest output is not just a recommendation. It is a defensible decision package that a researcher or policy maker can audit.</p></div>
+          <div><strong>Watch for</strong><p>Policy output without approved records, missing evidence seal, missing uncertainty language, or recommendations that ignore vulnerable groups.</p></div>
+        </div>
+      </section>
+
+      <section class="phase">
+        <h3>14. Export and interpretation</h3>
+        <div class="phase-grid">
+          <div><strong>Click or select</strong><p>Use <strong>Download HTML brief</strong> or <strong>Open PDF view</strong> for human sharing. Use Copy/Download JSON only when you need the technical audit payload.</p></div>
+          <div><strong>Expect to see</strong><p>Export formats for a readable HTML policy brief, a print-to-PDF view, Markdown brief copy, and a structured JSON audit payload.</p></div>
+          <div><strong>Interpretation</strong><p>HTML/PDF is for decision meetings. JSON is for reproducibility and audit. The interactive screen is for review and rerunning stages.</p></div>
+          <div><strong>Policy implication</strong><p>Separate technical audit files from decision briefs so government users can share only what permissions allow.</p></div>
+          <div><strong>Watch for</strong><p>Sharing private records, exporting synthetic stress-test data as real evidence, or losing the link between recommendation and narrative IDs.</p></div>
+        </div>
+      </section>
+
+      <h2>What To Look For</h2>
+      <ul>
+        <li>The upload path should be the same as real research data. There should be no special loader or shortcut.</li>
+        <li>Every imported record should carry location, source, language, period, consent, visibility, and hash metadata.</li>
+        <li>Structured interview data should not collapse Q1-Q5 into one undifferentiated block.</li>
+        <li>Batch imports should allow story-by-story encoding and comparison blocks when more than one encoding mode is used.</li>
+        <li>Social media feed records should support risk sensing and inoculation design without becoming automatic policy evidence.</li>
+        <li>Policy output should explain evidence strength, uncertainty, regional relevance, and implications.</li>
+      </ul>
+    </main>
+  </body>
+</html>

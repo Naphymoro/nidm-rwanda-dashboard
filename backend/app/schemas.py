@@ -49,7 +49,7 @@ class SimulationRequest(BaseModel):
     country: str = "Rwanda"
     admin_unit: Optional[str] = None
     horizon_days: int = Field(default=180, ge=1, le=3650)
-    parameters: Dict[str, float] = Field(default_factory=dict)
+    parameters: Dict[str, Any] = Field(default_factory=dict)
 
 
 class SimulationResult(BaseModel):

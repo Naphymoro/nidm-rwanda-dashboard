@@ -19,14 +19,40 @@ def normalize_csv(file: UploadFile) -> List[NarrativeRecord]:
     df = pd.read_csv(file.file)
     records = []
     for _, row in df.iterrows():
+        narrative_text = ""
+        for column in ["narrative", "text", "quote", "story", "content", "body"]:
+            value = row.get(column)
+            if pd.notna(value) and str(value).strip():
+                narrative_text = str(value)
+                break
+        provenance = {
+            key: row.get(key)
+            for key in [
+                "evidence_mode",
+                "source_name",
+                "period",
+                "language",
+                "knowledge_type",
+                "community_validation",
+                "sensitivity",
+                "consent_tier",
+                "visibility",
+                "contributor_type",
+                "validation_status",
+            ]
+            if key in row and pd.notna(row.get(key))
+        }
         records.append(
             NarrativeRecord(
-                narrative_id=str(uuid.uuid4()),
-                text=str(row.get("narrative", "")),
+                narrative_id=str(row.get("narrative_id") or row.get("id") or uuid.uuid4()),
+                text=narrative_text,
                 metadata=NarrativeMetadata(
-                    source_type="csv",
+                    source_type=str(row.get("source_type") or "csv"),
+                    source_name=str(row.get("source_name")) if pd.notna(row.get("source_name")) else None,
                     country=row.get("country"),
-                    admin_unit=row.get("admin_unit"),
+                    admin_unit=row.get("admin_unit") or row.get("district") or row.get("sector") or row.get("province"),
+                    language=str(row.get("language")) if pd.notna(row.get("language")) else "en",
+                    provenance=provenance,
                 ),
             )
         )

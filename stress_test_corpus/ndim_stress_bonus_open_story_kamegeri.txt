@@ -1,0 +1,20 @@
+Synthetic bonus open-story scenario for NDIM Engine stress testing
+Evidence route: open_story
+Country: Rwanda
+Province: Southern Province
+District: Nyamagabe
+Sector: Kamegeri
+Source type: field_note
+Source name: synthetic-bonus-text-scenario
+Period: 2026-Q1
+Language: en
+Consent tier: restricted_research
+Visibility: private
+
+This is synthetic data created for software testing and training only. It does not describe a real person.
+
+A household in Kamegeri described preparing beans, cassava leaves, and tea during a week when rain made firewood heavy and smoky. The primary cook said she knows smoke affects the children, but firewood is familiar and does not require paying cash on the day of cooking. A neighbor demonstrated a pressure cooker and showed that beans could be ready sooner, yet the household still worries about the first purchase cost, replacement seals, and whether older relatives will accept the taste.
+
+The story contains a clear adoption tension. The respondent trusts neighbors more than posters, wants a payment plan, and asks for a local repair contact before changing practice. The strongest intervention clue is not only technology promotion. It is a bundled pathway: community demonstration, trusted safety explanation, savings-group financing, recipe tasting, and repair visibility.
+
+For the NDIM workflow, ingest this text as an open story. The SDMX gate should preserve country, district, sector, source, period, language, consent, and visibility. Manual encoding should score high exposure because smoke and wet firewood are vivid, medium-to-high credibility because the story is locally grounded, medium trust because the neighbor demonstration helps but repair uncertainty remains, high barrier because cost and maintenance block adoption, and high social influence because older relatives and neighbors shape the decision.

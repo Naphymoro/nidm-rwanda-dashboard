@@ -6,6 +6,11 @@
 dist/
 build/
 *.dist
+__pycache__/
+*.py[cod]
+ui_snapshots/
+client-ui-preview.html
+ui-preview.html
 
 # Environment variables
 .env
