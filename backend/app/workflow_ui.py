@@ -5,6 +5,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NDIM Engine Stepwise Workflow</title>
     <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <style>
       :root {
         color-scheme: light;
@@ -109,6 +111,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         min-height: 0;
       }
       .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
         border-right: 1px solid var(--line);
         display: flex;
         flex-direction: column;
@@ -162,8 +167,16 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         overflow-wrap: anywhere;
       }
       .stepper {
+        flex: 1;
+        min-height: 0;
         padding: 14px;
         overflow: auto;
+      }
+      .stage-scroll-hint {
+        margin: -3px 0 10px;
+        color: var(--muted);
+        font-size: 11.5px;
+        line-height: 1.35;
       }
       .eyebrow, .section-label {
         margin: 0 0 8px;
@@ -362,6 +375,135 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         display: grid;
         gap: 10px;
         min-width: 0;
+      }
+      .system-map-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background:
+          radial-gradient(circle at 16% 12%, rgba(183, 145, 88, .12), transparent 28%),
+          var(--card);
+        padding: 12px;
+        min-width: 0;
+      }
+      .system-map-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .system-map-head h3 {
+        margin: 3px 0 0;
+        font-size: 16px;
+        line-height: 1.1;
+      }
+      .system-map-head p {
+        margin: 3px 0 0;
+        color: var(--muted);
+        font-size: 11.5px;
+        line-height: 1.35;
+      }
+      .system-map-scroll {
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 2px;
+      }
+      .system-map {
+        display: block;
+        width: 100%;
+        min-width: 560px;
+        height: auto;
+      }
+      .map-node {
+        cursor: pointer;
+        outline: none;
+      }
+      .map-node rect,
+      .map-node path.node-shape {
+        fill: var(--panel);
+        stroke: var(--line);
+        stroke-width: 1.4;
+        transition: fill .16s ease, stroke .16s ease, transform .16s ease;
+      }
+      .map-node:hover rect,
+      .map-node:focus rect,
+      .map-node:hover path.node-shape,
+      .map-node:focus path.node-shape {
+        fill: color-mix(in srgb, var(--panel) 82%, white);
+        stroke: var(--ink);
+      }
+      .map-node.active rect,
+      .map-node.active path.node-shape {
+        stroke: var(--ink);
+        stroke-width: 2.2;
+      }
+      .map-node.ready rect,
+      .map-node.ready path.node-shape {
+        stroke: rgba(25, 135, 84, .55);
+      }
+      .map-node.twin rect,
+      .map-node.twin path.node-shape {
+        fill: color-mix(in srgb, var(--panel) 86%, rgba(25, 135, 84, .18));
+        stroke: rgba(25, 135, 84, .72);
+        stroke-dasharray: 5 4;
+      }
+      .map-node.twin.active rect,
+      .map-node.twin.active path.node-shape {
+        stroke: var(--ink);
+        stroke-dasharray: 5 4;
+      }
+      .map-node.twin .map-chip {
+        fill: var(--green);
+      }
+      .map-node.twin .map-chip-text {
+        fill: var(--panel);
+      }
+      .map-node text {
+        fill: var(--text);
+        font-family: var(--font-ui);
+        font-weight: 900;
+        pointer-events: none;
+      }
+      .map-node text.sub {
+        fill: var(--muted);
+        font-family: var(--font-data);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .45px;
+      }
+      .map-arrow {
+        fill: none;
+        stroke: var(--soft);
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: .82;
+      }
+      .map-loop {
+        fill: none;
+        stroke: rgba(88, 110, 92, .75);
+        stroke-width: 2;
+        stroke-dasharray: 5 5;
+      }
+      .map-twin-halo {
+        fill: none;
+        stroke: rgba(25, 135, 84, .24);
+        stroke-width: 1.4;
+        stroke-dasharray: 2 6;
+      }
+      .map-label {
+        fill: var(--soft);
+        font: 800 9px var(--font-data);
+        letter-spacing: .75px;
+        text-transform: uppercase;
+      }
+      .map-chip {
+        fill: var(--ink);
+      }
+      .map-chip-text {
+        fill: var(--panel);
+        font: 900 10px var(--font-data);
+        letter-spacing: .8px;
       }
       .current-intel strong {
         display: block;
@@ -659,6 +801,18 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         flex-wrap: wrap;
         gap: 8px;
         min-width: 0;
+      }
+      .top-actions .button {
+        min-height: 38px;
+        padding: 8px 12px;
+      }
+      .stage-jump {
+        width: min(330px, 42vw);
+        min-height: 38px;
+        border-radius: 999px;
+        padding: 0 12px;
+        font-weight: 800;
+        background: var(--card);
       }
       .stage-card {
         max-width: none;
@@ -1400,6 +1554,21 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         padding: 12px;
         font: 12px var(--font-data);
         line-height: 1.7;
+        overflow-x: auto;
+      }
+      .equation.latex-display {
+        font-size: 14px;
+      }
+      .equation .katex-display {
+        margin: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 2px 0;
+        text-align: left;
+      }
+      .equation .katex {
+        color: var(--text);
+        font-size: 1.04em;
       }
       .equation span {
         color: var(--blue);
@@ -1446,7 +1615,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       .plot-card svg {
         display: block;
         width: 100%;
-        height: 220px;
+        height: 240px;
       }
       .plot-grid-line {
         stroke: var(--line);
@@ -1455,6 +1624,10 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       .plot-axis-label {
         fill: var(--soft);
         font: 10px var(--font-data);
+      }
+      .plot-axis-title {
+        fill: var(--muted);
+        font: 11px var(--font-data);
       }
       .plot-legend {
         display: flex;
@@ -1863,6 +2036,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           grid-template-columns: 1fr;
         }
         .sidebar {
+          position: static;
+          height: auto;
           border-right: 0;
           border-bottom: 1px solid var(--line);
         }
@@ -1905,6 +2080,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         .sidebar { max-height: none; }
         .topbar { align-items: flex-start; flex-direction: column; padding: 16px; }
         .top-actions, .top-actions .button, .run-status { width: 100%; justify-content: center; }
+        .stage-jump { width: 100%; border-radius: 12px; }
         .content { --content-x: 14px; padding: 14px var(--content-x); }
         .stage-card { border-radius: 14px; }
         .command-center { border-radius: 0; }
@@ -1983,6 +2159,16 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         .table, .template-table { overflow: visible; }
         .ledger-table-wrap { overflow-x: auto; }
         .stage-nav { flex-direction: column; }
+        .stage-nav {
+          position: sticky;
+          bottom: 0;
+          z-index: 45;
+          margin: 14px calc(var(--content-x) * -1) -14px;
+          padding: 10px var(--content-x);
+          border-top: 1px solid var(--line);
+          background: color-mix(in srgb, var(--panel) 94%, transparent);
+          backdrop-filter: blur(12px);
+        }
       }
       @media (max-width: 520px) {
         .brand { height: auto; align-items: flex-start; padding: 14px; }
@@ -2013,6 +2199,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         </div>
         <div class="stepper">
           <p class="section-label">Workflow stages</p>
+          <p class="stage-scroll-hint">All 13 stages are active. Scroll this list or use Jump to stage in the top bar.</p>
           <div class="step-list" id="stepList"></div>
         </div>
         <div class="sidebar-footer">
@@ -2020,6 +2207,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <button data-theme="dark">dark</button>
             <button class="active" data-theme="light">light</button>
           </div>
+          <a class="button" href="/manual" target="_blank" rel="noreferrer">Tool manual</a>
           <a class="button" href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub source</a>
         </div>
       </aside>
@@ -2033,6 +2221,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <p id="topCopy">Start by defining the evidence context, country, location, source, and narrative text.</p>
           </div>
           <div class="top-actions">
+            <select id="stageJumpSelect" class="stage-jump" aria-label="Jump to workflow stage"></select>
+            <button class="button primary" id="quickRunButton" type="button">Run stage</button>
+            <button class="button" id="toggleTraceButton" type="button">Activity log</button>
             <div class="run-status" id="runStatus"><span class="dot"></span><span>idle</span></div>
           </div>
         </header>
@@ -2064,25 +2255,26 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       const steps = [
         { id: "intake", num: "01", title: "Narrative intake", sub: "country, location, evidence" },
         { id: "gate", num: "02", title: "SDMX gate", sub: "validate input contract" },
-        { id: "encoding", num: "03", title: "Encoding", sub: "manual, AI, hybrid" },
-        { id: "compartmental", num: "04", title: "Compartmental model", sub: "S M T I R population flow" },
-        { id: "agents", num: "05", title: "Agent-based model", sub: "households and peer effects" },
-        { id: "digital", num: "06", title: "Digital twin", sub: "feedback into model" },
-        { id: "bayes", num: "07", title: "Bayesian update", sub: "prior to posterior" },
-        { id: "rl", num: "08", title: "RL optimizer", sub: "learn intervention policy" },
-        { id: "regional", num: "09", title: "Regional analysis", sub: "isolate or group places" },
-        { id: "graph", num: "10", title: "Knowledge graph", sub: "stories, themes, places" },
-        { id: "inoculation", num: "11", title: "Inoculation lab", sub: "counter-narratives" },
-        { id: "policy", num: "12", title: "Policy output", sub: "recommendation and audit" }
+        { id: "repository", num: "03", title: "Repository", sub: "review ledger and sync" },
+        { id: "encoding", num: "04", title: "Encoding", sub: "manual, AI, hybrid" },
+        { id: "compartmental", num: "05", title: "Compartmental model", sub: "S M T I R population flow" },
+        { id: "agents", num: "06", title: "Agent-based model", sub: "households and peer effects" },
+        { id: "digital", num: "07", title: "Digital twin", sub: "feedback into model" },
+        { id: "bayes", num: "08", title: "Bayesian update", sub: "prior to posterior" },
+        { id: "rl", num: "09", title: "RL optimizer", sub: "learn intervention policy" },
+        { id: "regional", num: "10", title: "Regional analysis", sub: "isolate or group places" },
+        { id: "graph", num: "11", title: "Knowledge graph", sub: "stories, themes, places" },
+        { id: "inoculation", num: "12", title: "Inoculation lab", sub: "counter-narratives" },
+        { id: "policy", num: "13", title: "Policy output", sub: "recommendation and audit" }
       ];
 
       const workflowPhases = [
-        { icon: "EV", label: "Evidence", detail: "Narratives, context, SDMX gate", step: 0, stages: ["intake", "gate"] },
-        { icon: "EN", label: "Encode", detail: "Manual, AI, hybrid scoring", step: 2, stages: ["encoding"] },
-        { icon: "MO", label: "Model", detail: "ODE and agent simulation", step: 3, stages: ["compartmental", "agents"] },
-        { icon: "LR", label: "Learn", detail: "Twin, posterior, RL loop", step: 5, stages: ["digital", "bayes", "rl"] },
-        { icon: "SY", label: "Synthesize", detail: "Regions, graph, inoculation", step: 8, stages: ["regional", "graph", "inoculation"] },
-        { icon: "EX", label: "Export", detail: "Policy output and audit", step: 11, stages: ["policy"] }
+        { icon: "EV", label: "Evidence", detail: "Narratives, SDMX gate, repository", step: 0, stages: ["intake", "gate", "repository"] },
+        { icon: "EN", label: "Encode", detail: "Manual, AI, hybrid scoring", step: 3, stages: ["encoding"] },
+        { icon: "MO", label: "Model", detail: "ODE and agent simulation", step: 4, stages: ["compartmental", "agents"] },
+        { icon: "LR", label: "Learn", detail: "Twin, posterior, RL loop", step: 6, stages: ["digital", "bayes", "rl"] },
+        { icon: "SY", label: "Synthesize", detail: "Regions, graph, inoculation", step: 9, stages: ["regional", "graph", "inoculation"] },
+        { icon: "EX", label: "Export", detail: "Policy output and audit", step: 12, stages: ["policy"] }
       ];
 
       const adminSchemas = {
@@ -2484,6 +2676,31 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           '"': "&quot;",
           "'": "&#039;"
         }[char]));
+      }
+
+      function mathBlock(tex, note = "") {
+        return `
+          <div class="equation latex-display">${escapeHtml(tex)}</div>
+          ${note ? `<p class="select-note">${escapeHtml(note)}</p>` : ""}
+        `;
+      }
+
+      function renderMath() {
+        if (!window.katex) return;
+        document.querySelectorAll(".latex-display").forEach((node) => {
+          if (node.dataset.rendered === "1") return;
+          const tex = node.textContent.trim();
+          try {
+            window.katex.render(tex, node, {
+              displayMode: true,
+              throwOnError: false,
+              strict: "ignore"
+            });
+            node.dataset.rendered = "1";
+          } catch (error) {
+            node.dataset.rendered = "0";
+          }
+        });
       }
 
       function fmtPct(value) {
@@ -2985,6 +3202,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         }
         if (accepted || rejected) {
           await sealRecords("repository commit update");
+          state.completed.add("repository");
           if (acceptedRepositoryRecords().length) state.completed.add("gate");
           else state.completed.delete("gate");
         }
@@ -3008,6 +3226,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         await appendLedger("record_uncommitted", `${record.narrative_id}: ${reason}; moved from ${previousStatus} back to active review`, record.governance.evidence_hash);
         await sealRecords("repository uncommit update");
         if (!acceptedRepositoryRecords().length) state.completed.delete("gate");
+        if (!acceptedRepositoryRecords().length && !rejectedRepositoryRecords().length) state.completed.delete("repository");
         return true;
       }
 
@@ -3437,15 +3656,22 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return steps[state.step];
       }
 
+      function stepIndexById(id) {
+        const index = steps.findIndex((step) => step.id === id);
+        return index >= 0 ? index : 0;
+      }
+
       function goStep(index) {
-        state.step = Math.max(0, Math.min(steps.length - 1, index));
+        const nextIndex = Math.max(0, Math.min(steps.length - 1, index));
+        if (steps[nextIndex]?.id !== "repository") state.repositoryOpen = false;
+        state.step = nextIndex;
         render();
         scrollToActiveStage();
       }
 
       function scrollToActiveStage() {
         requestAnimationFrame(() => {
-          const stage = document.querySelector(".stage-card");
+          const stage = document.querySelector(".stage-card, .repository-full-view");
           if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
         });
       }
@@ -3470,6 +3696,24 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             if (record.governance) record.governance.status = "pending_review";
           });
           state.completed.delete("gate");
+          state.completed.delete("repository");
+        } else if (id === "repository") {
+          state.repositoryFilters = {
+            status: "all",
+            route: "all",
+            country: "all",
+            admin: "all",
+            consent: "all",
+            visibility: "all",
+            source: "all",
+            validation: "all",
+            theme: "all",
+            master: "all",
+            trustMin: "",
+            trustMax: "",
+            barrierMin: "",
+            barrierMax: ""
+          };
         } else if (id === "encoding") {
           state.encoded = [];
           state.encodingRuns = {};
@@ -3529,9 +3773,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         if (id === "gate" && !state.completed.has("gate")) {
           if (!await validateIntake()) return;
         }
-        if (id === "gate" && !approvedRecords().length) {
+        if (id === "repository" && !approvedRecords().length) {
           toast("Commit accepted evidence first");
-          trace("blocked", "No accepted repository records", "Approve at least one narrative, then click Commit reviewed records so it enters the accepted repository before encoding.");
+          trace("blocked", "No accepted repository records", "Approve at least one narrative in the SDMX gate, click Commit reviewed records, then continue to encoding.");
           return;
         }
         if (id === "encoding" && !state.encoded.length) {
@@ -3594,6 +3838,16 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         });
       }
 
+      function renderStageJump() {
+        const select = $("stageJumpSelect");
+        if (!select) return;
+        select.innerHTML = steps.map((step, index) => `
+          <option value="${index}" ${index === state.step ? "selected" : ""}>${step.num} ${escapeHtml(step.title)}</option>
+        `).join("");
+        select.value = String(state.step);
+        select.onchange = () => goStep(Number(select.value));
+      }
+
       function renderCommandCenter() {
         const step = currentStep();
         const readiness = Math.round((state.completed.size / steps.length) * 100);
@@ -3612,7 +3866,6 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <p>Use this workbench to see what evidence exists, whether it has passed governance, which model stage is active, and what must happen next before policy output is credible.</p>
                 <div class="reference-links" aria-label="Tool references">
                   <a class="button" href="/manual" target="_blank" rel="noreferrer">Open tool manual</a>
-                  <a class="button" href="/stress-test-corpus" target="_blank" rel="noreferrer">Stress-test tutorial</a>
                   <a class="button" href="#narrativeRepository" data-jump-repository>Open narrative repository</a>
                   <button class="button" data-open-full-repository type="button">Open full repository</button>
                 </div>
@@ -3626,19 +3879,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 </div>
               </div>
               <div class="hero-side">
-                <div class="current-intel">
-                  <span class="mini-label">Now running</span>
-                  <strong>${escapeHtml(step.num)} ${escapeHtml(step.title)}</strong>
-                  <p>${escapeHtml(stageAdvice(step.id))}</p>
-                  <div class="workbench-actions">
-                    <button class="button primary" id="workbenchRunButton" type="button">Run stage</button>
-                    <button class="button" id="workbenchTraceButton" type="button">Activity log</button>
-                  </div>
-                </div>
-                ${renderHeroLedger()}
+                ${renderSystemDynamicsMap()}
               </div>
             </div>
-            ${renderFeedbackChain()}
             <div class="command-metrics">
               ${commandMetric("Observations", state.records.length || "-")}
               ${commandMetric("Approved", approvedRecords().length || "-")}
@@ -3673,31 +3916,6 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return `<div class="command-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`;
       }
 
-      function renderFeedbackChain() {
-        const nodes = [
-          ["01", "Evidence ledger", state.records.length > 0, "Narratives become governed observations."],
-          ["02", "Encoding", state.encoded.length > 0, "Scores become trust, barrier, confidence, and Phi."],
-          ["03", "Digital twin", Boolean(state.digital), "Field feedback reruns the model and corrects trajectory."],
-          ["04", "Bayes + RL", Boolean(state.bayes || state.rl), "Posterior assumptions and learned intervention policy refine action choice."],
-          ["05", "Synthesis", Boolean(state.regional || state.graph || state.inoculation), "Regions, graph, and inoculation drafts interpret where action should differ."],
-          ["06", "Policy output", Boolean(state.policy), "Final package uses evidence, twin output, posterior, RL, synthesis, and human review."]
-        ];
-        return `
-          <div class="feedback-chain" aria-label="Model feedback chain">
-            <p class="eyebrow">Feedback chain</p>
-            <div class="chain-grid">
-              ${nodes.map(([num, title, ready, detail]) => `
-                <div class="chain-node ${ready ? "ready" : ""}">
-                  <span>${escapeHtml(num)} ${ready ? "ready" : "waiting"}</span>
-                  <strong>${escapeHtml(title)}</strong>
-                  <p>${escapeHtml(detail)}</p>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `;
-      }
-
       function recordRouteLabel(record) {
         const modeId = record?.metadata?.provenance?.evidence_mode || record?.metadata?.evidence_mode || state.template.evidenceMode;
         return evidenceModes.find((mode) => mode.id === modeId)?.title || modeId || "Narrative";
@@ -3729,31 +3947,130 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return shortHash(record?.governance?.evidence_hash || record?.governance?.content_hash || "");
       }
 
-      function renderHeroLedger() {
-        const rows = state.records.slice(0, 5);
-        const more = Math.max(0, state.records.length - rows.length);
+      function renderSystemDynamicsMap() {
+        const step = currentStep();
+        const active = (ids) => ids.includes(step.id) ? "active" : "";
+        const ready = (value) => value ? "ready" : "";
+        const node = ({ x, y, w, h, label, sub, stepIndex, ids, isReady, chip, shape = "rect", variant = "", tip }) => {
+          const shapeMarkup = shape === "hex"
+            ? `<path class="node-shape" d="M${x + 14} ${y} H${x + w - 14} L${x + w} ${y + h / 2} L${x + w - 14} ${y + h} H${x + 14} L${x} ${y + h / 2} Z"></path>`
+            : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14"></rect>`;
+          return `
+            <g class="map-node ${variant} ${active(ids)} ${ready(isReady)}" data-flow-step="${stepIndex}" tabindex="0" role="button" aria-label="${escapeHtml(label)}: ${escapeHtml(tip)}">
+              <title>${escapeHtml(tip)}</title>
+              ${shapeMarkup}
+              <text x="${x + 14}" y="${y + 25}" font-size="14">${escapeHtml(label)}</text>
+              <text class="sub" x="${x + 14}" y="${y + 43}">${escapeHtml(sub)}</text>
+              <circle class="map-chip" cx="${x + w - 21}" cy="${y + 21}" r="13"></circle>
+              <text class="map-chip-text" x="${x + w - 21}" y="${y + 25}" text-anchor="middle">${escapeHtml(chip)}</text>
+            </g>
+          `;
+        };
         return `
-          <div class="ledger-card" id="narrativeRepository">
-            <p class="eyebrow">Narrative repository</p>
-            <h3>${state.records.length ? `${state.records.length} record${state.records.length === 1 ? "" : "s"} in active ledger` : "No records staged yet"}</h3>
-            <p>${escapeHtml(state.records.length ? "Click a narrative ID to inspect the governed record in the workflow." : "Records appear here only after you upload or manually load evidence, then click Stage and validate.")}</p>
-            <div class="ledger-table-wrap">
-              <table class="ledger-table">
-                <thead><tr><th>Narrative ID</th><th>Route</th><th>Place</th><th>Status</th><th>Seal</th></tr></thead>
-                <tbody>
-                  ${rows.length ? rows.map((record, index) => `
-                    <tr>
-                      <td><a class="record-link" href="#record-${encodeURIComponent(record.narrative_id || index)}" data-ledger-record="${escapeHtml(record.narrative_id || "")}">${escapeHtml(record.narrative_id || `record-${index + 1}`)}</a></td>
-                      <td title="${escapeHtml(recordRouteLabel(record))}">${escapeHtml(recordRouteLabel(record))}</td>
-                      <td title="${escapeHtml(recordAdminLabel(record))}">${escapeHtml(recordAdminLabel(record))}</td>
-                      <td title="${escapeHtml(recordStatusLabel(record))}">${escapeHtml(recordStatusLabel(record))}</td>
-                      <td title="${escapeHtml(recordHashLabel(record))}">${escapeHtml(recordHashLabel(record))}</td>
-                    </tr>
-                  `).join("") : `<tr><td colspan="5">Waiting for staged narrative records.</td></tr>`}
-                </tbody>
-              </table>
+          <div class="system-map-card" id="narrativeRepository">
+            <div class="system-map-head">
+              <div>
+                <p class="eyebrow">NDIM system map</p>
+                <h3>How evidence becomes policy</h3>
+                <p>Click any node to jump to that stage. Hover for the scientific role.</p>
+              </div>
+              <button class="button" data-open-full-repository type="button">Repository</button>
             </div>
-            ${more ? `<p style="margin-top: 8px;">+${more} more records visible in the SDMX gate.</p>` : ""}
+            <div class="system-map-scroll" aria-label="NDIM evidence-to-policy systems dynamics diagram">
+              <svg class="system-map" viewBox="0 0 760 342" role="img" aria-label="NDIM workflow system map with feedback loops and digital twin">
+                <defs>
+                  <marker id="mapArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                    <path d="M0,0 L8,4.5 L0,9 Z" fill="var(--soft)"></path>
+                  </marker>
+                  <marker id="mapLoopArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                    <path d="M0,0 L8,4.5 L0,9 Z" fill="rgba(88, 110, 92, .82)"></path>
+                  </marker>
+                </defs>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M132 75 H158"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M272 75 H298"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M412 75 H438"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M552 75 H578"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M646 108 V128"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M552 94 C578 111 594 124 608 138"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M646 198 V224"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M580 261 H552"></path>
+                <path class="map-arrow" marker-end="url(#mapArrow)" d="M438 261 H412"></path>
+                <path class="map-loop" marker-end="url(#mapLoopArrow)" d="M580 158 C532 132 545 91 580 82"></path>
+                <text class="map-label" x="505" y="130">model rerun</text>
+                <path class="map-loop" marker-end="url(#mapLoopArrow)" d="M500 232 C526 202 552 185 580 170"></path>
+                <text class="map-label" x="470" y="212">inoculation feedback</text>
+                <path class="map-loop" marker-end="url(#mapLoopArrow)" d="M302 290 C176 321 84 280 80 112"></path>
+                <text class="map-label" x="84" y="318">human review and evidence correction</text>
+                ${node({
+                  x: 20, y: 44, w: 112, h: 64,
+                  label: "Intake", sub: "stories + context", stepIndex: 0,
+                  ids: ["intake"], isReady: state.records.length > 0,
+                  chip: String(state.records.length || "0"),
+                  tip: "Structured interviews, open stories, indigenous knowledge, citizen science, batches, and social feeds enter with context."
+                })}
+                ${node({
+                  x: 160, y: 44, w: 112, h: 64,
+                  label: "SDMX", sub: "governance gate", stepIndex: 1,
+                  ids: ["gate"], isReady: state.completed.has("gate"),
+                  chip: state.completed.has("gate") ? "OK" : "--",
+                  tip: "Checks place, period, source, consent, visibility, route metadata, hashes, and review readiness."
+                })}
+                ${node({
+                  x: 300, y: 44, w: 112, h: 64,
+                  label: "Repository", sub: "accepted ledger", stepIndex: 2,
+                  ids: ["repository"], isReady: acceptedRepositoryRecords().length > 0,
+                  chip: String(acceptedRepositoryRecords().length || "0"),
+                  tip: "Accepted, rejected, pending, hash-sealed, and master-sync-ready narrative records live here."
+                })}
+                ${node({
+                  x: 440, y: 44, w: 112, h: 64,
+                  label: "Encoding", sub: "manual + LLM", stepIndex: 3,
+                  ids: ["encoding"], isReady: state.encoded.length > 0,
+                  chip: String(state.encoded.length || "0"),
+                  tip: "Manual, LLM, and hybrid scoring turn narratives into trust, barriers, influence, confidence, and Phi inputs."
+                })}
+                ${node({
+                  x: 580, y: 44, w: 132, h: 64,
+                  label: "ODE + ABM", sub: "diffusion models", stepIndex: 4,
+                  ids: ["compartmental", "agents"], isReady: Boolean(state.comp || state.agents),
+                  chip: Boolean(state.comp || state.agents) ? "ON" : "--",
+                  shape: "hex",
+                  tip: "Compartmental and agent-based models translate encoded evidence into population and household diffusion dynamics."
+                })}
+                <ellipse class="map-twin-halo" cx="646" cy="168" rx="82" ry="42"></ellipse>
+                ${node({
+                  x: 580, y: 136, w: 132, h: 62,
+                  label: "Digital twin", sub: "field mirror", stepIndex: 6,
+                  ids: ["digital"], isReady: Boolean(state.digital),
+                  chip: Boolean(state.digital) ? "DT" : "--",
+                  shape: "hex",
+                  variant: "twin",
+                  tip: "The digital twin compares predicted adoption with observed evidence, updates assumptions, and reruns the model."
+                })}
+                ${node({
+                  x: 580, y: 232, w: 132, h: 58,
+                  label: "Bayes/RL", sub: "posterior policy", stepIndex: 7,
+                  ids: ["bayes", "rl"], isReady: Boolean(state.bayes || state.rl),
+                  chip: Boolean(state.bayes || state.rl) ? "LR" : "--",
+                  shape: "hex",
+                  tip: "Bayesian posterior updates and RL policy search refine uncertainty, reward, and intervention choice."
+                })}
+                ${node({
+                  x: 440, y: 232, w: 112, h: 58,
+                  label: "Synthesis", sub: "regions graph lab", stepIndex: 9,
+                  ids: ["regional", "graph", "inoculation"], isReady: Boolean(state.regional || state.graph || state.inoculation),
+                  chip: Boolean(state.regional || state.graph || state.inoculation) ? "SY" : "--",
+                  tip: "Regional analysis, knowledge graphs, and inoculation messages explain where and how interventions should differ."
+                })}
+                ${node({
+                  x: 300, y: 232, w: 112, h: 58,
+                  label: "Policy", sub: "brief + review", stepIndex: 12,
+                  ids: ["policy"], isReady: Boolean(state.policy),
+                  chip: evidenceGrade(),
+                  tip: "The final decision brief exports readable policy advice with uncertainty, evidence grade, assumptions, limitations, and human review."
+                })}
+              </svg>
+            </div>
           </div>
         `;
       }
@@ -3801,6 +4118,243 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         `;
       }
 
+      function jsonForScript(value) {
+        return JSON.stringify(value)
+          .replace(/</g, "\\u003c")
+          .replace(/>/g, "\\u003e")
+          .replace(/&/g, "\\u0026");
+      }
+
+      function repositoryStandalonePayload() {
+        const records = state.records.map((record, index) => {
+          const gov = record.governance || {};
+          const provenance = record.metadata?.provenance || {};
+          const encoded = recordEncoded(record) || {};
+          const themes = recordThemes(record);
+          return {
+            index,
+            id: record.narrative_id || `record-${index + 1}`,
+            route: recordRouteLabel(record),
+            routeRaw: provenance.evidence_mode || state.template.evidenceMode,
+            country: record.metadata?.country || "",
+            place: recordAdminLabel(record),
+            source: recordSourceLabel(record),
+            status: recordStatusLabel(record),
+            statusGroup: recordStatusGroup(record),
+            consent: gov.consent || provenance.consent_tier || "",
+            visibility: gov.visibility || provenance.visibility || "",
+            reviewer: gov.reviewer || "",
+            reviewerRole: gov.reviewer_role || "",
+            validation: provenance.validation_status || "",
+            master: gov.master_repository_status || "not_prepared",
+            seal: shortHash(gov.evidence_hash || gov.content_hash || ""),
+            fullHash: gov.evidence_hash || gov.content_hash || "",
+            reason: gov.review_reason || gov.scan?.recommendation || "No review note recorded",
+            committed: gov.committed_at ? new Date(gov.committed_at).toLocaleString() : "-",
+            themes,
+            trust: typeof encoded.trust_score === "number" ? encoded.trust_score : null,
+            barrier: typeof encoded.adoption_barrier_score === "number" ? encoded.adoption_barrier_score : null,
+            confidence: typeof encoded.confidence === "number" ? encoded.confidence : null,
+            text: record.text || ""
+          };
+        });
+        return {
+          generatedAt: new Date().toLocaleString(),
+          project: "NDIM Engine narrative repository",
+          batchSeal: shortHash(state.governance.lastDigest),
+          records
+        };
+      }
+
+      function standaloneRepositoryHtml(payload) {
+        return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NDIM Narrative Repository</title>
+  <style>
+    :root { --ink:#11100e; --body:#5d5141; --muted:#9b8d78; --paper:#fbfaf7; --line:#d8cdbb; --soft:#f1ede5; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font-family:"Myriad Pro","Segoe UI",Arial,sans-serif; line-height:1.55; }
+    main { max-width:1200px; margin:0 auto; padding:28px 18px 64px; }
+    header { border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:18px; }
+    h1 { margin:0 0 8px; font-size:clamp(30px,5vw,52px); line-height:1; }
+    h2 { margin-top:30px; padding-top:18px; border-top:1px solid var(--line); }
+    p, td { color:var(--body); }
+    .meta, label, th { color:var(--muted); font:800 12px "Cascadia Mono",Consolas,monospace; letter-spacing:.08em; text-transform:uppercase; }
+    .filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; background:var(--soft); border:1px solid var(--line); border-radius:12px; padding:12px; }
+    select, input { width:100%; min-height:38px; border:1px solid var(--line); border-radius:8px; background:white; padding:6px 8px; font:inherit; }
+    button { min-height:36px; border:1px solid var(--line); border-radius:999px; background:white; padding:7px 12px; font-weight:800; cursor:pointer; }
+    button.primary { background:var(--ink); color:white; border-color:var(--ink); }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:16px 0; }
+    .stat { border:1px solid var(--line); border-radius:12px; background:white; padding:12px; }
+    .stat strong { display:block; font-size:24px; }
+    table { width:100%; border-collapse:collapse; background:white; margin-top:10px; }
+    th, td { border:1px solid var(--line); padding:9px; text-align:left; vertical-align:top; }
+    th { background:var(--soft); }
+    .summary { max-width:360px; }
+    .pill { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:2px 8px; margin:2px 3px 2px 0; font-size:12px; color:var(--body); }
+    .empty { border:1px dashed var(--line); border-radius:12px; padding:12px; color:var(--muted); background:white; }
+    @media (max-width:760px) {
+      table, thead, tbody, th, td, tr { display:block; }
+      thead { display:none; }
+      tr { border:1px solid var(--line); margin:10px 0; background:white; }
+      td { border:0; border-bottom:1px solid var(--line); }
+      td::before { content:attr(data-label); display:block; color:var(--muted); font:800 11px "Cascadia Mono",Consolas,monospace; text-transform:uppercase; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="meta">Standalone repository view</p>
+      <h1>NDIM Narrative Repository</h1>
+      <p>This tab is generated from the current local workflow ledger. It keeps long repository review outside the main workflow screen. Batch seal: <strong>${escapeHtml(payload.batchSeal || "not sealed")}</strong>. Generated: ${escapeHtml(payload.generatedAt)}.</p>
+    </header>
+    <section class="filters" aria-label="Repository filters">
+      <div><label for="status">Status</label><select id="status"></select></div>
+      <div><label for="country">Country</label><select id="country"></select></div>
+      <div><label for="place">Admin unit</label><select id="place"></select></div>
+      <div><label for="route">Route</label><select id="route"></select></div>
+      <div><label for="theme">Theme</label><select id="theme"></select></div>
+      <div><label for="consent">Consent</label><select id="consent"></select></div>
+      <div><label for="visibility">Visibility</label><select id="visibility"></select></div>
+      <div><label for="reviewer">Reviewer</label><select id="reviewer"></select></div>
+    </section>
+    <div class="stats" id="stats"></div>
+    <section id="sections"></section>
+  </main>
+  <script>
+    const payload = ${jsonForScript(payload)};
+    const state = { filters: { status:"all", country:"all", place:"all", route:"all", theme:"all", consent:"all", visibility:"all", reviewer:"all" } };
+    const esc = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
+    const label = { active_review:"Active review", pending_commit:"Reviewed, waiting commit", accepted:"Accepted repository", rejected:"Rejected repository" };
+    function unique(key) {
+      const values = new Set();
+      payload.records.forEach((record) => {
+        if (key === "theme") (record.themes || []).forEach((theme) => values.add(theme));
+        else if (record[key]) values.add(record[key]);
+      });
+      return Array.from(values).sort((a, b) => String(a).localeCompare(String(b)));
+    }
+    function fillSelect(id, values, allLabel) {
+      const node = document.getElementById(id);
+      node.innerHTML = '<option value="all">' + esc(allLabel) + '</option>' + values.map((value) => '<option value="' + esc(value) + '">' + esc(value) + '</option>').join('');
+      node.value = state.filters[id] || "all";
+      node.onchange = function () { state.filters[id] = node.value; render(); };
+    }
+    function filtered() {
+      return payload.records.filter((record) => {
+        const f = state.filters;
+        if (f.status !== "all" && record.statusGroup !== f.status) return false;
+        if (f.country !== "all" && record.country !== f.country) return false;
+        if (f.place !== "all" && record.place !== f.place) return false;
+        if (f.route !== "all" && record.route !== f.route) return false;
+        if (f.theme !== "all" && !(record.themes || []).includes(f.theme)) return false;
+        if (f.consent !== "all" && record.consent !== f.consent) return false;
+        if (f.visibility !== "all" && record.visibility !== f.visibility) return false;
+        if (f.reviewer !== "all" && record.reviewer !== f.reviewer) return false;
+        return true;
+      });
+    }
+    function renderStats(rows) {
+      const count = (group) => rows.filter((record) => record.statusGroup === group).length;
+      document.getElementById("stats").innerHTML = [
+        ["Filtered", rows.length],
+        ["Active review", count("active_review")],
+        ["Waiting commit", count("pending_commit")],
+        ["Accepted", count("accepted")],
+        ["Rejected", count("rejected")]
+      ].map((item) => '<div class="stat"><span class="meta">' + esc(item[0]) + '</span><strong>' + esc(item[1]) + '</strong></div>').join('');
+    }
+    function row(record) {
+      const canUncommit = record.statusGroup === "accepted" || record.statusGroup === "rejected";
+      const themes = (record.themes || []).slice(0, 4).map((theme) => '<span class="pill">' + esc(theme) + '</span>').join('');
+      return '<tr>' +
+        '<td data-label="Narrative ID"><strong>' + esc(record.id) + '</strong><br><span class="meta">' + esc(record.seal || "no seal") + '</span></td>' +
+        '<td data-label="Route">' + esc(record.route) + '</td>' +
+        '<td data-label="Place">' + esc(record.place) + '</td>' +
+        '<td data-label="Status">' + esc(record.status) + '<br><span class="meta">' + esc(record.master || "") + '</span></td>' +
+        '<td data-label="Reviewer">' + esc(record.reviewer || "-") + '<br>' + esc(record.reason || "") + '</td>' +
+        '<td data-label="Themes">' + (themes || "-") + '</td>' +
+        '<td data-label="Summary" class="summary">' + esc((record.text || "").slice(0, 240)) + ((record.text || "").length > 240 ? "..." : "") + '</td>' +
+        '<td data-label="Action">' + (canUncommit ? '<button class="primary" onclick="uncommit(' + record.index + ')">Uncommit</button>' : '-') + '</td>' +
+      '</tr>';
+    }
+    function section(title, group, rows, description) {
+      const subset = rows.filter((record) => record.statusGroup === group);
+      return '<h2>' + esc(title) + '</h2><p>' + esc(description) + '</p>' +
+        (subset.length ? '<table><thead><tr><th>Narrative ID</th><th>Route</th><th>Place</th><th>Status</th><th>Reviewer</th><th>Themes</th><th>Summary</th><th>Action</th></tr></thead><tbody>' + subset.map(row).join('') + '</tbody></table>' : '<div class="empty">No records in this section.</div>');
+    }
+    async function uncommit(index) {
+      if (!window.opener || !window.opener.ndimRepositoryUncommit) {
+        alert("Return to the NDIM workflow tab to uncommit this record.");
+        return;
+      }
+      const ok = await window.opener.ndimRepositoryUncommit(index);
+      if (ok) {
+        const record = payload.records.find((item) => item.index === index);
+        if (record) {
+          record.statusGroup = "active_review";
+          record.status = "active review";
+          record.reason = "Returned to active review from standalone repository tab.";
+          record.committed = "-";
+        }
+        render();
+      }
+    }
+    function render() {
+      const rows = filtered();
+      renderStats(rows);
+      document.getElementById("sections").innerHTML =
+        section("Active approval queue", "active_review", rows, "Records waiting for Approve or Reject in the SDMX gate.") +
+        section("Reviewed, waiting for commit", "pending_commit", rows, "Records already approved or rejected locally, but not yet committed.") +
+        section("Accepted repository", "accepted", rows, "Records accepted for encoding, modelling, synthesis, and policy audit.") +
+        section("Rejected repository", "rejected", rows, "Records preserved for audit but excluded from modelling unless uncommitted and reviewed again.");
+    }
+    fillSelect("status", Object.keys(label).map((key) => key), "All statuses");
+    Array.from(document.getElementById("status").options).forEach((option) => { if (label[option.value]) option.textContent = label[option.value]; });
+    fillSelect("country", unique("country"), "All countries");
+    fillSelect("place", unique("place"), "All places");
+    fillSelect("route", unique("route"), "All routes");
+    fillSelect("theme", unique("theme"), "All themes");
+    fillSelect("consent", unique("consent"), "All consent");
+    fillSelect("visibility", unique("visibility"), "All visibility");
+    fillSelect("reviewer", unique("reviewer"), "All reviewers");
+    render();
+  <\/script>
+</body>
+</html>`;
+      }
+
+      function openStandaloneRepository() {
+        const payload = repositoryStandalonePayload();
+        const opened = window.open("", "_blank");
+        if (!opened) {
+          toast("Repository tab blocked");
+          trace("repository", "Repository tab blocked", "The browser blocked the standalone repository tab. Allow popups for this local tool and try again.");
+          return;
+        }
+        opened.document.open();
+        opened.document.write(standaloneRepositoryHtml(payload));
+        opened.document.close();
+        toast("Repository opened");
+      }
+
+      async function uncommitRecordByIndex(index) {
+        const record = state.records[Number(index)];
+        if (!record) return false;
+        const ok = await uncommitRecord(record);
+        if (ok) await syncLedgerToBackend("repository record uncommitted");
+        trace("repository", ok ? "Record uncommitted" : "Record not uncommitted", ok ? `${record.narrative_id} moved back into active review.` : `${record.narrative_id} was not in a committed repository.`);
+        toast(ok ? "Record back in review" : "Record not committed");
+        render();
+        return ok;
+      }
+
+      window.ndimRepositoryUncommit = uncommitRecordByIndex;
+
       function renderMasterRepositoryPanel() {
         const eligible = masterEligibleRecords();
         const pkg = state.masterRepository.package;
@@ -3840,8 +4394,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         `;
       }
 
-      function renderFullRepositoryView() {
-        if (!state.repositoryOpen) return "";
+      function renderFullRepositoryView(forceOpen = false) {
+        if (!forceOpen && !state.repositoryOpen) return "";
         const allRecords = state.records;
         const filtered = filteredRepositoryRecords(allRecords);
         const active = filteredRepositoryRecords(activeReviewRecords());
@@ -3853,11 +4407,11 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <section class="repository-full-view" id="fullRepositoryView">
             <div class="repository-full-head">
               <div>
-                <p class="eyebrow">Full repository</p>
+                <p class="eyebrow">Stage 3 / Full repository</p>
                 <h2>Narrative review, accepted, and rejected repositories</h2>
                 <p>Records move from the active approval queue into the accepted or rejected repository only after Commit reviewed records. Accepted local records can then be packaged for a federated master repository with an SDMX structure and tamper-evident approval seal.</p>
               </div>
-              <button class="button" data-close-full-repository type="button">Close repository</button>
+              ${forceOpen ? `<button class="button" data-flow-step="${stepIndexById("gate")}" type="button">Back to SDMX gate</button>` : `<button class="button" data-close-full-repository type="button">Close repository</button>`}
             </div>
             <div class="metric-grid">
               <div class="metric"><span class="mini-label">Filtered records</span><strong>${filtered.length}</strong></div>
@@ -3875,6 +4429,34 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             ${renderRepositorySection("Reviewed, waiting for commit", "Records here already have an approve or reject decision. Click Commit reviewed records in the SDMX gate to move them into the accepted or rejected repository.", pending, "pending")}
             ${renderRepositorySection("Accepted repository", "These committed records are available for encoding, modelling, synthesis, and policy audit.", accepted, "accepted")}
             ${renderRepositorySection("Rejected repository", "These committed records are preserved for audit but excluded from encoding and modelling until uncommitted and reviewed again.", rejected, "rejected")}
+          </section>
+        `;
+      }
+
+      function renderRepositoryStage() {
+        const stats = governanceStats();
+        return `
+          <section class="stage-card">
+            <p class="eyebrow">Stage 3</p>
+            <h2>Narrative repository</h2>
+            <p class="copy">The full repository now opens in its own standalone tab so the workflow stays short and readable. Use this stage as a compact status checkpoint before encoding.</p>
+            <div class="metric-grid">
+              <div class="metric"><span class="mini-label">Active review</span><strong>${activeReviewRecords().length}</strong></div>
+              <div class="metric"><span class="mini-label">Waiting commit</span><strong>${pendingCommitRecords().length}</strong></div>
+              <div class="metric"><span class="mini-label">Accepted</span><strong>${acceptedRepositoryRecords().length}</strong></div>
+              <div class="metric"><span class="mini-label">Rejected</span><strong>${rejectedRepositoryRecords().length}</strong></div>
+              <div class="metric"><span class="mini-label">Flagged</span><strong>${stats.flagged}</strong></div>
+              <div class="metric"><span class="mini-label">Batch seal</span><strong>${escapeHtml(shortHash(state.governance.lastDigest))}</strong></div>
+            </div>
+            <div class="panel" style="margin-top: 14px;">
+              <h3>Repository workflow</h3>
+              <p>Approve or reject records in the SDMX gate, then click Commit reviewed records. Accepted records become available for encoding and modelling; rejected records stay preserved for audit. Open the full repository tab for filtering, summaries, hashes, reviewer status, and uncommit controls.</p>
+              <div class="button-row">
+                <button class="button primary" data-open-full-repository type="button">Open full repository</button>
+                <button class="button" data-flow-step="${stepIndexById("gate")}" type="button">Back to SDMX gate</button>
+              </div>
+            </div>
+            ${renderContextualNext("Open the full repository when you need detailed review; otherwise continue to encoding.")}
           </section>
         `;
       }
@@ -3903,6 +4485,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const advice = {
           intake: "Create traceable narrative observations before any model receives evidence.",
           gate: "Hash, scan, review, and approve evidence before encoding.",
+          repository: "Search, filter, inspect, export, uncommit, and prepare accepted evidence for master repository sync.",
           encoding: "Compare manual, AI, and hybrid scoring so model inputs are explainable.",
           compartmental: "Run the population ODE view to estimate aggregate diffusion pressure.",
           agents: "Stress-test local household dynamics, peer effects, and network friction.",
@@ -3927,21 +4510,14 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         document.querySelectorAll("[data-jump-repository]").forEach((button) => {
           button.addEventListener("click", (event) => {
             event.preventDefault();
-            const repository = $("narrativeRepository");
-            if (repository) {
-              repository.scrollIntoView({ behavior: "smooth", block: "start" });
-              repository.classList.add("pulse-focus");
-              window.setTimeout(() => repository.classList.remove("pulse-focus"), 900);
-            }
-            trace("repository", "Narrative repository opened", state.records.length ? `${state.records.length} staged record(s) are visible in the ledger.` : "The repository is empty until evidence is staged and validated.");
+            trace("repository", "Standalone repository opened", state.records.length ? `${state.records.length} staged record(s) are available for review, commit, and repository inspection.` : "The repository is empty until evidence is staged and validated.");
+            openStandaloneRepository();
           });
         });
         document.querySelectorAll("[data-open-full-repository]").forEach((button) => {
           button.addEventListener("click", () => {
-            state.repositoryOpen = true;
-            trace("repository", "Full repository opened", `${activeReviewRecords().length} active, ${acceptedRepositoryRecords().length} accepted, and ${rejectedRepositoryRecords().length} rejected record(s) are available.`);
-            render();
-            requestAnimationFrame(() => $("fullRepositoryView")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+            trace("repository", "Standalone repository opened", `${activeReviewRecords().length} active, ${acceptedRepositoryRecords().length} accepted, and ${rejectedRepositoryRecords().length} rejected record(s) are available.`);
+            openStandaloneRepository();
           });
         });
         document.querySelectorAll("[data-close-full-repository]").forEach((button) => {
@@ -4026,18 +4602,18 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         });
         document.querySelectorAll("[data-uncommit-record]").forEach((button) => {
           button.addEventListener("click", async () => {
-            const record = state.records[Number(button.dataset.uncommitRecord)];
-            if (!record) return;
-            const ok = await uncommitRecord(record);
-            if (ok) await syncLedgerToBackend("repository record uncommitted");
-            trace("repository", ok ? "Record uncommitted" : "Record not uncommitted", ok ? `${record.narrative_id} moved back into active review.` : `${record.narrative_id} was not in a committed repository.`);
-            toast(ok ? "Record back in review" : "Record not committed");
-            render();
+            await uncommitRecordByIndex(button.dataset.uncommitRecord);
             requestAnimationFrame(() => $("fullRepositoryView")?.scrollIntoView({ behavior: "smooth", block: "start" }));
           });
         });
         document.querySelectorAll("[data-flow-step]").forEach((button) => {
           button.addEventListener("click", () => goStep(Number(button.dataset.flowStep)));
+          button.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              goStep(Number(button.dataset.flowStep));
+            }
+          });
         });
         document.querySelectorAll("[data-ledger-record]").forEach((link) => {
           link.addEventListener("click", (event) => {
@@ -4057,7 +4633,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function syncWorkflowStagesOffset() {
         const stepper = document.querySelector(".stepper");
         const label = document.querySelector(".stepper .section-label");
-        const stageCard = document.querySelector(".stage-card");
+        const stageCard = document.querySelector(".stage-card, .repository-full-view");
         if (!stepper || !label || !stageCard) return;
         if (window.innerWidth <= 980) {
           stepper.style.paddingTop = "";
@@ -4077,18 +4653,22 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         $("topTitle").textContent = step.title;
         $("topCopy").textContent = step.sub;
         renderStepList();
-        $("stagePanel").innerHTML = renderCommandCenter() + renderStage(step.id) + renderContextStageNav() + renderFullRepositoryView();
+        renderStageJump();
+        const floatingRepository = step.id === "repository" ? "" : renderFullRepositoryView();
+        $("stagePanel").innerHTML = renderCommandCenter() + renderStage(step.id) + renderContextStageNav() + floatingRepository;
         $("backButton").disabled = state.step === 0;
         $("nextButton").textContent = state.step === steps.length - 1 ? "Finish" : "Next";
         bindCommandCenter();
         bindStage(step.id);
         bindContextStageNav();
+        renderMath();
         syncWorkflowStagesOffset();
       }
 
       function renderStage(id) {
         if (id === "intake") return renderIntake();
         if (id === "gate") return renderGate();
+        if (id === "repository") return renderRepositoryStage();
         if (id === "encoding") return renderEncoding();
         if (id === "compartmental") return renderCompartmental();
         if (id === "agents") return renderAgents();
@@ -4205,7 +4785,6 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <p class="copy">Choose the evidence route, attach SDMX context, then stage records into the governed narrative ledger.</p>
             <div class="reference-links" style="margin-bottom: 14px;">
               <a class="button" href="/manual" target="_blank" rel="noreferrer">Open tool manual</a>
-              <a class="button" href="/stress-test-corpus" target="_blank" rel="noreferrer">Stress-test tutorial</a>
               <a class="button" href="#narrativeRepository" data-jump-repository>Open narrative repository</a>
               <button class="button" data-open-full-repository type="button">Open full repository</button>
             </div>
@@ -4257,12 +4836,12 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
 
       function intakeOptionActionLabel(option = state.intakeOption) {
         return {
-          manual: "Open manual",
+          manual: "Open intake guide",
           corpus: "Open stress-test guide",
           copy: "Copy field template",
           download: "Download CSV template",
           reset: "Reset intake"
-        }[option] || "Run intake option";
+        }[option] || "Run intake helper";
       }
 
       function renderIntakeLoadPanel() {
@@ -4282,16 +4861,15 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <div class="intake-option-strip">
               <h3>Intake Option</h3>
               <div class="compact-select-row">
-                <div class="field"><label for="intakeOptionSelect">Supporting tool</label><select id="intakeOptionSelect">
-                  <option ${selectedAttr("manual", state.intakeOption)} value="manual">Manual</option>
-                  <option ${selectedAttr("corpus", state.intakeOption)} value="corpus">Stress-test corpus</option>
+                <div class="field"><label for="intakeOptionSelect">Intake helper</label><select id="intakeOptionSelect">
+                  <option ${selectedAttr("manual", state.intakeOption)} value="manual">Open manual</option>
                   <option ${selectedAttr("copy", state.intakeOption)} value="copy">Copy field template</option>
                   <option ${selectedAttr("download", state.intakeOption)} value="download">Download CSV template</option>
                   <option ${selectedAttr("reset", state.intakeOption)} value="reset">Reset intake</option>
                 </select></div>
                 <button class="button" id="runIntakeOption" type="button">${escapeHtml(intakeOptionActionLabel())}</button>
               </div>
-              <p class="select-note">Choose a supporting intake helper. The selected label tells you exactly what the button will do.</p>
+              <p class="select-note">Choose a supporting intake helper. The button label tells you exactly what will open, copy, download, or reset.</p>
             </div>
           </div>
         `;
@@ -5435,7 +6013,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const reviewed = records.filter((item) => state.manualScorecards[item.narrative_id]?.status === "manual_reviewed").length;
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 3</p>
+            <p class="eyebrow">Stage 4</p>
             <h2>Story-by-story encoding</h2>
             <p class="copy">Each approved narrative is encoded as its own scientific observation. Manual scoring now uses explicit numeric entries and coding rules, while AI and hybrid modes can still pre-code or compare results.</p>
             <div class="grid-3">
@@ -5713,13 +6291,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const last = state.comp?.trajectory?.at(-1);
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 4</p>
+            <p class="eyebrow">Stage 5</p>
             <h2>Compartmental model</h2>
             <p class="copy">Run the population model. It is the high-level S/M/T/I/R view of adoption, misinformation, truth alignment, inoculation, and durable resistance to misinformation.</p>
             <div class="grid-2">
               <div class="panel">
                 <h3>S/M/T/I/R meaning</h3>
-                <div class="equation"><span>dS/dt</span> = - beta_m S M - beta_t S T - iota S<br/><span>dT/dt</span> = beta_t S T + rho M - mu T<br/><span>dR/dt</span> = gamma I + eta T<br/><b>Phi</b> changes beta_t, rho, and iota through narrative strength.</div>
+                ${mathBlock("\\begin{aligned}\\frac{dS}{dt} &= -\\beta_mSM - \\beta_tST - \\iota S \\\\ \\frac{dM}{dt} &= \\beta_mSM - \\rho M - \\sigma MI \\\\ \\frac{dT}{dt} &= \\beta_tST + \\rho M - \\mu T \\\\ \\frac{dI}{dt} &= \\iota S + \\sigma MI - \\gamma I \\\\ \\frac{dR}{dt} &= \\gamma I + \\eta T \\\\ \\Phi_i &= 0.30E_i + 0.30C_i + 0.20\\tau_i + 0.20\\kappa_i \\end{aligned}", "Phi changes beta_t, rho, and iota through narrative strength.")}
                 <div class="guide-note"><strong>Guiding note</strong><p>Read this as the executable NDIM compartment model. The backend now carries S, M, T, I, and R compartments plus an adoption signal and uncertainty band. If a future endpoint falls back to a prototype curve, the model type label will say so clearly.</p></div>
                 <div class="check-list">
                   ${["S Susceptible households", "M Misinformed households", "T Truth-aligned households", "I Inoculated households", "R Resistant or durable adoption belief"].map((item) => `<div class="check pass"><i>--</i><div><strong>${item}</strong><span>Tracked by the scientific model layer.</span></div></div>`).join("")}
@@ -5755,13 +6333,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const last = state.agents?.trajectory?.at(-1);
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 5</p>
+            <p class="eyebrow">Stage 6</p>
             <h2>Agent-based model</h2>
             <p class="copy">Run the household-level model. It checks how peer effects, trust, and media exposure may differ from the aggregate ODE curve.</p>
             <div class="grid-2">
               <div class="panel">
                 <h3>Agent configuration</h3>
-                <div class="equation"><span>P(adopt_i)</span> = sigmoid(trust_i + peer_effect * sum_j A_ij adopt_j + media_i - barrier_i)<br/><span>degree_i</span> = sum_j A_ij<br/><span>trust_next</span> = trust + outreach + posterior_update</div>
+                ${mathBlock("\\begin{aligned}P(\\operatorname{adopt}_i) &= \\sigma\\left(b_0 + trust_i + peer\\_effect\\sum_j A_{ij}adopt_j + media_i - barrier_i\\right) \\\\ degree_i &= \\sum_j A_{ij} \\\\ trust_{i,t+1} &= trust_{i,t} + outreach_i + posterior\\_update_i \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>The agent model asks whether local peer dynamics tell a different story from the population curve. If ABM adoption is lower than ODE adoption, district-level friction or network clustering may be hiding in the aggregate model.</p></div>
                 <div class="field-grid">
                   <div class="field"><label for="peerEffect">Peer effect</label><input id="peerEffect" type="number" min="0" max="1" step="0.01" value="0.08" /></div>
@@ -5786,13 +6364,98 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         `;
       }
 
+      function baselineTwinTrajectory() {
+        const comp = state.comp?.trajectory || [];
+        const agents = state.agents?.trajectory || [];
+        if (comp.length && agents.length) {
+          const length = Math.min(comp.length, agents.length);
+          return Array.from({ length }, (_, index) => {
+            const c = comp[index];
+            const a = agents[index];
+            const adoption = 0.55 * Number(c.adoption || 0) + 0.45 * Number(a.adoption || 0);
+            return {
+              day: c.day ?? a.day ?? index,
+              adoption,
+              adoption_lower: 0.55 * Number(c.adoption_lower ?? c.adoption ?? adoption) + 0.45 * Number(a.adoption_lower ?? a.adoption ?? adoption),
+              adoption_upper: 0.55 * Number(c.adoption_upper ?? c.adoption ?? adoption) + 0.45 * Number(a.adoption_upper ?? a.adoption ?? adoption)
+            };
+          });
+        }
+        return comp.length ? comp : agents;
+      }
+
+      function digitalTwinErrorSummary() {
+        const baseline = baselineTwinTrajectory();
+        const predicted = baseline?.at(-1)?.adoption;
+        const observed = state.feedback.observedAdoption;
+        if (typeof predicted !== "number" || typeof observed !== "number") return "-";
+        const error = observed - predicted;
+        return `${error >= 0 ? "+" : ""}${(error * 100).toFixed(1)} pp`;
+      }
+
+      function digitalTwinScenarioLabel() {
+        if (state.inoculationApplied && state.digital?.model_mode === "hybrid_inoculation_vaccine") return "inoculation scenario";
+        if (state.digital) return "observed-feedback hybrid rerun";
+        return "not run";
+      }
+
+      function renderDigitalTwinBenchmark() {
+        const rows = [
+          ["Observed system state", "partially implemented", "Manual observed adoption, trust shift, barrier shift, and feedback note."],
+          ["Virtual representation", "implemented", "Hybrid NDIM run: 55% compartmental S/M/T/I/R model plus 45% agent-based proxy."],
+          ["Bidirectional data flow", "partially implemented", "Observations rerun the virtual model; outputs feed Bayesian/RL/policy stages. No automatic live sensor stream yet."],
+          ["Calibration", "partially implemented", "Feedback deltas update trust/barrier parameters for the twin rerun; no formal parameter-estimation loop yet."],
+          ["Scenario modelling", "partially implemented", "Current scenario is baseline versus feedback-adjusted twin; inoculation lab adds before/during/after narrative-vaccine runs."],
+          ["Uncertainty", "partially implemented", "Backend trajectories carry uncertainty bands; this stage still needs richer twin-specific interval plots."],
+          ["Provenance", "partially implemented", "Evidence records are hash-sealed; the twin run itself should next receive a downloadable run seal."],
+          ["Update loop over time", "prototype", "The loop is on-demand per user run, not continuous streaming or scheduled assimilation."],
+          ["Decision support", "implemented", "The policy brief can use the feedback-adjusted twin final adoption and assumptions."]
+        ];
+        return `
+          <div class="panel">
+            <h3>Digital twin audit and benchmark</h3>
+            <p class="copy">Scientific status: <strong>prototype digital twin feedback loop</strong>. It is credible as a traceable scenario feedback engine, but not yet a full operational digital twin with continuous live data assimilation.</p>
+            <div class="template-table">
+              <div class="template-row head"><span>Convention</span><span>Status</span><span>Current implementation</span></div>
+              ${rows.map(([criterion, status, detail]) => `<div class="template-row"><span data-label="Convention">${escapeHtml(criterion)}</span><span data-label="Status">${escapeHtml(status)}</span><span data-label="Current implementation">${escapeHtml(detail)}</span></div>`).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderDigitalTwinRunReport() {
+        if (!state.digital) return "";
+        const report = {
+          schema: "ndim-digital-twin-run-v1",
+          scientific_status: "prototype digital twin feedback loop",
+          model_running: state.digital.assumptions?.model_type || state.digital.model_mode || "hybrid NDIM model",
+          scenario: digitalTwinScenarioLabel(),
+          observed_adoption: state.feedback.observedAdoption,
+          predicted_minus_observed_error: digitalTwinErrorSummary(),
+          trust_shift: state.feedback.trustDelta,
+          barrier_shift: state.feedback.barrierDelta,
+          feedback_note: state.feedback.note,
+          final_adoption: state.digital.trajectory?.at(-1)?.adoption,
+          assumptions: state.digital.assumptions || null,
+          provenance: {
+            accepted_records: approvedRecords().length,
+            encoded_records: state.encoded.length,
+            evidence_seal: state.governance.lastDigest || null
+          }
+        };
+        return JSON.stringify(report, null, 2);
+      }
+
       function renderDigital() {
         const last = state.digital?.trajectory?.at(-1);
+        const baseline = baselineTwinTrajectory();
+        const baselineLast = baseline?.at(-1);
+        const modelLabel = state.digital?.assumptions?.model_type || "Hybrid NDIM model";
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 6</p>
-            <h2>Digital twin feedback loop</h2>
-            <p class="copy">This is where field feedback informs the next model run. Observed adoption, trust shifts, and barrier shifts refine model parameters.</p>
+            <p class="eyebrow">Stage 7</p>
+            <h2>Prototype digital twin feedback loop</h2>
+            <p class="copy">This stage is currently a traceable scenario feedback engine: it takes observed field feedback, reruns the hybrid NDIM virtual model, compares baseline versus feedback-adjusted adoption, and passes the revised signal into Bayesian, RL, inoculation, and policy stages.</p>
             <div class="grid-2">
               <div class="panel">
                 <h3>Feedback input</h3>
@@ -5802,23 +6465,29 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="field"><label for="barrierDelta">Barrier shift</label><input id="barrierDelta" type="number" min="-1" max="1" step="0.01" value="${state.feedback.barrierDelta}" /></div>
                   <div class="field"><label for="feedbackNote">Feedback note</label><input id="feedbackNote" value="${escapeHtml(state.feedback.note)}" placeholder="district feedback, survey note..." /></div>
                 </div>
-                <div class="equation" style="margin-top: 12px;"><span>theta_next</span> = theta_model + lambda(field_observed - model_predicted)<br/><span>trust_next</span> = trust + trust_shift<br/><span>barrier_next</span> = barrier + barrier_shift</div>
-                <div class="guide-note"><strong>Guiding note</strong><p>This stage closes the scientific loop. A digital twin is useful only when field observations can correct the model. Here the observed adoption level becomes a new starting condition and trust/barrier shifts alter the next model parameters.</p></div>
+                ${mathBlock("\\begin{aligned}error_t &= observed_t - predicted_t \\\\ \\theta_{t+1} &= \\theta_t + \\lambda error_t \\\\ trust_{t+1} &= clamp(trust_t + trust\\_shift, 0, 1) \\\\ barrier_{t+1} &= clamp(barrier_t + barrier\\_shift, 0, 1) \\end{aligned}")}
+                <div class="guide-note"><strong>Guiding note</strong><p>The virtual model running here is the hybrid NDIM model: a weighted blend of the compartmental S/M/T/I/R model and the agent-based proxy. Observed adoption resets the starting state; trust and barrier shifts now directly alter the twin rerun parameters.</p></div>
                 ${renderDigitalFeedbackChain()}
                 <div class="button-row"><button class="button primary" id="runDigital" type="button">Apply feedback and rerun twin</button></div>
               </div>
               <div class="panel">
                 <h3>Digital twin output</h3>
                 <div class="metric-grid">
+                  <div class="metric"><span class="mini-label">Twin status</span><strong>${state.digital ? "prototype run" : "not run"}</strong></div>
+                  <div class="metric"><span class="mini-label">Model running</span><strong>${escapeHtml(modelLabel)}</strong></div>
                   <div class="metric"><span class="mini-label">Refined adoption</span><strong>${fmtPct(last?.adoption)}</strong></div>
+                  <div class="metric"><span class="mini-label">Baseline adoption</span><strong>${fmtPct(baselineLast?.adoption)}</strong></div>
                   <div class="metric"><span class="mini-label">Observed adoption</span><strong>${fmtPct(state.feedback.observedAdoption)}</strong></div>
-                  <div class="metric"><span class="mini-label">Feedback status</span><strong>${state.digital ? "applied" : "-"}</strong></div>
+                  <div class="metric"><span class="mini-label">Observed error</span><strong>${escapeHtml(digitalTwinErrorSummary())}</strong></div>
+                  <div class="metric"><span class="mini-label">Scenario</span><strong>${escapeHtml(digitalTwinScenarioLabel())}</strong></div>
                 </div>
                 <div class="bars" style="margin-top: 14px;">${renderTrajectoryBars(state.digital?.trajectory)}</div>
-                ${renderDualLinePlot("Baseline versus feedback-adjusted twin", state.comp?.trajectory, state.digital?.trajectory, "adoption", ["baseline ODE", "feedback twin"], ["var(--blue)", "var(--amber)"])}
+                ${renderDualLinePlot("Baseline hybrid versus feedback-adjusted twin", baseline, state.digital?.trajectory, "adoption", ["baseline hybrid", "feedback twin"], ["var(--blue)", "var(--amber)"])}
+                <div class="button-row"><button class="button" id="downloadTwinReport" type="button" ${state.digital ? "" : "disabled"}>Download twin run report</button></div>
                 ${renderResultNote("digital")}
               </div>
             </div>
+            ${renderDigitalTwinBenchmark()}
           </section>
         `;
       }
@@ -5827,7 +6496,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const b = state.bayes;
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 7</p>
+            <p class="eyebrow">Stage 8</p>
             <h2>Bayesian prior to posterior update</h2>
             <p class="copy">Priors hold what the model believed before feedback. Posterior values update those beliefs after observed adoption and trust feedback.</p>
             <div class="grid-2">
@@ -5839,7 +6508,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="field"><label for="barrierA">Barrier alpha</label><input id="barrierA" type="number" min="1" step="1" value="${state.priors.barrierA}" /></div>
                   <div class="field"><label for="barrierB">Barrier beta</label><input id="barrierB" type="number" min="1" step="1" value="${state.priors.barrierB}" /></div>
                 </div>
-                <div class="equation" style="margin-top: 12px;"><span>prior</span> = Beta(alpha, beta)<br/><span>posterior</span> = Beta(alpha + successes, beta + failures)<br/><span>E[p]</span> = alpha / (alpha + beta)</div>
+                ${mathBlock("\\begin{aligned}p &\\sim \\operatorname{Beta}(\\alpha,\\beta) \\\\ posterior &= \\operatorname{Beta}(\\alpha + successes,\\beta + failures) \\\\ \\mathbb{E}[p] &= \\frac{\\alpha}{\\alpha + \\beta} \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>The prior is your starting belief. The posterior is the same belief after evidence is counted. Higher trust posterior raises adoption pressure; higher barrier posterior dampens adoption pressure and makes aggressive policies riskier.</p></div>
                 <div class="button-row"><button class="button primary" id="runBayes" type="button">Update posterior</button></div>
               </div>
@@ -5872,7 +6541,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const rl = state.rl;
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 8</p>
+            <p class="eyebrow">Stage 9</p>
             <h2>RL optimizer loop</h2>
             <p class="copy">The optimizer tests intervention packages and learns which action maximizes adoption while penalizing cost and barrier risk.</p>
             <div class="grid-2">
@@ -5884,7 +6553,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="field"><label for="discount">Discount</label><input id="discount" type="number" min="0.1" max="0.99" step="0.01" value="0.88" /></div>
                   <div class="field"><label for="epsilon">Exploration</label><input id="epsilon" type="number" min="0" max="1" step="0.01" value="0.16" /></div>
                 </div>
-                <div class="equation" style="margin-top: 12px;"><span>Q(s,a)</span> <- Q(s,a) + alpha [reward + gamma max Q(s',a') - Q(s,a)]<br/><span>reward</span> = adoption_gain - cost_penalty - barrier_penalty</div>
+                ${mathBlock("\\begin{aligned}Q(s,a) &\\leftarrow Q(s,a) + \\alpha\\left[r + \\gamma\\max_{a'}Q(s',a') - Q(s,a)\\right] \\\\ r &= adoption\\_gain - cost\\_penalty - barrier\\_penalty \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>RL is not replacing policy judgment. It is stress-testing intervention packages. If the reward curve stabilizes and one action dominates the Q table, the policy option is more robust; if rewards jump around, the model is still uncertain.</p></div>
                 <div class="button-row"><button class="button primary" id="runRL" type="button">Run RL loop</button></div>
               </div>
@@ -5912,7 +6581,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const risk = rows.slice().sort((a, b) => b.barrier - a.barrier)[0];
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 9</p>
+            <p class="eyebrow">Stage 10</p>
             <h2>Regional analysis</h2>
             <p class="copy">Analyse places in isolation or as a group before crafting interventions. This is where a national story becomes a district-sensitive policy plan.</p>
             <div class="grid-2">
@@ -5922,7 +6591,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="field"><label for="regionalMode">Analysis mode</label><select id="regionalMode"><option value="isolated">Isolate each region</option><option value="grouped">Group all regions</option></select></div>
                   <div class="field"><label for="regionalTarget">Target lens</label><select id="regionalTarget"><option value="barrier">Barrier reduction</option><option value="trust">Trust building</option><option value="diffusion">Peer diffusion</option></select></div>
                 </div>
-                <div class="equation" style="margin-top: 12px;"><span>regional_score_r</span> = mean(Phi_i, trust_i, barrier_i | location=r)<br/><span>intervention_r</span> = argmax expected adoption gain subject to feasibility and risk</div>
+                ${mathBlock("\\begin{aligned}score_r &= \\mathbb{E}(\\Phi_i, trust_i, barrier_i, confidence_i \\mid location_i=r) \\\\ intervention_r &= \\arg\\max_a\\; \\mathbb{E}[adoption\\_gain_r(a)] - risk_r(a) \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>Use isolated mode when one district needs its own intervention. Use grouped mode when you want a national or cross-district campaign shaped by all evidence.</p></div>
                 <div class="button-row"><button class="button primary" id="runRegional" type="button">Run regional analysis</button></div>
               </div>
@@ -5944,13 +6613,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const graph = state.graph || buildKnowledgeGraph();
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 10</p>
+            <p class="eyebrow">Stage 11</p>
             <h2>Knowledge graph</h2>
             <p class="copy">Study stories from the same location by connecting places, narratives, themes, trust, barriers, and candidate interventions.</p>
             <div class="grid-2">
               <div class="panel">
                 <h3>Graph theory lens</h3>
-                <div class="equation"><span>G</span> = (V, E)<br/><span>degree(v)</span> = sum_j A_vj<br/><span>theme_centrality</span> = degree(theme) / max_degree</div>
+                ${mathBlock("\\begin{aligned}G &= (V,E) \\\\ degree(v) &= \\sum_j A_{vj} \\\\ centrality(theme) &= \\frac{degree(theme)}{\\max_v degree(v)} \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>High-degree themes are repeated across many stories or locations. They are not automatically true, but they are useful places to investigate because they organize local meaning.</p></div>
                 <div class="button-row"><button class="button primary" id="buildGraph" type="button">Build knowledge graph</button></div>
                 ${renderGraphStoryGroups()}
@@ -5973,13 +6642,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const items = state.inoculation?.items || [];
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 11</p>
+            <p class="eyebrow">Stage 12</p>
             <h2>Inoculation lab</h2>
             <p class="copy">Show inoculation theory at work. The selected LLM provider is used as the intended generation path; if no model key is configured, the browser produces transparent deterministic drafts from the encoded evidence.</p>
             <div class="grid-2">
               <div class="panel">
                 <h3>Inoculation recipe</h3>
-                <div class="equation"><span>inoculation_message</span> = warning + weakened misinformation + refutation + trusted messenger + efficacy cue<br/><span>resistance_gain</span> = threat_awareness * refutation_quality * source_trust</div>
+                ${mathBlock("\\begin{aligned}message &= warning + weakened\\_claim + refutation + trusted\\_messenger + efficacy\\_cue \\\\ resistance\\_gain &= threat\\_awareness \\times refutation\\_quality \\times source\\_trust \\\\ \\iota' &= \\iota + intervention\\_strength \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>Good inoculation does not simply deny a false claim. It gives people a small preview of the misleading argument, explains the manipulation, then offers a trusted and practical alternative.</p></div>
                 <div class="field-grid" style="margin-top: 12px;">
                   <div class="field"><label for="inoculationAudience">Audience</label><select id="inoculationAudience"><option value="households">Households</option><option value="community_leaders">Community leaders</option><option value="health_workers">Health workers</option><option value="policy_makers">Policy makers</option></select></div>
@@ -6020,7 +6689,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const brief = policyDecisionBrief();
         return `
           <section class="stage-card">
-            <p class="eyebrow">Stage 12</p>
+            <p class="eyebrow">Stage 13</p>
             <h2>Policy output and audit</h2>
             <p class="copy">This stage creates a reviewable decision output rather than a black-box answer. It uses approved evidence, encoded model inputs, digital twin feedback, posterior/RL learning, regional analysis, graph insights, inoculation drafts, and human review.</p>
             <div class="button-row" style="margin-top: 0; margin-bottom: 14px;">
@@ -6084,6 +6753,27 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return key === "adoption" ? fmtPct(value) : value.toFixed(2);
       }
 
+      function axisLabelForX(key) {
+        const labels = {
+          day: "Time horizon (days)",
+          episode: "Training episode",
+          x: "Parameter value"
+        };
+        return labels[key] || `${key} axis`;
+      }
+
+      function axisLabelForY(key) {
+        const labels = {
+          adoption: "Projected adoption share (0-100%)",
+          reward: "Reward score",
+          y: "Posterior density",
+          trust_score: "Trust score (0-1)",
+          adoption_barrier_score: "Barrier score (0-1)",
+          confidence: "Evidence confidence (0-1)"
+        };
+        return labels[key] || `${key} value`;
+      }
+
       function polylinePoints(series, yKey, xKey, minY, maxY, maxX, w = 640, h = 220, pad = 30) {
         const spread = Math.max(0.0001, maxY - minY);
         return series.map((point, index) => {
@@ -6095,17 +6785,19 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         }).join(" ");
       }
 
-      function renderPlotFrame(title, body, legend = "", topLabel = "", bottomLabel = "") {
+      function renderPlotFrame(title, body, legend = "", topLabel = "", bottomLabel = "", xAxisLabel = "Time horizon (days)", yAxisLabel = "Projected adoption share (0-100%)") {
         return `
           <div class="plot-card">
             <div class="plot-title">${escapeHtml(title)}</div>
-            <svg viewBox="0 0 640 220" role="img" aria-label="${escapeHtml(title)}">
+            <svg viewBox="0 0 640 240" role="img" aria-label="${escapeHtml(title)}">
               <line class="plot-grid-line" x1="30" x2="610" y1="30" y2="30"></line>
               <line class="plot-grid-line" x1="30" x2="610" y1="110" y2="110"></line>
               <line class="plot-grid-line" x1="30" x2="610" y1="190" y2="190"></line>
               <line class="plot-grid-line" x1="30" x2="30" y1="30" y2="190"></line>
               <text class="plot-axis-label" x="36" y="25">${escapeHtml(topLabel)}</text>
               <text class="plot-axis-label" x="36" y="207">${escapeHtml(bottomLabel)}</text>
+              <text class="plot-axis-title" x="320" y="232" text-anchor="middle">${escapeHtml(xAxisLabel)}</text>
+              <text class="plot-axis-title" transform="translate(12 112) rotate(-90)" text-anchor="middle">${escapeHtml(yAxisLabel)}</text>
               ${body}
             </svg>
             ${legend}
@@ -6123,7 +6815,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const pointsString = polylinePoints(series, yKey, xKey, minY, maxY, maxX);
         const body = `<polyline points="${pointsString}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>`;
         const legend = `<div class="plot-legend"><span><i class="legend-swatch" style="background:${color}"></i>${escapeHtml(yKey)} over ${escapeHtml(xKey)}</span></div>`;
-        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, yKey), plotValueLabel(minY, yKey));
+        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, yKey), plotValueLabel(minY, yKey), axisLabelForX(xKey), axisLabelForY(yKey));
       }
 
       function renderUncertaintyLinePlot(title, points) {
@@ -6142,7 +6834,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <polyline points="${upper}" fill="none" stroke="var(--soft)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 7"></polyline>
         `;
         const legend = '<div class="plot-legend"><span><i class="legend-swatch" style="background:var(--blue)"></i>mean adoption</span><span><i class="legend-swatch" style="background:var(--soft)"></i>lower / upper interval</span></div>';
-        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, "adoption"), plotValueLabel(minY, "adoption"));
+        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, "adoption"), plotValueLabel(minY, "adoption"), "Time horizon (days)", "Projected adoption share with interval (0-100%)");
       }
 
       function renderDualLinePlot(title, first, second, yKey = "adoption", labels = ["first", "second"], colors = ["var(--blue)", "var(--green)"]) {
@@ -6160,7 +6852,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <polyline points="${lineB}" fill="none" stroke="${colors[1]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 8"></polyline>
         `;
         const legend = `<div class="plot-legend"><span><i class="legend-swatch" style="background:${colors[0]}"></i>${escapeHtml(labels[0])}</span><span><i class="legend-swatch" style="background:${colors[1]}"></i>${escapeHtml(labels[1])}</span></div>`;
-        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, yKey), plotValueLabel(minY, yKey));
+        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, yKey), plotValueLabel(minY, yKey), "Time horizon (days)", axisLabelForY(yKey));
       }
 
       function renderTripleLinePlot(title, first, second, third, yKey = "adoption", labels = ["before", "during", "after"], colors = ["var(--blue)", "var(--amber)", "var(--green)"]) {
@@ -6175,7 +6867,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <polyline points="${polylinePoints(items, yKey, "day", minY, maxY, maxX)}" fill="none" stroke="${colors[index]}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" ${index === 1 ? 'stroke-dasharray="8 8"' : ""}></polyline>
         `).join("");
         const legend = `<div class="plot-legend">${labels.map((label, index) => `<span><i class="legend-swatch" style="background:${colors[index]}"></i>${escapeHtml(label)}</span>`).join("")}</div>`;
-        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, yKey), plotValueLabel(minY, yKey));
+        return renderPlotFrame(title, body, legend, plotValueLabel(maxY, yKey), plotValueLabel(minY, yKey), "Time horizon (days)", axisLabelForY(yKey));
       }
 
       function betaSamples(alpha, beta) {
@@ -6206,7 +6898,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <polyline points="${betaPath(posterior, maxY)}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
         `;
         const legend = `<div class="plot-legend"><span><i class="legend-swatch" style="background:var(--soft)"></i>prior Beta(${priorA}, ${priorB})</span><span><i class="legend-swatch" style="background:${color}"></i>posterior Beta(${postA}, ${postB})</span></div>`;
-        return renderPlotFrame(title, body, legend, "density", "0 to 1 probability");
+        return renderPlotFrame(title, body, legend, "density", "0 to 1 probability", "Parameter value (0-1)", "Posterior density");
       }
 
       function encodedById() {
@@ -6317,7 +7009,15 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           const size = 8 + Math.min(10, node.degree * 2);
           return `<g><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${size}" fill="${color}" opacity=".9"></circle><text x="${(p.x + size + 4).toFixed(1)}" y="${(p.y + 4).toFixed(1)}" fill="var(--muted)" font-size="10" font-family="var(--font-data)">${escapeHtml(node.label.slice(0, 22))}</text></g>`;
         }).join("");
-        return `<svg class="kg-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Knowledge graph">${edgeSvg}${nodeSvg}</svg>`;
+        return `
+          <svg class="kg-svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Knowledge graph">${edgeSvg}${nodeSvg}</svg>
+          <div class="plot-legend">
+            <span><i class="legend-swatch" style="background:var(--blue)"></i>location nodes</span>
+            <span><i class="legend-swatch" style="background:var(--amber)"></i>theme nodes</span>
+            <span><i class="legend-swatch" style="background:var(--green)"></i>signal nodes</span>
+            <span>Layout is relational, not geographic; node size indicates connection count.</span>
+          </div>
+        `;
       }
 
       function renderGraphStoryGroups() {
@@ -6430,7 +7130,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             </div>
             ${renderTripleLinePlot("ODE before, during, and after inoculation", vaccine.compartmental?.before, vaccine.compartmental?.during, vaccine.compartmental?.after, "adoption", ["before", "during", "after"], ["var(--blue)", "var(--amber)", "var(--green)"])}
             ${renderTripleLinePlot("Agent model before, during, and after inoculation", vaccine.agent_based?.before, vaccine.agent_based?.during, vaccine.agent_based?.after, "adoption", ["before", "during", "after"], ["var(--violet)", "var(--amber)", "var(--green)"])}
-            <div class="guide-note"><strong>Interpretation</strong><p>If the after curve is higher than before, the inoculation message is functioning as a protective narrative intervention. It should still be field-tested before deployment because the model predicts direction, not guaranteed persuasion.</p></div>
+            <div class="guide-note"><strong>Interpretation</strong><p>The before curve is the current model projection without the counter-narrative. The during curve applies the message while the intervention is active. The after curve estimates residual protection after the message has circulated. A higher after curve means the model predicts a larger adoption-aligned population share under the assumed intervention strength, not that persuasion is guaranteed in the field. Treat this as a testable hypothesis for piloting, monitoring, and revision.</p></div>
           </div>
         `;
       }
@@ -6450,13 +7150,28 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         `;
       }
 
+      function endpointSummary(trajectory) {
+        const points = trajectory || [];
+        const last = points.length ? points[points.length - 1] : null;
+        return {
+          adoption: typeof last?.adoption === "number" ? last.adoption : null,
+          day: typeof last?.day === "number" ? Math.round(last.day) : Math.max(0, points.length - 1)
+        };
+      }
+
+      function adoptionInterpretation(label, trajectory, qualifier = "under the current assumptions") {
+        const endpoint = endpointSummary(trajectory);
+        if (typeof endpoint.adoption !== "number") return "Run the model first so NDIM can estimate the adoption pathway.";
+        return `${label} projects ${fmtPct(endpoint.adoption)} adoption-aligned population share by day ${endpoint.day} ${qualifier}. This percentage is a model endpoint, not an observed survey statistic: it means that, in the simulated population, that share is expected to be in the adoption or adoption-ready state at the end of the run. Use it comparatively across scenarios, and check uncertainty, evidence volume, and human review before treating it as policy-grade evidence.`;
+      }
+
       function renderResultNote(kind) {
         const notes = {
-          compartmental: state.comp ? `Result implication: the ${state.comp.assumptions?.model_type || "NDIM compartment"} curve reaches ${fmtPct(state.comp.trajectory.at(-1).adoption)} by the horizon with ${finalUncertaintySummary()}. Treat this as the population-level signal, then test whether local agent dynamics support or weaken it.` : "Result implication: run the population model to see whether narrative and intervention inputs produce meaningful adoption growth.",
-          agents: state.agents ? `Result implication: the ABM reaches ${fmtPct(state.agents.trajectory.at(-1).adoption)}. ${compareModels()} means the local network assumptions are ${compareModels() === "ABM lower" ? "more cautious than the ODE and may require targeted peer work" : "supportive of diffusion and may justify demonstration-led scaling"}.` : "Result implication: run the agent model to test household-level friction and peer spread.",
-          digital: state.digital ? `Result implication: the feedback-adjusted twin reaches ${fmtPct(state.digital.trajectory.at(-1).adoption)}. If this diverges from baseline, the field observation materially changed the model.` : "Result implication: use observed adoption and field notes to correct the next simulation.",
-          bayes: state.bayes ? `Result implication: posterior trust is ${fmtPct(state.bayes.trustMean)} and posterior barrier is ${fmtPct(state.bayes.barrierMean)}. ${state.bayes.fallback ? "The backend used a labelled fallback posterior approximation." : "Advanced posterior analytics were used when available."}` : "Result implication: Bayesian updating shows how evidence moves assumptions instead of hiding them.",
-          rl: state.rl ? `Result implication: the best learned intervention is "${state.rl.bestAction}" with Q reward ${Number(state.rl.bestReward || 0).toFixed(3)}. ${state.rl.fallback ? "This is a labelled fallback optimizer result." : "This optimizer result came from the analytics endpoint."} Use it as a candidate, not an automatic decision.` : "Result implication: run the optimizer to stress-test intervention packages before drafting policy."
+          compartmental: state.comp ? `${adoptionInterpretation(`The ${state.comp.assumptions?.model_type || "NDIM compartment"} model`, state.comp.trajectory, "from the S/M/T/I/R population equations")}. The final interval is ${finalUncertaintySummary()}, so a wide band should trigger more evidence collection or sensitivity analysis before a policy recommendation.` : "Result implication: run the population model to see whether narrative and intervention inputs produce meaningful adoption growth.",
+          agents: state.agents ? `${adoptionInterpretation("The agent-based model", state.agents.trajectory, "after simulating household heterogeneity, peer influence, trust, and barriers")}. ${compareModels()} means the local network assumptions are ${compareModels() === "ABM lower" ? "more cautious than the population equation; peer bottlenecks, mistrust, or access frictions may need targeted work" : "at least as supportive as the population equation; demonstration-led diffusion may be plausible if evidence quality is adequate"}.` : "Result implication: run the agent model to test household-level friction and peer spread.",
+          digital: state.digital ? `${adoptionInterpretation("The feedback-adjusted digital twin", state.digital.trajectory, "after applying observed field adoption, evidence trust, and barrier feedback")}. If this endpoint differs from the baseline ODE or ABM, the field observation changed the calibrated scenario. That is the purpose of the twin: it is a living analytic copy of the policy system, not a separate truth source.` : "Result implication: use observed adoption and field notes to correct the next simulation.",
+          bayes: state.bayes ? `The Bayesian update estimates posterior trust at ${fmtPct(state.bayes.trustMean)} and posterior barrier pressure at ${fmtPct(state.bayes.barrierMean)}. These are probability-like calibrated assumptions, not direct survey prevalence. They show how approved evidence moves the model from prior belief to updated belief; weak evidence, disagreement between coders, or sparse regions should widen caution. ${state.bayes.fallback ? "The backend used a labelled fallback posterior approximation, so treat this as provisional until Torch/Pyro analytics are available." : "Advanced posterior analytics were available for this run."}` : "Result implication: Bayesian updating shows how evidence moves assumptions instead of hiding them.",
+          rl: state.rl ? `The optimizer currently ranks "${state.rl.bestAction}" highest, with a Q reward of ${Number(state.rl.bestReward || 0).toFixed(3)}. Reward is an analytic score balancing projected adoption gain, barriers, cost, and risk; it is not a moral or political mandate. Use it to shortlist interventions, then compare feasibility, equity, evidence grade, and human review before implementation. ${state.rl.fallback ? "This is a labelled fallback optimizer result." : "This optimizer result came from the analytics endpoint."}` : "Result implication: run the optimizer to stress-test intervention packages before drafting policy."
         };
         return `<div class="result-note"><p>${escapeHtml(notes[kind] || "")}</p></div>`;
       }
@@ -6465,13 +7180,16 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const history = state.rl?.history || [];
         if (!history.length) return "<p>Run RL to show reward samples.</p>";
         const max = Math.max(...history.map((item) => item.reward), 0.01);
-        return history.slice(-8).map((item) => `
+        return `
+          <div class="plot-legend"><span>x-axis: reward magnitude</span><span>y-axis: recent training episodes</span></div>
+          ${history.slice(-8).map((item) => `
           <div class="bar-row">
             <span>ep ${item.episode}</span>
             <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2, (item.reward / max) * 100)}%; background: var(--violet);"></div></div>
             <span>${item.reward.toFixed(2)}</span>
           </div>
-        `).join("");
+        `).join("")}
+        `;
       }
 
       function compareModels() {
@@ -6491,7 +7209,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const feedback = state.digital ? " Digital twin feedback and posterior values were included in the interpretation." : "";
         const regional = state.regional?.rows?.length ? ` Regional analysis produced ${state.regional.rows.length} intervention unit(s).` : "";
         const inoculation = state.inoculation?.items?.length ? ` The inoculation lab generated ${state.inoculation.items.length} counter-narrative drafts for review.` : "";
-        return `Preliminary signal: prioritize trust-led clean-cooking outreach in ${state.meta.district || state.meta.country}. The current run projects ${adoption} final adoption, with average trust at ${trust} and average barrier at ${barrier}.${rl}${feedback}${regional}${inoculation} Human review is required before export.`;
+        return `Preliminary signal: prioritize trust-led clean-cooking outreach in ${state.meta.district || state.meta.country}. The current run projects a ${adoption} adoption-aligned share by the final simulation horizon. This is a scenario estimate, not an observed programme result. Average encoded trust is ${trust}, and average encoded barrier pressure is ${barrier}.${rl}${feedback}${regional}${inoculation} Human review is required before export, and the brief should state assumptions, evidence grade, uncertainty, and implementation limits.`;
       }
 
       function governanceJson() {
@@ -6991,11 +7709,12 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
       async function runIntakeOption() {
         const option = state.intakeOption || $("intakeOptionSelect")?.value || "manual";
         if (option === "manual") {
-          openSupportPage("/manual", "Manual");
+          openSupportPage("/manual#narrative-intake", "Intake guide");
           return;
         }
         if (option === "corpus") {
-          openSupportPage("/stress-test-corpus", "Stress-test corpus");
+          state.intakeOption = "manual";
+          openSupportPage("/manual", "Tool manual");
           return;
         }
         if (option === "copy") {
@@ -7335,7 +8054,19 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         }
         if (id === "compartmental") $("runCompartmental").addEventListener("click", runCompartmental);
         if (id === "agents") $("runAgents").addEventListener("click", runAgents);
-        if (id === "digital") $("runDigital").addEventListener("click", runDigital);
+        if (id === "digital") {
+          $("runDigital").addEventListener("click", runDigital);
+          const reportButton = $("downloadTwinReport");
+          if (reportButton) reportButton.addEventListener("click", () => {
+            if (!state.digital) {
+              toast("Run the twin first");
+              return;
+            }
+            downloadText(`ndim-digital-twin-run-${Date.now()}.json`, renderDigitalTwinRunReport(), "application/json");
+            trace("digital", "Twin run report downloaded", "Downloaded a JSON report describing the prototype twin run, feedback inputs, model assumptions, and provenance.");
+            toast("Twin report downloaded");
+          });
+        }
         if (id === "bayes") $("runBayes").addEventListener("click", runBayes);
         if (id === "rl") $("runRL").addEventListener("click", runRL);
         if (id === "regional") $("runRegional").addEventListener("click", runRegional);
@@ -7578,10 +8309,19 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         setStatus("running");
         trace("feedback", "Applying digital twin feedback", `Observed adoption ${fmtPct(state.feedback.observedAdoption)}, trust shift ${state.feedback.trustDelta}, barrier shift ${state.feedback.barrierDelta}.`);
         try {
+          const baseParams = modelParams({ initial_adoption: state.feedback.observedAdoption });
+          const twinParams = {
+            ...baseParams,
+            trust_score: clamp01(Number(baseParams.trust_score || 0.6) + state.feedback.trustDelta, Number(baseParams.trust_score || 0.6)),
+            barrier_score: clamp01(Number(baseParams.barrier_score || 0.35) + state.feedback.barrierDelta, Number(baseParams.barrier_score || 0.35)),
+            observed_adoption: state.feedback.observedAdoption,
+            feedback_note: state.feedback.note,
+            scenario_type: "observed_feedback_hybrid_rerun"
+          };
           const response = await fetch("/simulate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model_mode: "hybrid", country: state.meta.country, admin_unit: state.meta.district, horizon_days: 180, parameters: modelParams({ initial_adoption: state.feedback.observedAdoption }) })
+            body: JSON.stringify({ model_mode: "hybrid", country: state.meta.country, admin_unit: state.meta.district, horizon_days: 180, parameters: twinParams })
           });
           if (!response.ok) throw new Error(`Backend returned ${response.status}`);
           state.digital = await response.json();
@@ -7906,6 +8646,11 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           }
           return;
         }
+        if (id === "repository") {
+          trace("repository", "Repository refreshed", `${state.records.length} local record(s), ${approvedRecords().length} accepted, ${rejectedRepositoryRecords().length} rejected, and ${pendingCommitRecords().length} waiting for commit.`);
+          render();
+          return;
+        }
         const runners = {
           encoding: runEncoding,
           compartmental: runCompartmental,
@@ -7945,6 +8690,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         });
       });
       window.addEventListener("resize", syncWorkflowStagesOffset);
+      window.addEventListener("load", renderMath);
 
       renderTrace();
       render();
@@ -8036,6 +8782,8 @@ MANUAL_HTML = r"""<!doctype html>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NDIM Engine Manual</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <style>
       body { margin: 0; background: #f7f9fc; color: #0f172a; font-family: "Myriad Pro", "Segoe UI", Arial, sans-serif; line-height: 1.65; }
       main { max-width: 1040px; margin: 0 auto; padding: 38px 20px 70px; }
@@ -8051,6 +8799,8 @@ MANUAL_HTML = r"""<!doctype html>
       .card { border: 1px solid #d8dee9; border-radius: 14px; background: white; padding: 16px; margin: 12px 0; }
       .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
       .callout { border-left: 4px solid #2459d6; background: white; border-radius: 12px; padding: 14px 16px; margin: 14px 0; }
+      .math-display { border: 1px solid #d8dee9; border-radius: 14px; background: white; padding: 14px 16px; margin: 12px 0; overflow-x: auto; }
+      .math-display .katex-display { margin: 0; text-align: left; overflow-x: auto; overflow-y: hidden; }
       .small { color: #64748b; font-size: 14px; }
       @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
     </style>
@@ -8063,14 +8813,15 @@ MANUAL_HTML = r"""<!doctype html>
       <div class="callout"><p><strong>Simple reading:</strong> the tool asks, "What are people saying, how should we encode it, how does that narrative change adoption dynamics, what did the field data correct, and which policy action is most robust?"</p></div>
 
       <h2>Using the Evidence-to-Policy Workbench</h2>
-      <p>The opening screen is a workbench, not a separate demo area. Use the compact workflow buttons to move between Evidence, Encode, Model, Learn, Synthesize, and Export. The workbench cards show evidence count, approved records, model signal, current stage, next action, and the narrative repository ledger.</p>
+      <p>The opening screen is a workbench, not a separate demo area. Use the compact workflow buttons and the stage selector to move between Evidence, Encode, Model, Learn, Synthesize, and Export. The hero system map shows how evidence, models, the digital twin, learning loops, synthesis, and policy output connect.</p>
       <table>
         <thead><tr><th>Workbench element</th><th>What it does</th><th>How to use it</th></tr></thead>
         <tbody>
-          <tr><td>Narrative repository ledger</td><td>Lists staged narrative records with route, place, status, and evidence seal.</td><td>Click a narrative ID to inspect that record in the governance/encoding flow.</td></tr>
+          <tr><td>NDIM system map</td><td>Shows the evidence-to-policy chain, including the dashed Digital Twin feedback engine.</td><td>Click any node to jump to that workflow stage.</td></tr>
+          <tr><td>Full repository</td><td>Lists staged narrative records with route, place, review status, evidence seal, acceptance, rejection, uncommit history, and master repository readiness.</td><td>Open the Repository stage or the repository button in the system map.</td></tr>
           <tr><td>SDMX readiness panel</td><td>Checks whether route, place, source, period, and evidence body are ready.</td><td>Fix missing items before clicking Stage and validate.</td></tr>
           <tr><td>Activity log</td><td>Shows the reasoning trace and system actions in a drawer.</td><td>Open it only when auditing the workflow; keep it closed while working.</td></tr>
-          <tr><td>Run current stage</td><td>Runs the main action for the active stage.</td><td>Use it as a shortcut after the required inputs are present.</td></tr>
+          <tr><td>Run stage</td><td>Runs the main action for the active stage.</td><td>Use it as a shortcut after the required inputs are present.</td></tr>
         </tbody>
       </table>
 
@@ -8080,20 +8831,21 @@ MANUAL_HTML = r"""<!doctype html>
         <tbody>
           <tr><td>01 Narrative intake</td><td>Load text, CSV, notes, or SDMX-like evidence with country and location context.</td><td>Batch of narrative observations.</td></tr>
           <tr><td>02 SDMX gate</td><td>Check whether each observation has source, place, period, language, and measure fields.</td><td>Validated observation payload.</td></tr>
-          <tr><td>03 Encoding</td><td>Score narratives using manual, AI, or hybrid review.</td><td>Trust, barrier, confidence, themes, and Phi inputs.</td></tr>
-          <tr><td>04 Compartmental model</td><td>Estimate population-level adoption flow.</td><td>Adoption trajectory over time.</td></tr>
-          <tr><td>05 Agent-based model</td><td>Test household heterogeneity and peer effects.</td><td>Local adoption trajectory and ODE/ABM contrast.</td></tr>
-          <tr><td>06 Digital twin</td><td>Feed field observations back into the model.</td><td>Feedback-adjusted simulation curve.</td></tr>
-          <tr><td>07 Bayesian update</td><td>Update trust and barrier assumptions from prior to posterior.</td><td>Posterior trust and barrier distributions.</td></tr>
-          <tr><td>08 RL optimizer</td><td>Compare intervention policies by reward.</td><td>Best action, reward curve, and Q values.</td></tr>
-          <tr><td>09 Regional analysis</td><td>Analyse regions alone or as grouped evidence.</td><td>Place-based intervention implications.</td></tr>
-          <tr><td>10 Knowledge graph</td><td>Connect stories, places, themes, trust, barriers, and interventions.</td><td>Graph of repeated narrative structures.</td></tr>
-          <tr><td>11 Inoculation lab</td><td>Generate pre-bunking and refutation narratives from encoded risks.</td><td>Reviewable counter-narrative drafts.</td></tr>
-          <tr><td>12 Policy output</td><td>Create a reviewable decision brief.</td><td>Recommendation, JSON audit payload, Markdown brief, and evidence trail.</td></tr>
+          <tr><td>03 Repository</td><td>Search, inspect, filter, export, uncommit, and prepare accepted records for master repository review.</td><td>Accepted, rejected, pending, and master-sync-ready evidence ledger.</td></tr>
+          <tr><td>04 Encoding</td><td>Score narratives using manual, AI, or hybrid review.</td><td>Trust, barrier, confidence, themes, and Phi inputs.</td></tr>
+          <tr><td>05 Compartmental model</td><td>Estimate population-level adoption flow.</td><td>Adoption trajectory over time.</td></tr>
+          <tr><td>06 Agent-based model</td><td>Test household heterogeneity and peer effects.</td><td>Local adoption trajectory and ODE/ABM contrast.</td></tr>
+          <tr><td>07 Digital twin</td><td>Feed field observations back into the model.</td><td>Feedback-adjusted simulation curve.</td></tr>
+          <tr><td>08 Bayesian update</td><td>Update trust and barrier assumptions from prior to posterior.</td><td>Posterior trust and barrier distributions.</td></tr>
+          <tr><td>09 RL optimizer</td><td>Compare intervention policies by reward.</td><td>Best action, reward curve, and Q values.</td></tr>
+          <tr><td>10 Regional analysis</td><td>Analyse regions alone or as grouped evidence.</td><td>Place-based intervention implications.</td></tr>
+          <tr><td>11 Knowledge graph</td><td>Connect stories, places, themes, trust, barriers, and interventions.</td><td>Graph of repeated narrative structures.</td></tr>
+          <tr><td>12 Inoculation lab</td><td>Generate pre-bunking and refutation narratives from encoded risks.</td><td>Reviewable counter-narrative drafts.</td></tr>
+          <tr><td>13 Policy output</td><td>Create a reviewable decision brief.</td><td>Recommendation, JSON audit payload, Markdown brief, and evidence trail.</td></tr>
         </tbody>
       </table>
 
-      <h2>1. Narrative intake</h2>
+      <h2 id="narrative-intake">1. Narrative intake</h2>
       <p>NDIM supports a <strong>Narrative Commons</strong> intake model. Structured interviews are one route, but users can also ingest open stories, indigenous knowledge records, citizen-science reports, crowdsourced batches, and experimental social/community feeds.</p>
       <table>
         <thead><tr><th>Route</th><th>Use when</th><th>Extra governance fields</th></tr></thead>
@@ -8122,12 +8874,14 @@ indigenous_knowledge,Rwanda,Musanze,2026,community-consultation,cooking_practice
       <p>The gate passes when required fields are present. It does not claim the narrative is true; it only confirms that the evidence is traceable.</p>
       <h3>Evidence governance at the gate</h3>
       <p>The current implementation adds a tamper-evident review layer before encoding. Each observation receives a SHA-256 evidence hash, a content hash, an automated risk scan, a visibility tier, a consent tier, and a reviewer decision. Encoding is blocked until at least one record is approved.</p>
-      <pre>evidence_hash_i = SHA256(canonical_json(narrative_i, metadata_i, tags_i))
-review_signature_i = SHA256(reviewer | role | status | time | evidence_hash_i)
-ledger_event_hash_t = SHA256(event_t + previous_event_hash)</pre>
+      <div class="math-display">\begin{aligned}
+evidence\_hash_i &= \operatorname{SHA256}(canonical\_json(narrative_i, metadata_i, tags_i)) \\
+review\_signature_i &= \operatorname{SHA256}(reviewer, role, status, time, evidence\_hash_i) \\
+ledger\_event\_hash_t &= \operatorname{SHA256}(event_t + ledger\_event\_hash_{t-1})
+\end{aligned}</div>
       <p><strong>Interpretation:</strong> hashes and chained ledger events prove whether a record changed after review. They do not prove that the story is factually true. Truth still depends on consent, field validation, duplicate checks, triangulation, and human approval.</p>
 
-      <h3>Narrative repository and evidence ledger</h3>
+      <h2 id="repository">3. Full repository and evidence ledger</h2>
       <p>The narrative database should be read as one core table plus mode-specific extensions. This is how structured interviews, indigenous knowledge, citizen science, and crowdsourced batches stay coherent without forcing every record into the same form.</p>
       <table>
         <thead><tr><th>Repository layer</th><th>Example fields</th><th>Purpose</th></tr></thead>
@@ -8154,7 +8908,7 @@ ledger_event_hash_t = SHA256(event_t + previous_event_hash)</pre>
       </table>
       <p><strong>Important:</strong> the current tool creates the SDMX/DSD package and approval seal locally. It does not push to a live Google Sheet or blockchain by itself until a master repository backend is configured.</p>
 
-      <h2>3. Encoding derivation</h2>
+      <h2>4. Encoding derivation</h2>
       <div class="grid">
         <div class="card"><h3>Manual scorecard</h3><p>Researchers enter explicit 0-1 numeric scores for each story, plus a short justification for each variable.</p></div>
         <div class="card"><h3>AI encoder</h3><p>Uses the selected LLM provider when configured. If no key is available, the backend falls back safely.</p></div>
@@ -8173,11 +8927,12 @@ ledger_event_hash_t = SHA256(event_t + previous_event_hash)</pre>
           <tr><td>S_i</td><td>Social influence strength</td><td>Mostly individual decision.</td><td>Peers, family, leaders, groups, or local networks dominate the decision.</td></tr>
         </tbody>
       </table>
-      <pre>Phi_i = 0.30 E_i + 0.30 C_i + 0.20 tau_i + 0.20 kappa_i
-
-trust_score_i   = tau_i
-barrier_score_i = B_i
-confidence_i    = mean(C_i, kappa_i, S_i)</pre>
+      <div class="math-display">\begin{aligned}
+\Phi_i &= 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i \\
+trust_i &= \tau_i \\
+barrier_i &= B_i \\
+confidence_i &= \operatorname{mean}(C_i,\kappa_i,S_i)
+\end{aligned}</div>
       <p><code>Phi</code> is a narrative-strength index. It increases truth diffusion when trust and cultural fit are strong. <code>B</code> is kept separate because a story can be emotionally powerful and culturally credible while still describing barriers that slow adoption.</p>
       <p><strong>Batch import rule:</strong> a CSV file is a container, not a scientific unit. Every row becomes one <code>NarrativeRecord</code> with its own hash, approval status, manual scorecard, LLM pre-code, comparison result, and final encoded output. The UI queue supports "encode current then next" so researchers can review records one by one, while "compare all modes" runs manual, AI, and hybrid over the full approved batch.</p>
       <h3>Bring-your-own LLM configuration</h3>
@@ -8188,7 +8943,7 @@ X-NDIM-LLM-Base-URL: optional local or compatible endpoint
 X-NDIM-LLM-Model: selected model or deployment</pre>
       <p>For sensitive indigenous knowledge or government evidence, prefer manual scoring or a local provider such as Ollama or LM Studio. Cloud LLMs should only be used when the user has permission to send the narratives to that provider.</p>
 
-      <h2>4. Compartmental model derivation</h2>
+      <h2>5. Compartmental model derivation</h2>
       <p>The conceptual NDIM population model has five compartments. They can be normalized so <code>S + M + T + I + R = 1</code>.</p>
       <table>
         <thead><tr><th>Compartment</th><th>Meaning</th></tr></thead>
@@ -8200,95 +8955,120 @@ X-NDIM-LLM-Model: selected model or deployment</pre>
           <tr><td>R</td><td>Resistant or durably adoption-aligned households.</td></tr>
         </tbody>
       </table>
-      <pre>dS/dt = - beta_m S M - beta_t S T - iota S
-dM/dt =   beta_m S M - rho M - sigma M I
-dT/dt =   beta_t S T + rho M - mu T
-dI/dt =   iota S + sigma M I - gamma I
-dR/dt =   gamma I + eta T</pre>
+      <div class="math-display">\begin{aligned}
+\frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
+\frac{dT}{dt} &= \beta_tST + \rho M - \mu T \\
+\frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
+\frac{dR}{dt} &= \gamma I + \eta T
+\end{aligned}</div>
       <p>Terms are contact or transition rates. For example, <code>beta_m S M</code> is misinformation contact between susceptible and misinformed groups, while <code>beta_t S T</code> is truth-aligned contact. The UI plot shows the backend adoption trajectory, which is the measurable policy-facing outcome of this system.</p>
-      <pre>beta_t = beta_t0 * (1 + Phi) * trust_score
-beta_m = beta_m0 * barrier_score
-iota   = iota0 + intervention_strength</pre>
+      <div class="math-display">\begin{aligned}
+\beta_t &= \beta_{t0}(1+\Phi)\,trust \\
+\beta_m &= \beta_{m0}\,barrier \\
+\iota &= \iota_0 + intervention\_strength
+\end{aligned}</div>
       <p>Helpful reproduction-style diagnostics are:</p>
-      <pre>R_m = beta_m S0 / (rho + sigma I0 + epsilon)
-R_t = beta_t S0 / (mu + epsilon)</pre>
+      <div class="math-display">\begin{aligned}
+R_m &= \frac{\beta_m S_0}{\rho + \sigma I_0 + \epsilon} \\
+R_t &= \frac{\beta_t S_0}{\mu + \epsilon}
+\end{aligned}</div>
       <p>If <code>R_t &gt; R_m</code>, truth-aligned diffusion is stronger than misinformation pressure. If <code>R_m</code> is higher, policy should prioritize trusted correction, inoculation, or barrier reduction before expecting fast adoption.</p>
 
-      <h2>5. Agent-based model derivation</h2>
+      <h2>6. Agent-based model derivation</h2>
       <p>The agent model treats each household as a local decision maker. It is useful when one district, village, or social network may behave differently from the national average.</p>
-      <pre>peer_i(t)  = mean(adopted neighbors of household i)
-media_i(t) = media_exposure_i * trust_i
-z_i(t)     = b0 + trust_i + peer_effect * peer_i(t)
-           + media_effect * media_i(t) - barrier_i
-
-P(adopt_i at t+1) = 1 / (1 + exp(-z_i(t)))</pre>
+      <div class="math-display">\begin{aligned}
+peer_i(t) &= \operatorname{mean}(adopted\ neighbors_i) \\
+media_i(t) &= media\_exposure_i \cdot trust_i \\
+z_i(t) &= b_0 + trust_i + peer\_effect \cdot peer_i(t) + media\_effect \cdot media_i(t) - barrier_i \\
+P(adopt_i,t+1) &= \frac{1}{1+\exp(-z_i(t))}
+\end{aligned}</div>
       <p>Social network analysis is appropriate here because adoption is partly transmitted by neighbours, trusted messengers, and visible peer examples.</p>
-      <pre>A_ij = 1 if household i is socially exposed to household j
-degree_i = sum_j A_ij
-exposure_i(t) = sum_j A_ij * adopted_j(t) / max(1, degree_i)
-bridge_score_i = number of cross-community links from i</pre>
+      <div class="math-display">\begin{aligned}
+A_{ij} &= 1\ \text{if household } i \text{ is socially exposed to household } j \\
+degree_i &= \sum_j A_{ij} \\
+exposure_i(t) &= \frac{\sum_j A_{ij}adopted_j(t)}{\max(1,degree_i)} \\
+bridge_i &= \operatorname{count}(cross\_community\_links_i)
+\end{aligned}</div>
       <p>The ABM curve should be compared with the ODE curve. If the ABM curve is lower, the model is warning that local household friction is important. If the ABM curve is higher, peer diffusion may be stronger than the aggregate model assumes. High-degree or bridge households are good candidates for demonstrations because they move information between clusters.</p>
 
-      <h2>6. Digital twin feedback derivation</h2>
-      <p>The digital twin is the feedback mechanism. It takes a field observation and asks how far the model was from reality.</p>
-      <pre>error_t = observed_adoption_t - predicted_adoption_t
-theta_next = theta_model + lambda * error_t
+      <h2>7. Digital twin feedback derivation</h2>
+      <p>The current NDIM implementation should be read as a <strong>prototype digital twin feedback loop</strong>. It is more than a static scenario chart because observed field feedback changes the virtual model run and feeds later Bayesian/RL/policy stages. It is not yet a full operational digital twin because it does not continuously ingest live field streams, automatically estimate all parameters, or maintain scheduled state synchronization.</p>
+      <p><strong>Model running inside the twin:</strong> the Digital Twin stage calls the backend <code>/simulate</code> endpoint with <code>model_mode = hybrid</code>. The backend runs a hybrid NDIM model, currently a weighted blend of the documented compartmental S/M/T/I/R model and an agent-based proxy:</p>
+      <div class="math-display">\begin{aligned}
+A_{hybrid}(t) &= 0.55A_{ODE}(t) + 0.45A_{ABM}(t)
+\end{aligned}</div>
+      <p><strong>Inputs consumed:</strong> accepted and encoded evidence sets the baseline trust, barrier, confidence, Phi, and intervention parameters. The twin then adds observed adoption, trust shift, barrier shift, and a feedback note supplied by the analyst. These are treated as scenario feedback, not as proof that the field observation is nationally representative.</p>
+      <div class="math-display">\begin{aligned}
+error_t &= observed\_adoption_t - predicted\_adoption_t \\
+\theta_{t+1} &= \theta_t + \lambda error_t \\
+trust_{t+1} &= clamp(trust_t + trust\_shift,0,1) \\
+barrier_{t+1} &= clamp(barrier_t + barrier\_shift,0,1)
+\end{aligned}</div>
+      <p><strong>Scenario modelling in the current twin:</strong> the main comparison is baseline hybrid trajectory versus feedback-adjusted hybrid trajectory. The Inoculation Lab adds a second scenario family by injecting a narrative vaccine and showing before/during/after ODE and agent curves. A full scenario library with saved named runs is a recommended next upgrade.</p>
+      <table>
+        <thead><tr><th>Digital twin convention</th><th>NDIM status</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>Observed system state</td><td>Partially implemented</td><td>Manual observed adoption and feedback deltas are entered by the user.</td></tr>
+          <tr><td>Virtual model representation</td><td>Implemented</td><td>Hybrid NDIM virtual model: ODE compartmental dynamics plus ABM proxy.</td></tr>
+          <tr><td>Bidirectional data flow</td><td>Partially implemented</td><td>Observed feedback changes the model; model output feeds Bayesian/RL/policy stages. There is no live automatic data stream yet.</td></tr>
+          <tr><td>Calibration</td><td>Partially implemented</td><td>Feedback shifts trust and barriers directly. Formal parameter estimation remains a future upgrade.</td></tr>
+          <tr><td>Scenario / what-if testing</td><td>Partially implemented</td><td>Baseline versus feedback-adjusted twin is implemented; inoculation before/during/after testing is implemented separately.</td></tr>
+          <tr><td>Uncertainty</td><td>Partially implemented</td><td>Trajectory bands exist in model outputs, but twin-specific uncertainty and sensitivity views should be expanded.</td></tr>
+          <tr><td>Traceable provenance</td><td>Partially implemented</td><td>Evidence records are hash-sealed. Twin run reports should be archived with the evidence seal.</td></tr>
+          <tr><td>Update loop over time</td><td>Prototype</td><td>The current loop is on-demand, not continuous monitoring.</td></tr>
+          <tr><td>Decision support</td><td>Implemented</td><td>Policy output can use the feedback-adjusted twin final adoption and assumptions.</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Policy caution:</strong> if only one observation is entered, the twin output should be interpreted as a scenario feedback test, not a calibrated national twin. A policy-grade twin requires repeated observations, provenance, calibration, uncertainty intervals, and human review.</p>
 
-trust_next   = clamp(trust_model + trust_shift, 0, 1)
-barrier_next = clamp(barrier_model + barrier_shift, 0, 1)</pre>
-      <p>The updated parameters rerun the simulation. This makes the model a learning system: outputs from the field become inputs for the next model pass.</p>
-
-      <h2>7. Bayesian update derivation</h2>
+      <h2>8. Bayesian update derivation</h2>
       <p>Trust and barrier assumptions are bounded probabilities, so the manual uses Beta priors. A Beta prior is written as:</p>
-      <pre>p ~ Beta(alpha, beta)
-E[p] = alpha / (alpha + beta)</pre>
+      <div class="math-display">\begin{aligned}
+p &\sim \operatorname{Beta}(\alpha,\beta) \\
+\mathbb{E}[p] &= \frac{\alpha}{\alpha+\beta}
+\end{aligned}</div>
       <p>After evidence arrives, count successes and failures. For trust, a success means the evidence supports trust. For barrier, a success means the evidence supports the presence of a barrier.</p>
-      <pre>likelihood = p^successes * (1 - p)^failures
-posterior = Beta(alpha + successes, beta + failures)
-
-trust_posterior_mean =
-  (trust_alpha + trust_successes) /
-  (trust_alpha + trust_beta + trials)</pre>
+      <div class="math-display">\begin{aligned}
+\mathcal{L}(p) &= p^{successes}(1-p)^{failures} \\
+posterior &= \operatorname{Beta}(\alpha+successes,\beta+failures) \\
+\mathbb{E}[trust\mid data] &= \frac{\alpha_{trust}+trust\_successes}{\alpha_{trust}+\beta_{trust}+trials}
+\end{aligned}</div>
       <p>The posterior plot shows how evidence moves the model from prior belief to updated belief. The posterior feeds the model parameters used by RL and the final policy run.</p>
 
-      <h2>8. RL optimizer derivation</h2>
+      <h2>9. RL optimizer derivation</h2>
       <p>The RL optimizer is framed as a small policy search problem. States represent model conditions such as trust and barrier levels. Actions represent intervention packages. Rewards combine adoption gain, cost, and risk.</p>
-      <pre>reward = adoption_gain - cost_penalty - barrier_penalty
-
-Q(s,a) = Q(s,a) + alpha * [
-  reward + gamma * max_a' Q(s',a') - Q(s,a)
-]</pre>
+      <div class="math-display">\begin{aligned}
+r &= adoption\_gain - cost\_penalty - barrier\_penalty \\
+Q(s,a) &\leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]
+\end{aligned}</div>
       <p>Interpret the reward plot as a learning curve. Stable rewards and a clear best action suggest the policy is robust under the current assumptions. Volatile rewards suggest uncertainty and a need for more evidence, stronger priors, or scenario comparison.</p>
 
-      <h2>9. Regional analysis</h2>
+      <h2>10. Regional analysis</h2>
       <p>Regional analysis asks whether the same narrative behaves differently by place. Isolation mode treats each region as its own evidence unit. Grouped mode pools places into a shared campaign view.</p>
-      <pre>score_r = mean({Phi_i, trust_i, barrier_i, confidence_i} | location_i = r)
-
-intervention_r =
-  if trust_r low: trusted messenger intervention
-  if barrier_r high: practical friction reduction
-  if trust_r high and barrier_r low: peer diffusion campaign</pre>
+      <div class="math-display">\begin{aligned}
+score_r &= \mathbb{E}(\Phi_i,trust_i,barrier_i,confidence_i \mid location_i=r) \\
+intervention_r &= \arg\max_a\ \mathbb{E}[adoption\_gain_r(a)] - risk_r(a)
+\end{aligned}</div>
       <p><strong>Interpretation:</strong> a region with high trust and high barriers may not need persuasion first; it may need cost, fuel, repair, or access support. A region with low trust needs messenger repair before technical messaging.</p>
 
-      <h2>10. Knowledge graph</h2>
+      <h2>11. Knowledge graph</h2>
       <p>The knowledge graph is a research lens for studying stories from the same location. Nodes are locations, themes, trust/barrier signals, and intervention concepts. Edges connect a story location to the themes and signals found in that place.</p>
-      <pre>G = (V, E)
-A_ij = 1 if node i is connected to node j
-degree(i) = sum_j A_ij
-centrality(theme) = degree(theme) / max_degree</pre>
+      <div class="math-display">\begin{aligned}
+G &= (V,E) \\
+A_{ij} &= 1\ \text{if node } i \text{ is connected to node } j \\
+degree(i) &= \sum_j A_{ij} \\
+centrality(theme) &= \frac{degree(theme)}{\max_v degree(v)}
+\end{aligned}</div>
       <p><strong>Interpretation:</strong> high-degree themes are repeated across locations or stories. They are not automatically causal, but they tell the analyst where narrative meaning clusters. This is useful for comparing districts, identifying repeated rumours, and selecting which narratives need inoculation.</p>
 
-      <h2>11. Inoculation theory and counter-narrative generation</h2>
+      <h2>12. Inoculation theory and counter-narrative generation</h2>
       <p>Inoculation theory says people can become more resistant to manipulation if they receive a weak preview of a misleading claim plus a clear refutation before the full misinformation appears. The lab turns encoded narrative risks into pre-bunking and counter-feed drafts.</p>
-      <pre>inoculation_message =
-  warning
-  + weakened_misinformation_claim
-  + refutation
-  + trusted_messenger
-  + efficacy_cue
-
-resistance_gain =
-  threat_awareness * refutation_quality * source_trust</pre>
+      <div class="math-display">\begin{aligned}
+message &= warning + weakened\_claim + refutation + trusted\_messenger + efficacy\_cue \\
+resistance\_gain &= threat\_awareness \times refutation\_quality \times source\_trust \\
+\iota' &= \iota + intervention\_strength
+\end{aligned}</div>
       <p>The LLM generation role is to spawn candidate narratives from a structured prompt. A safe prompt should include the target region, audience, barrier theme, trusted messenger, tone, and a requirement that the output does not ridicule the audience.</p>
       <pre>Prompt skeleton:
 Generate three inoculation messages for {region}.
@@ -8298,7 +9078,7 @@ Use: warning, weakened claim, refutation, trusted source, practical action.
 Avoid: shame, exaggeration, unsupported claims.</pre>
       <p><strong>Implication:</strong> counter-narratives should be reviewed by humans and ideally tested before use. The output is a policy communication draft, not proof that the message will work.</p>
 
-      <h2>12. Policy output and feedback loop</h2>
+      <h2>13. Policy output and feedback loop</h2>
       <p>The final output is a reviewable decision brief, not an automatic decision. It includes metadata, encoding mode, LLM provider selection, encoded narratives, compartmental summary, agent summary, digital twin summary, Bayesian posterior, RL policy, regional analysis, knowledge graph, inoculation drafts, and recommendation text.</p>
       <p><strong>Social media feed route:</strong> social feeds now enter through Stage 01 as an evidence route, not as a model stage. The user selects one or more platforms, pastes feed items, and sends them through the same SDMX governance gate before any modelling influence.</p>
       <pre>narratives -> encoding -> model parameters
@@ -8314,6 +9094,837 @@ all outputs -> policy brief</pre>
       <p>For novice users, follow the buttons stage by stage and read the implication notes. For expert users, inspect equations, priors, graph structure, and reward curves. For policy makers, focus on the recommendation, evidence trail, uncertainty, feasibility, and whether the recommended intervention matches the target region.</p>
       <p class="small">Version note: the current backend exposes a labelled NDIM compartment model with S/M/T/I/R compartments, uncertainty bands, persistent evidence ledger sync, validation checks, and deterministic Bayesian/RL fallbacks when advanced Torch/Pyro services are unavailable.</p>
     </main>
+    <script>
+      function renderManualMath() {
+        if (!window.katex) return;
+        document.querySelectorAll(".math-display").forEach((node) => {
+          if (node.dataset.rendered === "1") return;
+          const tex = node.textContent.trim();
+          try {
+            window.katex.render(tex, node, { displayMode: true, throwOnError: false, strict: "ignore" });
+            node.dataset.rendered = "1";
+          } catch (error) {
+            node.dataset.rendered = "0";
+          }
+        });
+      }
+      window.addEventListener("load", renderManualMath);
+    </script>
+  </body>
+</html>
+"""
+
+MANUAL_HTML = r"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NDIM Engine Manual</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <style>
+      :root {
+        --ink:#11100e;
+        --body:#564b3d;
+        --muted:#8a7d68;
+        --paper:#fbfaf7;
+        --line:#d6cbbb;
+        --soft:#f3efe7;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Myriad Pro", "Segoe UI", Arial, sans-serif;
+        line-height: 1.65;
+      }
+      main {
+        width: min(980px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 34px 0 80px;
+      }
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+        margin-bottom: 18px;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(34px, 6vw, 58px);
+        line-height: 1.02;
+        letter-spacing: -.02em;
+      }
+      h2, h3 { line-height: 1.22; }
+      p, li, td {
+        color: var(--body);
+        font-size: 16px;
+      }
+      a {
+        color: var(--ink);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+      .small-link-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 14px;
+        font-size: 14px;
+      }
+      details {
+        border-top: 1px solid var(--line);
+        padding: 0;
+      }
+      details:last-of-type { border-bottom: 1px solid var(--line); }
+      summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 18px 0;
+        font-size: 22px;
+        font-weight: 800;
+      }
+      summary::-webkit-details-marker { display: none; }
+      summary::before {
+        content: "+";
+        display: inline-block;
+        width: 26px;
+        color: var(--muted);
+        font-family: Consolas, monospace;
+      }
+      details[open] summary::before { content: "-"; }
+      .section-body {
+        padding: 0 0 24px 26px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0 18px;
+        background: white;
+      }
+      th, td {
+        border: 1px solid var(--line);
+        padding: 9px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--soft);
+        color: var(--ink);
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      code, pre, .mono {
+        font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+      }
+      pre {
+        background: #11100e;
+        color: #f7efe3;
+        border-radius: 8px;
+        padding: 12px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
+      .note {
+        border-left: 3px solid var(--ink);
+        background: var(--soft);
+        padding: 10px 12px;
+        margin: 14px 0;
+      }
+      .math-display {
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 12px 0;
+        overflow-x: auto;
+      }
+      .math-display.rendered-fallback {
+        font-family: "Cambria Math", "STIX Two Math", Georgia, serif;
+        font-size: 20px;
+        line-height: 1.9;
+      }
+      .math-display .katex-display {
+        margin: 0;
+        text-align: left;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      .eq-line {
+        display: flex;
+        align-items: center;
+        gap: .45em;
+        white-space: nowrap;
+      }
+      .eq-var { font-style: italic; }
+      .eq-op { color: var(--muted); }
+      .frac {
+        display: inline-grid;
+        grid-template-rows: auto auto;
+        text-align: center;
+        line-height: 1.1;
+        vertical-align: middle;
+        margin-right: .1em;
+      }
+      .frac > span:first-child {
+        border-bottom: 1px solid currentColor;
+        padding: 0 .2em .08em;
+      }
+      .frac > span:last-child {
+        padding: .08em .2em 0;
+      }
+      .eq-matrix {
+        display: inline-grid;
+        gap: .15em;
+        padding-left: .45em;
+        border-left: 2px solid var(--line);
+      }
+      #backTop {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        color: var(--ink);
+        padding: 9px 12px;
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 8px 24px rgba(40, 32, 20, .10);
+      }
+      @media (max-width: 720px) {
+        main { width: min(100% - 22px, 980px); padding-top: 18px; }
+        summary { font-size: 19px; }
+        .section-body { padding-left: 0; }
+        table, thead, tbody, th, td, tr { display: block; }
+        thead { display: none; }
+        tr { border: 1px solid var(--line); margin: 10px 0; background: white; }
+        td { border: 0; border-bottom: 1px solid var(--line); }
+        td::before {
+          content: attr(data-label);
+          display: block;
+          color: var(--muted);
+          font: 800 11px "Cascadia Mono", Consolas, monospace;
+          letter-spacing: .07em;
+          text-transform: uppercase;
+        }
+      }
+    </style>
+  </head>
+  <body id="top">
+    <main>
+      <header>
+        <p class="mono">NDIM ENGINE MANUAL</p>
+        <h1>Narrative Diffusion and Inoculation Model</h1>
+        <p>NDIM is a local-first scientific and policy tool for turning governed narrative evidence into model inputs, uncertainty-aware simulations, intervention tests, and a human-reviewed policy brief.</p>
+        <p class="small-link-row">
+          <a href="/">Back to tool</a>
+          <a href="#installation">Installation</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#equations">Equations</a>
+          <a href="#repository">Repository</a>
+          <a href="#multimodal">Multimodal roadmap</a>
+        </p>
+      </header>
+
+      <details id="installation" open>
+        <summary>Installation and local use</summary>
+        <div class="section-body">
+          <p>NDIM is intended to run on the user machine. The desktop launcher starts a local backend and opens the browser interface at a localhost address such as <code>http://127.0.0.1:8010/</code>.</p>
+          <ol>
+            <li>Install NDIM Engine using the platform installer or bundle.</li>
+            <li>Open NDIM Engine from the desktop shortcut or application menu.</li>
+            <li>Wait for the local status page to show the backend URL.</li>
+            <li>Click <strong>Open NDIM Engine</strong> to begin.</li>
+            <li>If the backend fails, click <strong>Export support bundle</strong> and share the ZIP with the maintainer.</li>
+          </ol>
+          <p class="note">Local-first means evidence stays on the local machine unless the user deliberately exports or syncs it. Consent, visibility, reviewer approval, and repository settings still matter.</p>
+        </div>
+      </details>
+
+      <details id="workflow" open>
+        <summary>Workflow from evidence to policy</summary>
+        <div class="section-body">
+          <p>The tool is designed as a sequential scientific story:</p>
+          <ol>
+            <li><strong>Narrative intake:</strong> choose country, administrative unit, evidence route, consent, visibility, and narrative body.</li>
+            <li><strong>SDMX gate:</strong> check that the record has enough structure to become a governed observation.</li>
+            <li><strong>Repository:</strong> approve or reject records, commit reviewed records, and inspect accepted/rejected evidence in the standalone repository tab.</li>
+            <li><strong>Encoding:</strong> score narratives manually, with an LLM, or through hybrid review.</li>
+            <li><strong>Compartmental model:</strong> run the population-level S/M/T/I/R diffusion model or labelled fallback curve.</li>
+            <li><strong>Agent-based model:</strong> test household heterogeneity, peer influence, trust, and local barriers.</li>
+            <li><strong>Digital twin:</strong> feed observed field information back into the virtual model and rerun scenarios.</li>
+            <li><strong>Bayesian update:</strong> move from priors to posteriors for trust and barrier assumptions.</li>
+            <li><strong>RL optimizer:</strong> compare candidate intervention packages by reward, cost, and risk.</li>
+            <li><strong>Regional analysis and knowledge graph:</strong> identify place-specific patterns and repeated themes.</li>
+            <li><strong>Inoculation lab:</strong> generate and test counter-narratives as narrative vaccines.</li>
+            <li><strong>Policy output:</strong> export a human-readable brief with assumptions, limitations, uncertainty, and required review.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details id="equations">
+        <summary>Core equations</summary>
+        <div class="section-body">
+          <h3>Encoding</h3>
+          <p>Encoding turns a narrative into bounded model variables. Manual encoding should include a short justification for each score.</p>
+          <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
+          <table>
+            <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Symbol">E</td><td data-label="Meaning">Exposure, salience, or emotional intensity.</td></tr>
+              <tr><td data-label="Symbol">C</td><td data-label="Meaning">Credibility and local grounding.</td></tr>
+              <tr><td data-label="Symbol">tau</td><td data-label="Meaning">Trust alignment.</td></tr>
+              <tr><td data-label="Symbol">kappa</td><td data-label="Meaning">Inoculation or resistance opportunity.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Compartmental NDIM</h3>
+          <p>The documented model uses susceptible, misinformation-exposed, truth-aligned, inoculated, and resistant/adoption-aligned compartments.</p>
+          <div class="math-display">\begin{aligned}
+\frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \mu M \\
+\frac{dT}{dt} &= \beta_tST + \rho M - \eta T \\
+\frac{dI}{dt} &= \iota S + \eta T - \gamma I \\
+\frac{dR}{dt} &= \gamma I + \mu M
+\end{aligned}</div>
+
+          <h3>Digital twin feedback</h3>
+          <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
+          <p>The current twin is a prototype feedback loop. It reruns the hybrid model after approved evidence, encoded narratives, and field observations adjust trust, barriers, and intervention parameters.</p>
+
+          <h3>Bayesian update</h3>
+          <div class="math-display">\begin{aligned}
+prior &= Beta(\alpha,\beta) \\
+posterior &= Beta(\alpha + successes,\beta + failures)
+\end{aligned}</div>
+
+          <h3>RL optimizer</h3>
+          <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
+          <p>The reward ranks candidate interventions. It supports human review; it does not automatically decide policy.</p>
+        </div>
+      </details>
+
+      <details id="repository">
+        <summary>Repository and governance</summary>
+        <div class="section-body">
+          <p>The repository has an active approval queue, an accepted repository, and a rejected repository. Records should move only after review and commit.</p>
+          <table>
+            <thead><tr><th>Area</th><th>Purpose</th><th>Main action</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Area">Active approval queue</td><td data-label="Purpose">Records are staged and governed but not reviewed.</td><td data-label="Main action">Approve or Reject.</td></tr>
+              <tr><td data-label="Area">Reviewed, waiting commit</td><td data-label="Purpose">Records have a decision but have not entered a repository.</td><td data-label="Main action">Commit reviewed records.</td></tr>
+              <tr><td data-label="Area">Accepted repository</td><td data-label="Purpose">Evidence can be encoded, modelled, and used in policy output.</td><td data-label="Main action">Inspect, export, or Uncommit.</td></tr>
+              <tr><td data-label="Area">Rejected repository</td><td data-label="Purpose">Evidence is retained for audit but excluded from modelling.</td><td data-label="Main action">Inspect or Uncommit.</td></tr>
+            </tbody>
+          </table>
+          <p>The full repository opens in a separate HTML tab from the main workflow. This keeps the workflow readable while still allowing detailed filtering by country, administrative unit, route, theme, consent, visibility, status, reviewer, and evidence seal.</p>
+        </div>
+      </details>
+
+      <details id="stress-test-corpus">
+        <summary>Stress-test corpus and exercises</summary>
+        <div class="section-body">
+          <p>The stress-test corpus is bundled in <code>stress_test_corpus/</code>. It is not loaded by default. Use the intake file picker when you want to test the tool with synthetic Rwanda clean-cooking narratives.</p>
+          <table>
+            <thead><tr><th>Route</th><th>File</th><th>Use</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Route">Structured interview</td><td data-label="File"><code>ndim_stress_structured_interview_rwanda.csv</code></td><td data-label="Use">Tests Q1-Q5 interview ingestion.</td></tr>
+              <tr><td data-label="Route">Open story</td><td data-label="File"><code>ndim_stress_open_story_rwanda.csv</code></td><td data-label="Use">Tests paragraph narrative ingestion.</td></tr>
+              <tr><td data-label="Route">Indigenous knowledge</td><td data-label="File"><code>ndim_stress_indigenous_knowledge_rwanda.csv</code></td><td data-label="Use">Tests cultural sensitivity, attribution, and validation fields.</td></tr>
+              <tr><td data-label="Route">Citizen science</td><td data-label="File"><code>ndim_stress_citizen_science_rwanda.csv</code></td><td data-label="Use">Tests contributor confidence and observation metadata.</td></tr>
+              <tr><td data-label="Route">Crowdsourced batch</td><td data-label="File"><code>ndim_stress_crowdsourced_batch_rwanda.csv</code></td><td data-label="Use">Tests queue, approval, rejection, commit, and repository filtering.</td></tr>
+              <tr><td data-label="Route">Social media feed</td><td data-label="File"><code>ndim_stress_experimental_feed_rwanda.csv</code></td><td data-label="Use">Tests experimental feed route and platform selection.</td></tr>
+              <tr><td data-label="Route">Bonus single story</td><td data-label="File"><code>ndim_stress_bonus_open_story_kamegeri.txt</code></td><td data-label="Use">Tests one-story manual loading.</td></tr>
+            </tbody>
+          </table>
+          <ol>
+            <li>Choose the matching evidence route in Stage 01.</li>
+            <li>Use <strong>Open text or CSV file</strong> and select the matching file from <code>stress_test_corpus/</code>.</li>
+            <li>Check country, administrative unit, source, language, period, consent, and visibility.</li>
+            <li>Read SDMX readiness, then stage and validate.</li>
+            <li>Approve or reject records, commit reviewed records, and open the standalone repository tab.</li>
+            <li>Encode, model, update the twin, run Bayesian/RL stages, test inoculation, and export the policy brief.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details id="interpretation">
+        <summary>Interpreting results</summary>
+        <div class="section-body">
+          <p>A model percentage such as <strong>95.3%</strong> means the projected adoption-aligned share of the simulated population at the final time horizon. It does not mean that 95.3% of real households have already adopted.</p>
+          <table>
+            <thead><tr><th>Output</th><th>Meaning</th><th>Caution</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Output">ODE curve</td><td data-label="Meaning">Population-level diffusion pathway.</td><td data-label="Caution">Can hide local household variation.</td></tr>
+              <tr><td data-label="Output">Agent model</td><td data-label="Meaning">Household and peer-effect pathway.</td><td data-label="Caution">Depends on network assumptions.</td></tr>
+              <tr><td data-label="Output">Digital twin</td><td data-label="Meaning">Feedback-adjusted scenario rerun.</td><td data-label="Caution">Only as good as the observed feedback and calibration rule.</td></tr>
+              <tr><td data-label="Output">Posterior</td><td data-label="Meaning">Updated uncertainty about trust and barriers.</td><td data-label="Caution">Sparse evidence should widen caution.</td></tr>
+              <tr><td data-label="Output">RL reward</td><td data-label="Meaning">Relative intervention score.</td><td data-label="Caution">Shortlist for review, not an automatic decision.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details id="exports">
+        <summary>Outputs and exports</summary>
+        <div class="section-body">
+          <p>The main output is a human-readable policy brief. It should state evidence grade, confidence level, assumptions, limitations, uncertainty, required human review, and recommended intervention.</p>
+          <p>Use HTML for a readable brief. Use browser print-to-PDF for PDF export when direct PDF generation is unavailable. JSON remains available for audit and reproducibility.</p>
+        </div>
+      </details>
+
+      <details id="multimodal">
+        <summary>Multimodal and translation roadmap</summary>
+        <div class="section-body">
+          <p>This is a roadmap section, not a claim that all features are implemented today.</p>
+          <ul>
+            <li><strong>Speech to text:</strong> transcribe field interviews, radio discussions, and community meetings before SDMX validation.</li>
+            <li><strong>Text to speech:</strong> read field templates, policy briefs, and inoculation messages aloud for accessibility and training.</li>
+            <li><strong>Kinyarwanda-English translation:</strong> support translation both directions with translator notes, contested meanings, and confidence flags.</li>
+            <li><strong>Local language partners:</strong> integrate resources such as Digital Umuganda where licensing, quality, and governance allow.</li>
+            <li><strong>Multimodal evidence:</strong> eventually ingest audio, images of field forms, transcripts, and social feed summaries, but only after consent and provenance checks.</li>
+          </ul>
+          <p class="note">Translation and transcription can introduce errors. Store original evidence, translated text, reviewer identity, and confidence so policy users know what is certain and what remains uncertain.</p>
+        </div>
+      </details>
+    </main>
+    <a id="backTop" href="#top">Back to top</a>
+    <script>
+      function fallbackEquation(tex) {
+        const compact = tex.replace(/\s+/g, " ");
+        const frac = (top, bottom) => `<span class="frac"><span>${top}</span><span>${bottom}</span></span>`;
+        const line = (left, right) => `<div class="eq-line"><span>${left}</span><span class="eq-op">=</span><span>${right}</span></div>`;
+        if (compact.includes("\\Phi_i")) {
+          return `<div class="eq-line"><span class="eq-var">Φ<sub>i</sub></span><span class="eq-op">=</span><span>0.30<span class="eq-var">E<sub>i</sub></span> + 0.30<span class="eq-var">C<sub>i</sub></span> + 0.20<span class="eq-var">τ<sub>i</sub></span> + 0.20<span class="eq-var">κ<sub>i</sub></span></span></div>`;
+        }
+        if (compact.includes("\\frac{dS}{dt}")) {
+          return `<div class="eq-matrix">
+            ${line(frac("dS", "dt"), `-β<sub>m</sub>SM - β<sub>t</sub>ST - ιS`)}
+            ${line(frac("dM", "dt"), `β<sub>m</sub>SM - ρM - μM`)}
+            ${line(frac("dT", "dt"), `β<sub>t</sub>ST + ρM - ηT`)}
+            ${line(frac("dI", "dt"), `ιS + ηT - γI`)}
+            ${line(frac("dR", "dt"), `γI + μM`)}
+          </div>`;
+        }
+        if (compact.includes("\\theta_{t+1}")) {
+          return `<div class="eq-line"><span class="eq-var">θ<sub>t+1</sub></span><span class="eq-op">=</span><span><span class="eq-var">θ<sub>t</sub></span> + λ(<span class="eq-var">y<sub>observed</sub></span> - <span class="eq-var">y<sub>predicted</sub></span>)</span></div>`;
+        }
+        if (compact.includes("prior") && compact.includes("posterior")) {
+          return `<div class="eq-matrix">
+            ${line(`<span class="eq-var">prior</span>`, `Beta(α, β)`)}
+            ${line(`<span class="eq-var">posterior</span>`, `Beta(α + successes, β + failures)`)}
+          </div>`;
+        }
+        if (compact.includes("Q(s,a)")) {
+          return `<div class="eq-line"><span class="eq-var">Q(s,a)</span><span class="eq-op">←</span><span><span class="eq-var">Q(s,a)</span> + α [ r + γ max<sub>a′</sub><span class="eq-var">Q(s′,a′)</span> - <span class="eq-var">Q(s,a)</span> ]</span></div>`;
+        }
+        return `<div class="eq-line">${tex}</div>`;
+      }
+
+      function renderManualMath() {
+        document.querySelectorAll(".math-display").forEach((node) => {
+          if (node.dataset.rendered === "1") return;
+          const tex = node.textContent.trim();
+          if (window.katex) {
+            try {
+              window.katex.render(tex, node, { displayMode: true, throwOnError: false, strict: "ignore" });
+              node.dataset.rendered = "1";
+              return;
+            } catch (error) {
+              node.dataset.rendered = "0";
+            }
+          }
+          node.innerHTML = fallbackEquation(tex);
+          node.classList.add("rendered-fallback");
+          node.dataset.rendered = "1";
+        });
+      }
+      window.addEventListener("load", () => {
+        renderManualMath();
+        if (window.location.hash) {
+          const target = document.querySelector(window.location.hash);
+          if (target && target.tagName.toLowerCase() === "details") target.open = true;
+        }
+      });
+    </script>
+  </body>
+</html>
+"""
+
+LEGACY_MANUAL_HTML_BUSY = r"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NDIM Engine Manual</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <style>
+      :root {
+        --ink:#0b0a08; --body:#625746; --muted:#a99b84; --paper:#fbfaf7;
+        --panel:#f1ede5; --card:#fffdf9; --line:#d3c7b5; --accent:#11100e;
+        --green:#708461; --blue:#315da8; --amber:#b98a3a; --red:#a04d37;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 12% 0%, rgba(179,144,88,.10), transparent 28%), var(--paper);
+        color: var(--ink);
+        font-family: "Myriad Pro", "Segoe UI", Arial, sans-serif;
+        line-height: 1.62;
+      }
+      main { max-width: 1120px; margin: 0 auto; padding: 34px 18px 72px; }
+      header {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--card);
+        padding: clamp(22px, 4vw, 44px);
+        box-shadow: 0 20px 60px rgba(64,47,24,.08);
+      }
+      h1 { margin: 0 0 10px; font-size: clamp(36px, 6vw, 68px); line-height: .98; letter-spacing: -.02em; }
+      h2, h3 { line-height: 1.18; }
+      p, li, td { color: var(--body); font-size: 16px; }
+      a { color: var(--blue); font-weight: 800; }
+      code, pre, .mono { font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace; }
+      .top-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+      .button {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-height: 42px; padding: 10px 16px; border: 1px solid var(--line);
+        border-radius: 999px; background: var(--panel); color: var(--ink); text-decoration: none;
+      }
+      .button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+      .toc {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 10px;
+        margin: 18px 0 22px;
+      }
+      .toc a {
+        border: 1px solid var(--line); border-radius: 16px; background: var(--card);
+        padding: 12px; color: var(--ink); text-decoration: none;
+      }
+      details {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--card);
+        margin: 14px 0;
+        overflow: hidden;
+      }
+      details[open] { box-shadow: 0 14px 40px rgba(64,47,24,.07); }
+      summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 18px 20px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        font-weight: 900;
+        font-size: 21px;
+      }
+      summary::-webkit-details-marker { display: none; }
+      summary .num {
+        display: inline-flex; width: 42px; height: 42px; align-items: center; justify-content: center;
+        border: 1px solid var(--line); border-radius: 14px; background: var(--panel);
+        font: 800 14px "Cascadia Mono", monospace;
+      }
+      .section-body { border-top: 1px solid var(--line); padding: 18px 20px 22px; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .card { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 14px; }
+      .callout { border-left: 4px solid var(--blue); background: var(--panel); border-radius: 14px; padding: 14px 16px; margin: 14px 0; }
+      .warning { border-left-color: var(--red); }
+      .success { border-left-color: var(--green); }
+      table { width: 100%; border-collapse: collapse; margin: 14px 0; background: white; }
+      th, td { border: 1px solid var(--line); padding: 10px; text-align: left; vertical-align: top; }
+      th { background: var(--panel); color: var(--ink); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+      pre {
+        background: #11100e; color: #f8efe1; padding: 14px; border-radius: 14px; overflow-x: auto;
+        white-space: pre-wrap;
+      }
+      .math-display {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: white;
+        padding: 14px 16px;
+        margin: 12px 0;
+        overflow-x: auto;
+      }
+      .math-display .katex-display { margin: 0; text-align: left; overflow-x: auto; overflow-y: hidden; }
+      .step-list { counter-reset: item; padding-left: 0; list-style: none; }
+      .step-list li { counter-increment: item; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 12px 14px; margin: 10px 0; }
+      .step-list li::before { content: counter(item, decimal-leading-zero) " "; font: 800 12px "Cascadia Mono", monospace; color: var(--muted); margin-right: 8px; }
+      .small { color: var(--muted); font-size: 13px; }
+      @media (max-width: 760px) {
+        main { padding: 14px 10px 42px; }
+        header { border-radius: 18px; }
+        .grid { grid-template-columns: 1fr; }
+        summary { font-size: 18px; padding: 14px; }
+        .section-body { padding: 14px; }
+        table, thead, tbody, th, td, tr { display: block; }
+        th { display: none; }
+        td { border-top: 0; }
+        td::before { content: attr(data-label); display: block; font: 800 11px "Cascadia Mono", monospace; color: var(--muted); text-transform: uppercase; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="mono small">NDIM ENGINE MANUAL</p>
+        <h1>Narrative Diffusion and Inoculation Model</h1>
+        <p>NDIM is a local-first research and policy workbench for turning governed narrative evidence into transparent encoding, model simulations, uncertainty updates, intervention tests, and a human-reviewed policy brief.</p>
+        <div class="top-links">
+          <a class="button primary" href="/">Back to tool</a>
+          <a class="button" href="#installation">Installation</a>
+          <a class="button" href="#stage-tutorial">Workflow tutorial</a>
+          <a class="button" href="#stress-test-corpus">Stress-test corpus</a>
+          <a class="button" href="#multimodal-roadmap">Multimodal roadmap</a>
+        </div>
+      </header>
+
+      <nav class="toc" aria-label="Manual sections">
+        <a href="#installation">Install and open the local app</a>
+        <a href="#tool-map">What the tool does</a>
+        <a href="#equations">Scientific equations</a>
+        <a href="#stage-tutorial">Stage-by-stage tutorial</a>
+        <a href="#stress-test-corpus">Stress-test exercises</a>
+        <a href="#interpretation">How to interpret results</a>
+        <a href="#exports">Outputs and exports</a>
+        <a href="#multimodal-roadmap">Speech, translation, and multimodal roadmap</a>
+      </nav>
+
+      <details id="installation" open>
+        <summary><span class="num">01</span>Installation and local use</summary>
+        <div class="section-body">
+          <p>The packaged desktop app is intended to run locally on Windows, Linux, and macOS. The user opens NDIM Engine, the local backend starts on a localhost port, and the browser UI opens without sending private evidence to a public server by default.</p>
+          <ol class="step-list">
+            <li>Install NDIM Engine using the installer or platform bundle supplied by the project maintainer.</li>
+            <li>Open NDIM Engine from the Start menu, application launcher, or desktop shortcut.</li>
+            <li>Wait for the local status screen to show the backend URL, usually <code>http://127.0.0.1:8010/</code> or a nearby port.</li>
+            <li>Use <strong>Open NDIM Engine</strong> to enter the workflow. Use <strong>Open data folder</strong> only when you need logs, local exports, or support files.</li>
+            <li>If the backend fails, use <strong>Export support bundle</strong> and send the ZIP to the maintainer. The bundle should not be published publicly if it contains sensitive evidence.</li>
+          </ol>
+          <div class="callout warning">
+            <strong>Policy caution.</strong>
+            <p>Local-first does not mean automatically private. Consent, visibility, reviewer decisions, and repository sync settings still determine whether a record can leave the local machine.</p>
+          </div>
+        </div>
+      </details>
+
+      <details id="tool-map" open>
+        <summary><span class="num">02</span>What NDIM does</summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="card"><h3>For researchers</h3><p>NDIM preserves provenance, supports manual and LLM-assisted encoding, displays equations, tracks uncertainty, and keeps an audit trail from raw narrative to policy brief.</p></div>
+            <div class="card"><h3>For policy makers</h3><p>NDIM summarizes evidence quality, risks, intervention options, model confidence, regional differences, and required human review in plain language.</p></div>
+            <div class="card"><h3>For novice users</h3><p>Follow the stages from top to bottom. Each stage explains what it needs, what it creates, and why the next stage depends on it.</p></div>
+            <div class="card"><h3>For advanced users</h3><p>Inspect SDMX metadata, hashes, encoder agreement, priors and posteriors, scenario bands, RL rewards, and exportable audit payloads.</p></div>
+          </div>
+          <p>The core story is: collect evidence -> validate evidence -> commit to repository -> encode narratives -> simulate diffusion -> test local agents -> update the digital twin -> update uncertainty -> optimize interventions -> test inoculation narratives -> export a decision brief.</p>
+        </div>
+      </details>
+
+      <details id="equations">
+        <summary><span class="num">03</span>Scientific equations used by the tool</summary>
+        <div class="section-body">
+          <h3>Encoding score</h3>
+          <p>Manual and heuristic encoding convert narrative features into a model-ready signal. In production, LLM-assisted scores should be calibrated against double-coded human validation data.</p>
+          <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
+          <p>Here, <code>E</code> is exposure or salience, <code>C</code> is credibility/local grounding, <code>tau</code> is trust signal, and <code>kappa</code> is barrier or friction signal. The UI should explain the scoring rule before a researcher enters manual scores.</p>
+
+          <h3>Population compartments</h3>
+          <p>The documented NDIM model uses S/M/T/I/R compartments: susceptible, misinformation-exposed, truth-aligned, inoculated, and resistant/adopted.</p>
+          <div class="math-display">\begin{aligned}
+\frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \mu M \\
+\frac{dT}{dt} &= \beta_tST + \rho M - \eta T \\
+\frac{dI}{dt} &= \iota S + \eta T - \gamma I \\
+\frac{dR}{dt} &= \gamma I + \mu M
+\end{aligned}</div>
+          <p>If the deployed backend uses a simpler curve for speed or fallback, the UI labels it as a prototype adoption curve rather than pretending it is the full NDIM system.</p>
+
+          <h3>Digital twin feedback</h3>
+          <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
+          <p>The twin is a feedback-calibrated analytic copy of the intervention system. It receives approved evidence, encoded narratives, model outputs, field observations, posterior values, RL recommendations, and inoculation-lab interventions.</p>
+
+          <h3>Bayesian update</h3>
+          <div class="math-display">\begin{aligned}
+prior &= Beta(\alpha,\beta) \\
+posterior &= Beta(\alpha + successes,\beta + failures)
+\end{aligned}</div>
+          <p>The posterior is not "truth". It is the model's updated uncertainty after evidence and assumptions are made explicit.</p>
+
+          <h3>RL optimizer</h3>
+          <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha \left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
+          <p>The RL reward ranks candidate policy packages. It should shortlist options for human review, not automatically decide policy.</p>
+        </div>
+      </details>
+
+      <details id="stage-tutorial" open>
+        <summary><span class="num">04</span>Workflow tutorial from intake to policy output</summary>
+        <div class="section-body">
+          <h3>Stage 01. Narrative intake</h3>
+          <ol class="step-list">
+            <li>Select the evidence route: structured interview, open story, indigenous knowledge, citizen science, crowdsourced batch, or social media feed.</li>
+            <li>Choose country and administrative units. Rwanda, Kenya, Uganda, Tanzania, and Ghana use different admin labels; the form adapts to the country.</li>
+            <li>Use <strong>Open text or CSV file</strong> only after the route and location make sense. For a single story, open the bonus text file or paste a paragraph. For batch testing, use one CSV at a time.</li>
+            <li>Review consent, visibility, source, period, language, and route-specific metadata before staging.</li>
+            <li>Read <strong>SDMX readiness and record preview</strong> immediately after the narrative body. The stage should show route, place, source, consent, visibility, and whether the record is ready.</li>
+          </ol>
+
+          <h3>Stage 02. SDMX gate and approval</h3>
+          <ol class="step-list">
+            <li>Stage the record only if the readiness panel is complete.</li>
+            <li>Review the approval queue. Use <strong>Approve</strong> when the record is suitable for modelling; use <strong>Reject</strong> when consent, quality, duplication, or injection risk is unacceptable.</li>
+            <li>Click <strong>Commit reviewed records</strong>. Approved records move to the Accepted repository; rejected records move to the Rejected repository.</li>
+            <li>Use <strong>Uncommit</strong> only inside a repository record if it needs to return to review.</li>
+          </ol>
+
+          <h3>Stage 03. Encoding</h3>
+          <p>Encoding turns narratives into variables used by the model. Use manual scoring for transparent human review, AI encoding when a user-supplied LLM key is configured, or hybrid mode when AI suggestions require human confirmation.</p>
+          <table>
+            <thead><tr><th>Variable</th><th>Meaning</th><th>How to score</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Variable">Trust</td><td data-label="Meaning">Confidence in messenger, technology, institution, or local evidence.</td><td data-label="How to score">Higher when the story names trusted people, direct experience, or reliable local proof.</td></tr>
+              <tr><td data-label="Variable">Barrier</td><td data-label="Meaning">Cost, access, safety, habit, repair, fuel, or social friction.</td><td data-label="How to score">Higher when the story makes adoption difficult even if the respondent is interested.</td></tr>
+              <tr><td data-label="Variable">Social influence</td><td data-label="Meaning">Peer, family, leader, group, or media pressure.</td><td data-label="How to score">Higher when decisions are shaped by neighbours, elders, WhatsApp groups, radio, or officials.</td></tr>
+              <tr><td data-label="Variable">Inoculation opportunity</td><td data-label="Meaning">Presence of misinformation, fear, or vulnerable misunderstanding that can be pre-bunked.</td><td data-label="How to score">Higher when a weak claim plus respectful refutation could reduce future harm.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Stage 04. Compartmental model</h3>
+          <p>Run the population model to see the aggregate adoption pathway. Read the axis labels: the x-axis is time horizon in days; the y-axis is projected adoption-aligned population share. This is a scenario estimate, not observed adoption.</p>
+
+          <h3>Stage 05. Agent-based model</h3>
+          <p>The agent model tests household-level variation. It asks whether peer effects, trust, and barriers make the aggregate curve too optimistic or too cautious. A lower ABM curve means local frictions may be slowing diffusion.</p>
+
+          <h3>Stage 06. Digital twin</h3>
+          <p>The digital twin applies field feedback to the model and reruns the scenario. A result such as 95.3% means the model projects that 95.3 of every 100 simulated households are adoption-aligned by the final horizon under the current assumptions. It is not a claim that 95.3% of real households have adopted.</p>
+
+          <h3>Stage 07. Bayesian update</h3>
+          <p>The Bayesian stage updates trust and barrier assumptions. Wide uncertainty or thin evidence should trigger "do not use for policy without further review" caution.</p>
+
+          <h3>Stage 08. RL optimizer</h3>
+          <p>The optimizer tests intervention packages such as trusted messenger, subsidy/friction reduction, peer demonstration, and inoculation messaging. The best reward is a candidate for review, not a command.</p>
+
+          <h3>Stage 09. Regional analysis</h3>
+          <p>Compare regions in isolation or as a group. This helps identify whether one policy should be national, province-specific, district-specific, or community-specific.</p>
+
+          <h3>Stage 10. Knowledge graph</h3>
+          <p>Use the graph to study repeated stories from the same location. Nodes show locations, themes, and signals; larger nodes have more connections. The layout is relational, not a map.</p>
+
+          <h3>Stage 11. Inoculation lab</h3>
+          <p>Generate counter-narratives from approved risks. Apply the narrative vaccine to compare before, during, and after intervention curves in both the ODE and agent-based model.</p>
+
+          <h3>Stage 12. Policy output</h3>
+          <p>Export a human-readable policy brief. It should include confidence level, evidence grade, assumptions, limitations, uncertainty, and required human review. JSON audit export remains available for traceability.</p>
+        </div>
+      </details>
+
+      <details id="stress-test-corpus">
+        <summary><span class="num">05</span>Stress-test corpus and exercises</summary>
+        <div class="section-body">
+          <p>The stress-test corpus is bundled in the repository folder <code>stress_test_corpus/</code>. It contains realistic synthetic Rwanda clean-cooking narratives for testing ingestion, route-specific metadata, approval, encoding, modelling, and policy output. Do not auto-load these records by default; choose one file during the exercise.</p>
+          <table>
+            <thead><tr><th>Evidence route</th><th>File</th><th>How to use it</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Evidence route">Structured interview</td><td data-label="File"><code>ndim_stress_structured_interview_rwanda.csv</code></td><td data-label="How to use it">Select Structured interview, load the CSV, inspect Q1-Q5 responses, then stage and approve a few records.</td></tr>
+              <tr><td data-label="Evidence route">Open story</td><td data-label="File"><code>ndim_stress_open_story_rwanda.csv</code></td><td data-label="How to use it">Select Open story, load the CSV, verify the narrative body, and compare manual vs AI/hybrid encoding.</td></tr>
+              <tr><td data-label="Evidence route">Indigenous knowledge</td><td data-label="File"><code>ndim_stress_indigenous_knowledge_rwanda.csv</code></td><td data-label="How to use it">Check cultural sensitivity, attribution preference, community validation, and whether the story should be used for policy claims.</td></tr>
+              <tr><td data-label="Evidence route">Citizen science</td><td data-label="File"><code>ndim_stress_citizen_science_rwanda.csv</code></td><td data-label="How to use it">Review observation confidence, validation status, place, and time before approving.</td></tr>
+              <tr><td data-label="Evidence route">Crowdsourced batch</td><td data-label="File"><code>ndim_stress_crowdsourced_batch_rwanda.csv</code></td><td data-label="How to use it">Use this to test queue reduction, approve/reject decisions, commit, and repository filtering.</td></tr>
+              <tr><td data-label="Evidence route">Social media feed</td><td data-label="File"><code>ndim_stress_experimental_feed_rwanda.csv</code></td><td data-label="How to use it">Select Social media feeds, tick the platforms represented in the file, and keep it experimental until governance is satisfied.</td></tr>
+              <tr><td data-label="Evidence route">Bonus single story</td><td data-label="File"><code>ndim_stress_bonus_open_story_kamegeri.txt</code></td><td data-label="How to use it">Use this to test single-story manual loading and one-record encoding.</td></tr>
+            </tbody>
+          </table>
+          <h3>Full exercise path</h3>
+          <ol class="step-list">
+            <li>Open the tool, choose one evidence route, and use <strong>Open text or CSV file</strong> to load the matching file from <code>stress_test_corpus/</code>.</li>
+            <li>Confirm country, province, district, sector, source, language, period, consent, and visibility.</li>
+            <li>Read SDMX readiness. If anything is missing, correct it before staging.</li>
+            <li>Stage records, approve or reject them, then commit reviewed records so the queue visibly changes.</li>
+            <li>Open the full repository and confirm accepted and rejected records are stored in the correct place.</li>
+            <li>Encode at least three records using manual, AI/heuristic, and hybrid modes. Compare whether high-barrier and high-trust stories receive different scores.</li>
+            <li>Run compartmental and agent-based models. Read the x-axis and y-axis labels before interpreting the curves.</li>
+            <li>Run the digital twin with a field observation. Compare baseline and feedback-adjusted curves.</li>
+            <li>Run Bayesian update and check whether uncertainty is still too high for policy use.</li>
+            <li>Run RL optimizer and compare the best intervention with regional analysis and knowledge graph themes.</li>
+            <li>Generate inoculation messages, apply the narrative vaccine, and compare before, during, and after curves.</li>
+            <li>Export the policy brief as HTML or print-friendly PDF and review assumptions, limitations, confidence, and required human review.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details id="interpretation">
+        <summary><span class="num">06</span>How to interpret results scientifically</summary>
+        <div class="section-body">
+          <div class="callout">
+            <strong>What percentages mean.</strong>
+            <p>A model endpoint such as 95.3% means the projected adoption-aligned share of the simulated population at the final time horizon. It does not mean that 95.3% of real households have adopted. Use it to compare scenarios, not as a direct monitoring statistic.</p>
+          </div>
+          <table>
+            <thead><tr><th>Output</th><th>Interpretation</th><th>Policy caution</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Output">ODE curve</td><td data-label="Interpretation">Population-level trajectory under the compartment equations.</td><td data-label="Policy caution">May hide local network and household variation.</td></tr>
+              <tr><td data-label="Output">Agent curve</td><td data-label="Interpretation">Local heterogeneity and peer diffusion effects.</td><td data-label="Policy caution">Depends strongly on assumptions about trust, peers, and barriers.</td></tr>
+              <tr><td data-label="Output">Digital twin</td><td data-label="Interpretation">Feedback-adjusted rerun after observed evidence enters the model.</td><td data-label="Policy caution">Only as good as the observation and calibration rule.</td></tr>
+              <tr><td data-label="Output">Posterior</td><td data-label="Interpretation">Updated uncertainty about trust and barriers.</td><td data-label="Policy caution">Sparse evidence should widen caution, not confidence.</td></tr>
+              <tr><td data-label="Output">RL reward</td><td data-label="Interpretation">Relative score for candidate interventions.</td><td data-label="Policy caution">Shortlist for review, not automatic decision.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details id="exports">
+        <summary><span class="num">07</span>Outputs, repository, and exports</summary>
+        <div class="section-body">
+          <p>The primary output should be a human-readable decision brief. It should include the evidence route, accepted records, rejected records, hashes, reviewers, consent, visibility, encoding mode, model assumptions, uncertainty, intervention recommendations, limitations, and human-review sign-off.</p>
+          <p>Use HTML export for reading in a browser. Use print-to-PDF from the HTML brief when direct browser PDF generation is unavailable. JSON remains an audit export for traceability and federation, not the main policy document.</p>
+          <p>For federated repository workflows, local accepted records can be prepared for an SDMX-based push to a master repository such as Google Sheets or another governed store. Before pushing, records should pass approval, consent, visibility, hash sealing, and reviewer validation.</p>
+        </div>
+      </details>
+
+      <details id="multimodal-roadmap">
+        <summary><span class="num">08</span>Multimodal and translation roadmap</summary>
+        <div class="section-body">
+          <p>This section describes a proposed upgrade path, not a claim that every feature is already implemented.</p>
+          <div class="grid">
+            <div class="card"><h3>Speech to text</h3><p>Field users could record interviews or community discussions and transcribe them locally before SDMX validation. Transcription should preserve speaker, language, place, date, consent, and confidence.</p></div>
+            <div class="card"><h3>Text to speech</h3><p>Policy briefs, field templates, and inoculation messages could be read aloud for accessibility, training, and community review.</p></div>
+            <div class="card"><h3>Kinyarwanda-English translation</h3><p>NDIM should support translation in both directions, with translator notes, contested terms, and uncertainty flags. Digital Umuganda or similar language resources could be integrated where licensing and quality allow.</p></div>
+            <div class="card"><h3>Multimodal evidence</h3><p>Future evidence routes could include audio, photos of field forms, radio transcripts, WhatsApp summaries, and community meeting recordings, but all should pass consent, provenance, validation, and injection-risk checks before modelling.</p></div>
+          </div>
+          <div class="callout warning">
+            <strong>Governance requirement.</strong>
+            <p>Translation and speech models can introduce errors. NDIM should store original text/audio references, translation notes, reviewer identity, and confidence so policy users know what was said, what was translated, and what remains uncertain.</p>
+          </div>
+        </div>
+      </details>
+    </main>
+    <script>
+      function renderManualMath() {
+        if (!window.katex) return;
+        document.querySelectorAll(".math-display").forEach((node) => {
+          if (node.dataset.rendered === "1") return;
+          const tex = node.textContent.trim();
+          try {
+            window.katex.render(tex, node, { displayMode: true, throwOnError: false, strict: "ignore" });
+            node.dataset.rendered = "1";
+          } catch (error) {
+            node.dataset.rendered = "0";
+          }
+        });
+      }
+      window.addEventListener("load", renderManualMath);
+      if (window.location.hash) {
+        window.addEventListener("load", () => {
+          const target = document.querySelector(window.location.hash);
+          if (target && target.tagName.toLowerCase() === "details") target.open = true;
+        });
+      }
+    </script>
   </body>
 </html>
 """

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import os
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
@@ -97,13 +97,7 @@ def manual():
 
 @app.get("/stress-test-corpus")
 def stress_test_corpus():
-    if not STRESS_TEST_INSTRUCTIONS_PATH.exists():
-        raise HTTPException(status_code=404, detail="Stress-test corpus instructions not found")
-    return FileResponse(
-        STRESS_TEST_INSTRUCTIONS_PATH,
-        media_type="text/html",
-        headers={"Cache-Control": "no-store, max-age=0", "Pragma": "no-cache"},
-    )
+    return RedirectResponse(url="/manual#stress-test-corpus", status_code=307)
 
 @app.get("/analytics/status")
 def analytics_status():
