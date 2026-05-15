@@ -6,9 +6,10 @@ from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
-from .schemas import EncodingMode, NarrativeRecord, SimulationRequest, SimulationResult, EncodedNarrative
+from .schemas import EncodingMode, NarrativeRecord, SimulationRequest, SimulationResult, EncodedNarrative, InoculationEncoding
 from .ingestion import normalize_text_input, normalize_csv, normalize_pdf
 from .encoding import encode_narrative, llm_provider_status, supported_llm_providers
+from .inoculation import diagnose_inoculation
 from .database import Base, engine, get_db
 from . import models
 from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
@@ -367,6 +368,58 @@ def encode(
     db.commit()
     return encoded
 
+@app.post("/inoculate", response_model=List[InoculationEncoding])
+def inoculate(
+    records: List[NarrativeRecord],
+    provider: str = "openai",
+    x_ndim_llm_key: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Key"),
+    x_ndim_llm_provider: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Provider"),
+    x_ndim_llm_base_url: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Base-URL"),
+    x_ndim_llm_model: Optional[str] = Header(default=None, alias="X-NDIM-LLM-Model"),
+    db: Session = Depends(get_db),
+):
+    selected_provider = x_ndim_llm_provider or provider
+    diagnoses = [
+        diagnose_inoculation(
+            record,
+            provider=selected_provider,
+            api_key=x_ndim_llm_key,
+            base_url=x_ndim_llm_base_url,
+            model=x_ndim_llm_model,
+        )
+        for record in records
+    ]
+    for item in diagnoses:
+        db.add(
+            models.InoculationDiagnosis(
+                narrative_id=item.narrative_id,
+                diagnosis_mode=item.diagnosis_mode,
+                threat_type=item.threat_type,
+                misinformation_mechanism=item.misinformation_mechanism,
+                source_actor=item.source_actor,
+                susceptible_group=item.susceptible_group,
+                trusted_messenger=item.trusted_messenger,
+                scores={
+                    "threat_recognition": item.threat_recognition_score,
+                    "misinformation_risk": item.misinformation_risk_score,
+                    "identity_threat": item.identity_threat_score,
+                    "reactance_risk": item.reactance_risk_score,
+                    "cultural_sensitivity": item.cultural_sensitivity_score,
+                    "refutability": item.refutability_score,
+                    "trusted_messenger_fit": item.trusted_messenger_fit_score,
+                    "narrative_resilience": item.narrative_resilience_score,
+                },
+                intervention_parameters=item.intervention_parameters,
+                evidence_spans=item.evidence_spans,
+                counter_narrative=item.counter_narrative,
+                booster_strategy=item.booster_strategy,
+                booster_needed="yes" if item.booster_needed else "no",
+                confidence=item.confidence,
+            )
+        )
+    db.commit()
+    return diagnoses
+
 @app.post("/simulate", response_model=SimulationResult)
 def simulate(req: SimulationRequest, db: Session = Depends(get_db)):
     trajectory = run_digital_twin(req.model_mode, req.horizon_days, req.parameters)
@@ -417,6 +470,10 @@ def get_narratives(db: Session = Depends(get_db)):
 @app.get("/encodings")
 def get_encodings(db: Session = Depends(get_db)):
     return db.query(models.Encoding).all()
+
+@app.get("/inoculations")
+def get_inoculations(db: Session = Depends(get_db)):
+    return db.query(models.InoculationDiagnosis).all()
 
 @app.get("/simulations")
 def get_simulations(db: Session = Depends(get_db)):

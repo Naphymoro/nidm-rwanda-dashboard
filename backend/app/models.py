@@ -83,6 +83,26 @@ class Encoding(Base):
     confidence = Column(Float)
 
 
+class InoculationDiagnosis(Base):
+    __tablename__ = "inoculation_diagnoses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    narrative_id = Column(String, index=True)
+    diagnosis_mode = Column(String, index=True)
+    threat_type = Column(String, index=True)
+    misinformation_mechanism = Column(String)
+    source_actor = Column(String)
+    susceptible_group = Column(String)
+    trusted_messenger = Column(String)
+    scores = Column(JSON)
+    intervention_parameters = Column(JSON)
+    evidence_spans = Column(JSON)
+    counter_narrative = Column(Text)
+    booster_strategy = Column(Text)
+    booster_needed = Column(String, index=True)
+    confidence = Column(Float)
+
+
 class SimulationRun(Base):
     __tablename__ = "simulations"
 

@@ -2515,6 +2515,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         manualScores: { E: 0.55, C: 0.58, tau: 0.62, kappa: 0.52, B: 0.40, S: 0.50 },
         manualScorecards: {},
         encoded: [],
+        inoculationDiagnoses: [],
         comp: null,
         agents: null,
         digital: null,
@@ -2797,6 +2798,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       }
 
       function policyDecisionBrief() {
+        const inoculation = aggregateInoculationSignal();
+        const diagnosis = dominantInoculationDiagnosis();
         return {
           confidence_level: confidenceLevel(),
           evidence_grade: evidenceGrade(),
@@ -2811,6 +2814,16 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           analytics_status: state.analyticsStatus?.available ? "advanced" : "fallback_or_unavailable",
           analytics_summary: analyticsSummary(),
           uncertainty_summary: finalUncertaintySummary(),
+          inoculation_threat_profile: {
+            top_threat: inoculation.top_threat,
+            misinformation_risk: inoculation.misinformation_risk,
+            reactance_penalty: inoculation.reactance_penalty,
+            cultural_sensitivity: diagnosis?.cultural_sensitivity_score || 0,
+            booster_share: inoculation.booster_share
+          },
+          recommended_counter_narrative: diagnosis?.counter_narrative || state.inoculation?.items?.[0]?.text || "Run inoculation diagnosis and lab before field communication.",
+          trusted_messenger: diagnosis?.trusted_messenger || "local peer demonstrator",
+          booster_plan: diagnosis?.booster_strategy || "Repeat through trusted local messengers after field testing.",
           assumptions: latestModelOutput()?.assumptions || null,
           limitations: [
             "Narratives are not random samples unless the field protocol makes them so.",
@@ -3610,6 +3623,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         buildRecords();
         state.encoded = [];
         state.encodingRuns = {};
+        state.inoculationDiagnoses = [];
         state.manualScorecards = {};
         state.manualIndex = 0;
         if (!state.text.trim() && !questionBlocks().length) {
@@ -3684,6 +3698,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           state.importedRecords = [];
           state.encoded = [];
           state.encodingRuns = {};
+          state.inoculationDiagnoses = [];
           state.manualScorecards = {};
           state.manualIndex = 0;
           state.governance.ledger = [];
@@ -3717,6 +3732,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         } else if (id === "encoding") {
           state.encoded = [];
           state.encodingRuns = {};
+          state.inoculationDiagnoses = [];
           state.manualScorecards = {};
           state.manualIndex = 0;
           state.completed.delete("encoding");
@@ -6047,6 +6063,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 </div>
                 ${renderEncodingTable()}
                 ${renderEncodingComparison()}
+                ${renderInoculationDiagnosisPanel()}
               </div>
             </div>
           </section>
@@ -6283,6 +6300,46 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
               const themes = [...new Set(rows.flatMap((item) => item.themes || []))].slice(0, 5).join(", ") || "general";
               return `<div class="compare-card ${state.encodingMode === mode ? "active" : ""}"><h3>${escapeHtml(mode)} batch average</h3><p>Trust ${trust.toFixed(2)} / Barrier ${barrier.toFixed(2)} / Confidence ${conf.toFixed(2)}</p><p>Themes: ${escapeHtml(themes)}</p></div>`;
             }).join("")}
+          </div>
+        `;
+      }
+
+      function renderInoculationDiagnosisPanel() {
+        const diagnoses = state.inoculationDiagnoses || [];
+        const signal = aggregateInoculationSignal();
+        if (!diagnoses.length) {
+          return `
+            <div class="panel" style="margin-top: 14px;">
+              <h3>Inoculation diagnosis</h3>
+              <p>After encoding, NDIM will diagnose misinformation threat, weak-dose claim, refutational preemption, trusted messenger fit, reactance risk, and booster need. This makes inoculation theory a real model input rather than only a theme label.</p>
+            </div>
+          `;
+        }
+        return `
+          <div class="panel" style="margin-top: 14px;">
+            <h3>Inoculation diagnosis</h3>
+            <p>This layer reads the encoded narratives through inoculation theory. It does not replace adoption encoding; it adds threat diagnosis and intervention parameters that feed the digital twin.</p>
+            <div class="metric-grid" style="margin-top: 12px;">
+              <div class="metric"><span class="mini-label">Top threat</span><strong>${escapeHtml(signal.top_threat.replace(/_/g, " "))}</strong></div>
+              <div class="metric"><span class="mini-label">Misinfo risk</span><strong>${fmtPct(signal.misinformation_risk)}</strong></div>
+              <div class="metric"><span class="mini-label">Narrative vaccine</span><strong>${fmtPct(signal.inoculation_strength)}</strong></div>
+              <div class="metric"><span class="mini-label">Booster need</span><strong>${fmtPct(signal.booster_share)}</strong></div>
+            </div>
+            <div class="template-table" style="margin-top: 12px;">
+              <div class="template-row head"><span>Story</span><span>Threat</span><span>Messenger</span><span>Counter move</span></div>
+              ${diagnoses.slice(0, 6).map((item) => `
+                <div class="template-row">
+                  <span data-label="Story">${escapeHtml(item.narrative_id)}</span>
+                  <span data-label="Threat">${escapeHtml((item.threat_type || "none").replace(/_/g, " "))}<br/><small>risk ${fmtPct(item.misinformation_risk_score)}, reactance ${fmtPct(item.reactance_risk_score)}</small></span>
+                  <span data-label="Messenger">${escapeHtml(item.trusted_messenger || "local peer demonstrator")}</span>
+                  <span data-label="Counter move">${escapeHtml(item.refutational_preemption || item.counter_narrative || "Human review required.")}</span>
+                </div>
+              `).join("")}
+            </div>
+            <div class="guide-note" style="margin-top: 12px;">
+              <strong>Scientific interpretation</strong>
+              <p>High misinformation risk means the story contains a claim or fear that could slow adoption. High reactance means a correction may backfire if it sounds coercive. A strong trusted-messenger fit means the model should prefer local demonstration or peer correction over generic messaging.</p>
+            </div>
           </div>
         `;
       }
@@ -6654,6 +6711,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="field"><label for="inoculationAudience">Audience</label><select id="inoculationAudience"><option value="households">Households</option><option value="community_leaders">Community leaders</option><option value="health_workers">Health workers</option><option value="policy_makers">Policy makers</option></select></div>
                   <div class="field"><label for="inoculationTone">Tone</label><select id="inoculationTone"><option value="clear">Clear and practical</option><option value="warm">Warm and local</option><option value="technical">Technical evidence</option></select></div>
                 </div>
+                ${renderInoculationDiagnosisPanel()}
                 <div class="button-row"><button class="button primary" id="runInoculation" type="button">Generate inoculation narratives</button></div>
               </div>
               <div class="panel">
@@ -6670,6 +6728,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const rows = [
           ["Accepted evidence", approvedRecords().length ? `${approvedRecords().length} committed record(s)` : "waiting"],
           ["Encoded narratives", state.encoded.length ? `${state.encoded.length} encoded story input(s)` : "waiting"],
+          ["Inoculation diagnosis", state.inoculationDiagnoses.length ? `${state.inoculationDiagnoses.length} diagnosed; top threat ${aggregateInoculationSignal().top_threat.replace(/_/g, " ")}` : "waiting"],
           ["Compartmental ODE", state.comp ? "baseline population curve ready" : "waiting"],
           ["Agent-based model", state.agents ? "household curve ready" : "waiting"],
           ["Bayesian posterior", state.bayes ? `trust ${fmtPct(state.bayes.trustMean)}, barrier ${fmtPct(state.bayes.barrierMean)}` : "waiting"],
@@ -6715,6 +6774,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="template-row head"><span>Review item</span><span>Status</span><span>Meaning</span></div>
                   <div class="template-row"><span data-label="Review item">Evidence grade</span><span data-label="Status">${escapeHtml(brief.evidence_grade)}</span><span data-label="Meaning">strength of evidence chain</span></div>
                   <div class="template-row"><span data-label="Review item">Model used</span><span data-label="Status">${escapeHtml(brief.model_type_used)}</span><span data-label="Meaning">backend equation family</span></div>
+                  <div class="template-row"><span data-label="Review item">Inoculation threat</span><span data-label="Status">${escapeHtml((brief.inoculation_threat_profile.top_threat || "not diagnosed").replace(/_/g, " "))}</span><span data-label="Meaning">dominant misinformation or reactance profile</span></div>
+                  <div class="template-row"><span data-label="Review item">Trusted messenger</span><span data-label="Status">${escapeHtml(brief.trusted_messenger)}</span><span data-label="Meaning">recommended human channel for correction</span></div>
                   <div class="template-row"><span data-label="Review item">Validation</span><span data-label="Status">${escapeHtml(brief.validation_status)}</span><span data-label="Meaning">${escapeHtml(brief.validation_summary)}</span></div>
                   <div class="template-row"><span data-label="Review item">Uncertainty</span><span data-label="Status">${escapeHtml(brief.uncertainty_summary)}</span><span data-label="Meaning">scenario confidence band</span></div>
                 </div>
@@ -7038,6 +7099,16 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return { region: risk?.region || state.meta.district || state.meta.country, barrier: risk?.barrier || 0.35, themes };
       }
 
+      function dominantInoculationDiagnosis() {
+        const rows = state.inoculationDiagnoses || [];
+        if (!rows.length) return null;
+        return rows.slice().sort((a, b) => {
+          const ar = Number(a.misinformation_risk_score || 0) + Number(a.reactance_risk_score || 0) + Number(a.threat_recognition_score || 0);
+          const br = Number(b.misinformation_risk_score || 0) + Number(b.reactance_risk_score || 0) + Number(b.threat_recognition_score || 0);
+          return br - ar;
+        })[0];
+      }
+
       function renderCounterCard(item) {
         return `
           <div class="counter-card">
@@ -7050,12 +7121,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       }
 
       function estimateInoculationStrength() {
+        const diagnosis = aggregateInoculationSignal();
         const barrier = avg(state.encoded.map((item) => item.adoption_barrier_score), 0.35);
         const trust = avg(state.encoded.map((item) => item.trust_score), 0.6);
         const confidence = avg(state.encoded.map((item) => item.confidence), 0.5);
         const inoculationThemes = state.encoded.filter((item) => (item.themes || []).some((theme) => /inoculation|safety|trust|social/i.test(theme))).length;
         const themeDensity = state.encoded.length ? inoculationThemes / state.encoded.length : 0.25;
-        return clamp01(0.16 + barrier * 0.18 + trust * 0.16 + confidence * 0.14 + themeDensity * 0.16, 0.32);
+        return clamp01(0.10 + barrier * 0.14 + trust * 0.12 + confidence * 0.10 + themeDensity * 0.12 + diagnosis.inoculation_strength * 0.38 + diagnosis.misinformation_risk * 0.12, 0.32);
       }
 
       function adjustedVaccineTrajectory(base, strength, phase = "during", agent = false) {
@@ -7209,7 +7281,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const feedback = state.digital ? " Digital twin feedback and posterior values were included in the interpretation." : "";
         const regional = state.regional?.rows?.length ? ` Regional analysis produced ${state.regional.rows.length} intervention unit(s).` : "";
         const inoculation = state.inoculation?.items?.length ? ` The inoculation lab generated ${state.inoculation.items.length} counter-narrative drafts for review.` : "";
-        return `Preliminary signal: prioritize trust-led clean-cooking outreach in ${state.meta.district || state.meta.country}. The current run projects a ${adoption} adoption-aligned share by the final simulation horizon. This is a scenario estimate, not an observed programme result. Average encoded trust is ${trust}, and average encoded barrier pressure is ${barrier}.${rl}${feedback}${regional}${inoculation} Human review is required before export, and the brief should state assumptions, evidence grade, uncertainty, and implementation limits.`;
+        const threat = state.inoculationDiagnoses.length ? ` Inoculation diagnosis identifies ${aggregateInoculationSignal().top_threat.replace(/_/g, " ")} as the leading threat profile, with misinformation risk ${fmtPct(aggregateInoculationSignal().misinformation_risk)}.` : "";
+        return `Preliminary signal: prioritize trust-led clean-cooking outreach in ${state.meta.district || state.meta.country}. The current run projects a ${adoption} adoption-aligned share by the final simulation horizon. This is a scenario estimate, not an observed programme result. Average encoded trust is ${trust}, and average encoded barrier pressure is ${barrier}.${threat}${rl}${feedback}${regional}${inoculation} Human review is required before export, and the brief should state assumptions, evidence grade, uncertainty, inoculation threat profile, and implementation limits.`;
       }
 
       function governanceJson() {
@@ -7322,10 +7395,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           llm_provider: state.llmProvider,
           llm_provider_config: publicLlmConfig(),
           manual_scorecards: state.manualScorecards,
+          inoculation_diagnoses: state.inoculationDiagnoses,
+          inoculation_summary: aggregateInoculationSignal(),
           narratives: state.records.length,
           encoded: state.encoded,
           feedback_chain: {
             evidence_to_encoding: state.encoded.length > 0,
+            encoding_to_inoculation_diagnosis: state.inoculationDiagnoses.length > 0,
             ode_and_agent_models: Boolean(state.comp || state.agents),
             digital_twin_to_policy: Boolean(state.digital),
             bayesian_posterior_to_policy: Boolean(state.bayes),
@@ -7386,6 +7462,9 @@ ${policyNarrative()}
 - RL optimizer used in policy: ${state.rl ? `yes, best action: ${state.rl.bestAction}` : "not yet"}
 - Regional analysis included: ${state.regional ? "yes" : "not yet"}
 - Knowledge graph included: ${state.graph ? "yes" : "not yet"}
+- Inoculation diagnosis included: ${state.inoculationDiagnoses.length ? `yes, top threat: ${aggregateInoculationSignal().top_threat}` : "not yet"}
+- Trusted messenger: ${brief.trusted_messenger}
+- Booster plan: ${brief.booster_plan}
 - Inoculation drafts included: ${state.inoculation ? "yes" : "not yet"}
 - Inoculation vaccine applied to twin: ${state.inoculationApplied ? `yes, strength ${fmtPct(state.inoculation?.interventionStrength)}` : "not yet"}
 
@@ -7414,6 +7493,9 @@ This brief is generated from the JSON audit payload \`ndim-policy-output-v1\`. T
           ["Final adoption", fmtPct(summary.final_adoption)],
           ["Average trust", fmtPct(summary.average_trust)],
           ["Average barrier", fmtPct(summary.average_barrier)],
+          ["Inoculation threat profile", `${brief.inoculation_threat_profile.top_threat} / misinformation risk ${fmtPct(brief.inoculation_threat_profile.misinformation_risk)}`],
+          ["Trusted messenger", brief.trusted_messenger],
+          ["Booster plan", brief.booster_plan],
           ["Digital twin used", state.digital ? "yes" : "not yet"],
           ["Bayesian posterior used", state.bayes ? "yes" : "not yet"],
           ["RL action", state.rl?.bestAction || "not yet"],
@@ -7675,6 +7757,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         state.importedRecords = [];
         state.encoded = [];
         state.encodingRuns = {};
+        state.inoculationDiagnoses = [];
         state.manualScorecards = {};
         state.manualIndex = 0;
         state.governance.ledger = [];
@@ -7837,6 +7920,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
               state.text = state.records.map((record) => record.text).join("\n\n");
               state.encoded = [];
               state.encodingRuns = {};
+              state.inoculationDiagnoses = [];
               state.manualScorecards = {};
               state.manualIndex = 0;
               $("narrativeText").value = state.text;
@@ -8044,6 +8128,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           $("resetEncoding").addEventListener("click", () => {
             state.encoded = [];
             state.encodingRuns = {};
+            state.inoculationDiagnoses = [];
             state.manualScorecards = {};
             state.manualIndex = 0;
             state.completed.delete("encoding");
@@ -8100,12 +8185,51 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         }
       }
 
+      function inoculationDiagnosisById() {
+        return Object.fromEntries((state.inoculationDiagnoses || []).map((item) => [item.narrative_id, item]));
+      }
+
+      function aggregateInoculationSignal() {
+        const rows = state.inoculationDiagnoses || [];
+        if (!rows.length) {
+          return {
+            inoculation_strength: 0,
+            misinformation_risk: 0,
+            reactance_penalty: 0,
+            trusted_messenger_fit: 0,
+            misinformation_decay: 0,
+            resistance_growth: 0,
+            trust_shift: 0,
+            barrier_shift: 0,
+            booster_share: 0,
+            top_threat: "not diagnosed"
+          };
+        }
+        const params = (key, fallback = 0) => avg(rows.map((item) => item.intervention_parameters?.[key]), fallback);
+        const threats = topItems(rows.map((item) => item.threat_type || "none_detected"), 1);
+        return {
+          inoculation_strength: params("inoculation_strength"),
+          misinformation_risk: params("misinformation_risk"),
+          reactance_penalty: params("reactance_penalty"),
+          trusted_messenger_fit: params("trusted_messenger_fit"),
+          misinformation_decay: params("misinformation_decay"),
+          resistance_growth: params("resistance_growth"),
+          trust_shift: params("trust_shift"),
+          barrier_shift: params("barrier_shift"),
+          booster_share: rows.filter((item) => item.booster_needed).length / rows.length,
+          threat_recognition: avg(rows.map((item) => item.threat_recognition_score), 0),
+          narrative_resilience: avg(rows.map((item) => item.narrative_resilience_score), 0),
+          top_threat: threats[0] || "none_detected"
+        };
+      }
+
       function modelParams(extra = {}) {
         const trustBase = avg(state.encoded.map((item) => item.trust_score), 0.6);
         const barrierBase = avg(state.encoded.map((item) => item.adoption_barrier_score), 0.35);
+        const inoculationSignal = aggregateInoculationSignal();
         const vaccineStrength = state.inoculationApplied ? (state.inoculation?.interventionStrength || 0) : 0;
-        const trust = clamp01((state.bayes?.trustMean ?? (trustBase + (state.digital ? state.feedback.trustDelta : 0))) + vaccineStrength * 0.08, 0.6);
-        const barrier = clamp01((state.bayes?.barrierMean ?? (barrierBase + (state.digital ? state.feedback.barrierDelta : 0))) - vaccineStrength * 0.07, 0.35);
+        const trust = clamp01((state.bayes?.trustMean ?? (trustBase + (state.digital ? state.feedback.trustDelta : 0))) + vaccineStrength * 0.08 + inoculationSignal.trust_shift * 0.25, 0.6);
+        const barrier = clamp01((state.bayes?.barrierMean ?? (barrierBase + (state.digital ? state.feedback.barrierDelta : 0))) - vaccineStrength * 0.07 + inoculationSignal.barrier_shift * 0.25, 0.35);
         const confidence = avg(state.encoded.map((item) => item.confidence), 0.5);
         const rlBonus = state.rl?.interventionBonus || 0;
         return {
@@ -8114,6 +8238,12 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           narrative_influence: Math.min(0.9, 0.2 + 0.35 * confidence + vaccineStrength * 0.12),
           intervention_strength: Math.min(0.9, 0.1 + 0.2 * trust + rlBonus + vaccineStrength * 0.28),
           inoculation_strength: vaccineStrength,
+          recommended_inoculation_strength: inoculationSignal.inoculation_strength,
+          misinformation_risk: inoculationSignal.misinformation_risk,
+          misinformation_decay: state.inoculationApplied ? Math.max(inoculationSignal.misinformation_decay, vaccineStrength * 0.60) : inoculationSignal.misinformation_decay * 0.25,
+          resistance_growth: state.inoculationApplied ? Math.max(inoculationSignal.resistance_growth, vaccineStrength * 0.55) : inoculationSignal.resistance_growth * 0.20,
+          reactance_penalty: inoculationSignal.reactance_penalty,
+          trusted_messenger_fit: inoculationSignal.trusted_messenger_fit,
           ...extra
         };
       }
@@ -8131,12 +8261,67 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         return approved;
       }
 
+      async function runInoculationDiagnosis(records = approvedRecords()) {
+        if (!records.length) return [];
+        trace("api", "Calling inoculation diagnosis", `POST /inoculate with ${records.length} approved record(s).`);
+        try {
+          const response = await fetch(`/inoculate?provider=${encodeURIComponent(state.llmProvider)}`, {
+            method: "POST",
+            headers: llmRequestHeaders(),
+            body: JSON.stringify(records)
+          });
+          if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+          state.inoculationDiagnoses = await response.json();
+          const signal = aggregateInoculationSignal();
+          trace("inoculation", "Inoculation diagnosis complete", `Top threat ${signal.top_threat}; misinformation risk ${fmtPct(signal.misinformation_risk)}; recommended vaccine strength ${fmtPct(signal.inoculation_strength)}.`);
+          return state.inoculationDiagnoses;
+        } catch (error) {
+          trace("error", "Inoculation diagnosis failed", error.message || "Unknown error");
+          state.inoculationDiagnoses = records.map((record) => ({
+            narrative_id: record.narrative_id,
+            diagnosis_mode: "browser_fallback",
+            narrative_type: "adoption_context",
+            threat_type: "requires_review",
+            misinformation_mechanism: "requires_review",
+            trusted_messenger: "local peer demonstrator",
+            misinformation_risk_score: 0.35,
+            reactance_risk_score: 0.25,
+            threat_recognition_score: 0.35,
+            identity_threat_score: 0.20,
+            cultural_sensitivity_score: record.metadata?.provenance?.evidence_mode === "indigenous_knowledge" ? 0.65 : 0.25,
+            refutability_score: 0.45,
+            trusted_messenger_fit_score: 0.45,
+            weak_dose_claim: "A local clean-cooking concern needs review before it becomes a misinformation risk.",
+            refutational_preemption: "Ask a trusted local reviewer to compare the claim with demonstration evidence, cost data, and repair support.",
+            counter_narrative: "Use local demonstration and respectful correction before repeating uncertain claims.",
+            booster_strategy: "Repeat through a local peer, health worker, or community leader after initial exposure.",
+            booster_needed: true,
+            narrative_resilience_score: 0.40,
+            confidence: 0.35,
+            evidence_spans: { uncertainty: "Backend inoculation endpoint unavailable; browser fallback used." },
+            intervention_parameters: {
+              inoculation_strength: 0.32,
+              misinformation_decay: 0.18,
+              resistance_growth: 0.18,
+              trust_shift: 0.05,
+              barrier_shift: -0.04,
+              reactance_penalty: 0.14,
+              trusted_messenger_fit: 0.45,
+              misinformation_risk: 0.35
+            },
+            model_notes: "Browser fallback; use backend or LLM diagnosis before policy use."
+          }));
+          return state.inoculationDiagnoses;
+        }
+      }
+
       async function runEncoding() {
         const approved = await requireApprovedRecords();
         if (!approved.length) return;
         if (state.encodingMode === "manual") {
           state.encoded = approved.map((record) => saveManualScorecard(record, true));
           state.encodingRuns.manual = state.encoded;
+          await runInoculationDiagnosis(approved);
           state.completed.add("encoding");
           setStatus("complete");
           trace("manual", "Manual batch encoding complete", `${state.encoded.length} narrative scorecard(s) saved story by story. Each score keeps encoder, timestamp, Phi, and justifications.`);
@@ -8156,6 +8341,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           if (!response.ok) throw new Error(`Backend returned ${response.status}`);
           state.encoded = await response.json();
           state.encodingRuns[state.encodingMode] = state.encoded;
+          await runInoculationDiagnosis(approved);
           state.completed.add("encoding");
           setStatus("complete");
           trace("result", "Encoding complete", `Returned ${state.encoded.length} encoded narrative(s).`);
@@ -8175,6 +8361,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         if (!record) return;
         if (state.encodingMode === "manual") {
           const encoded = saveManualScorecard(record, true);
+          await runInoculationDiagnosis(approved);
           state.completed.add("encoding");
           state.manualIndex = nextUnencodedIndex(approved, state.manualIndex + 1);
           setStatus("complete");
@@ -8195,6 +8382,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           if (!response.ok) throw new Error(`Backend returned ${response.status}`);
           const [encoded] = await response.json();
           upsertEncoded(state.encodingMode, encoded);
+          await runInoculationDiagnosis(approved);
           state.completed.add("encoding");
           state.manualIndex = nextUnencodedIndex(approved, state.manualIndex + 1);
           setStatus("complete");
@@ -8237,6 +8425,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         }
         state.encodingMode = originalMode;
         state.encoded = state.encodingRuns[originalMode] || state.encodingRuns.hybrid || [];
+        await runInoculationDiagnosis(approved);
         state.completed.add("encoding");
         setStatus("complete");
         trace("result", "Encoding comparison complete", "Manual, AI, and hybrid runs are now visible as comparison blocks.");
@@ -8528,35 +8717,41 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         const audience = $("inoculationAudience")?.value || "households";
         const tone = $("inoculationTone")?.value || "clear";
         const signal = dominantBarrier();
+        const diagnosis = dominantInoculationDiagnosis();
         const region = signal.region.split(" / ").slice(-1)[0];
         const themes = signal.themes.length ? signal.themes.join(", ") : "cost, trust, fuel access";
-        const messenger = audience === "health_workers" ? "a local health worker" : audience === "community_leaders" ? "a community leader" : audience === "policy_makers" ? "a district policy team" : "a neighbour who has already tried the stove";
+        const messenger = diagnosis?.trusted_messenger || (audience === "health_workers" ? "a local health worker" : audience === "community_leaders" ? "a community leader" : audience === "policy_makers" ? "a district policy team" : "a neighbour who has already tried the stove");
         const interventionStrength = estimateInoculationStrength();
+        const weakDose = diagnosis?.weak_dose_claim || "Some messages will claim clean cooking is only for wealthy families or that fuel cannot be found.";
+        const refutation = diagnosis?.refutational_preemption || "Before accepting that claim, compare it with local households already cooking with less smoke, verified costs, and available support.";
+        const counterMessage = diagnosis?.counter_narrative || "Do not decide from a rumour alone. Visit a local demonstration, ask about fuel and repair support, and compare smoke exposure in a real kitchen.";
+        const booster = diagnosis?.booster_strategy || "Repeat the correction through trusted local messengers after the first demonstration.";
         state.inoculation = {
           audience,
           tone,
           provider: state.llmProvider,
           interventionStrength,
+          diagnosis,
           items: [
             {
               type: "pre-bunk",
               audience,
               title: `Before the rumour spreads in ${region}`,
-              text: `Some messages will claim clean cooking is only for wealthy families or that fuel cannot be found. Before accepting that claim, ask who benefits from the doubt and compare it with local households already cooking with less smoke. ${messenger} can show the real costs, fuel options, and health evidence.`,
-              components: ["warning", "weakened claim", "trusted messenger", themes]
+              text: `${weakDose} ${refutation} ${messenger} can show the practical evidence in context.`,
+              components: ["warning", "weak-dose claim", "trusted messenger", themes]
             },
             {
               type: "refutation",
               audience,
-              title: "Cost concern with practical correction",
-              text: `It is reasonable to worry about first purchase cost. The misleading version says cost makes adoption impossible. The evidence-based correction is to pair demonstrations with financing, maintenance guidance, and peer comparison of charcoal, fuel, and time costs.`,
-              components: ["refutation", "efficacy", "barrier reduction", `provider: ${state.llmProvider}`]
+              title: "Refutational preemption",
+              text: `${refutation} The correction should be specific, respectful, and paired with a practical next step rather than a generic denial.`,
+              components: ["refutation", "efficacy", diagnosis?.threat_type || "barrier reduction", `provider: ${state.llmProvider}`]
             },
             {
               type: "counter-feed",
               audience,
               title: "Short social counter-message",
-              text: `Do not decide from a rumour alone. Visit a local demonstration, ask about fuel and repair support, and compare smoke exposure in a real kitchen. Clean cooking is a health and household-budget decision, not a status symbol.`,
+              text: `${counterMessage} ${booster}`,
               components: ["short feed", "call to action", "social proof", tone]
             }
           ],
@@ -8569,7 +8764,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         render();
       }
 
-      function applyInoculationVaccine() {
+      async function applyInoculationVaccine() {
         if (!state.inoculation?.items?.length) {
           toast("Generate inoculation narratives first");
           trace("blocked", "No inoculation vaccine available", "Run the inoculation lab before applying the narrative vaccine to the digital twin.");
@@ -8586,15 +8781,41 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         state.inoculationApplied = true;
         state.feedback.trustDelta = Math.min(1, (state.feedback.trustDelta || 0) + strength * 0.08);
         state.feedback.barrierDelta = Math.max(-1, (state.feedback.barrierDelta || 0) - strength * 0.07);
-        const digitalTrajectory = vaccine.compartmental?.after || vaccine.agent_based?.after;
-        if (digitalTrajectory?.length) {
-          state.digital = {
-            model_mode: "hybrid_inoculation_vaccine",
-            country: state.meta.country,
-            admin_unit: state.meta.district,
-            parameters: modelParams({ inoculation_strength: strength }),
-            trajectory: digitalTrajectory
-          };
+        try {
+          const response = await fetch("/simulate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model_mode: "hybrid",
+              country: state.meta.country,
+              admin_unit: state.meta.district,
+              horizon_days: 180,
+              parameters: modelParams({
+                inoculation_strength: strength,
+                scenario_type: "inoculation_vaccine_digital_twin"
+              })
+            })
+          });
+          if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+          state.digital = await response.json();
+          state.digital.model_mode = "hybrid_inoculation_vaccine";
+          state.completed.add("digital");
+        } catch (error) {
+          const digitalTrajectory = vaccine.compartmental?.after || vaccine.agent_based?.after;
+          if (digitalTrajectory?.length) {
+            state.digital = {
+              model_mode: "hybrid_inoculation_vaccine",
+              country: state.meta.country,
+              admin_unit: state.meta.district,
+              assumptions: { model_type: "Local fallback vaccine trajectory", error: error.message || "simulate failed" },
+              parameters: modelParams({ inoculation_strength: strength }),
+              trajectory: digitalTrajectory
+            };
+            state.completed.add("digital");
+          }
+          trace("error", "Backend vaccine simulation fallback", error.message || "Unknown error");
+        }
+        if (state.digital?.trajectory?.length) {
           state.completed.add("digital");
         }
         trace("inoculation", "Narrative vaccine applied", `Digital twin now includes inoculation strength ${fmtPct(strength)}. Trust shift and barrier shift were updated for downstream Bayesian/RL/policy stages.`);
@@ -8623,6 +8844,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
             state.policy.summary.final_adoption = state.digital.trajectory.at(-1).adoption;
           }
           state.encoded = state.policy.encoded || state.encoded;
+          state.inoculationDiagnoses = state.policy.inoculation_diagnoses || state.inoculationDiagnoses;
           state.completed.add("policy");
           await appendLedger("policy_output", "Policy JSON generated from approved evidence and current model outputs", state.governance.lastDigest);
           await syncLedgerToBackend("policy output generated");
@@ -9353,13 +9575,14 @@ MANUAL_HTML = r"""<!doctype html>
             <li><strong>SDMX gate:</strong> check that the record has enough structure to become a governed observation.</li>
             <li><strong>Repository:</strong> approve or reject records, commit reviewed records, and inspect accepted/rejected evidence in the standalone repository tab.</li>
             <li><strong>Encoding:</strong> score narratives manually, with an LLM, or through hybrid review.</li>
-            <li><strong>Compartmental model:</strong> run the population-level S/M/T/I/R diffusion model or labelled fallback curve.</li>
+            <li><strong>Inoculation diagnosis:</strong> diagnose threat type, misinformation mechanism, weak-dose claim, refutational preemption, reactance risk, trusted messenger fit, booster need, and narrative resilience.</li>
+            <li><strong>Compartmental model:</strong> run the population-level S/M/T/I/R diffusion model or labelled fallback curve using adoption encoding plus inoculation-risk parameters.</li>
             <li><strong>Agent-based model:</strong> test household heterogeneity, peer influence, trust, and local barriers.</li>
             <li><strong>Digital twin:</strong> feed observed field information back into the virtual model and rerun scenarios.</li>
             <li><strong>Bayesian update:</strong> move from priors to posteriors for trust and barrier assumptions.</li>
             <li><strong>RL optimizer:</strong> compare candidate intervention packages by reward, cost, and risk.</li>
             <li><strong>Regional analysis and knowledge graph:</strong> identify place-specific patterns and repeated themes.</li>
-            <li><strong>Inoculation lab:</strong> generate and test counter-narratives as narrative vaccines.</li>
+            <li><strong>Inoculation lab:</strong> generate and test counter-narratives as narrative vaccines, then inject them into the digital twin.</li>
             <li><strong>Policy output:</strong> export a human-readable brief with assumptions, limitations, uncertainty, and required review.</li>
           </ol>
         </div>
@@ -9394,6 +9617,21 @@ MANUAL_HTML = r"""<!doctype html>
           <h3>Digital twin feedback</h3>
           <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
           <p>The current twin is a prototype feedback loop. It reruns the hybrid model after approved evidence, encoded narratives, and field observations adjust trust, barriers, and intervention parameters.</p>
+
+          <h3>Inoculation diagnosis</h3>
+          <p>The upgrade adds a separate diagnosis layer after adoption encoding. The diagnosis estimates misinformation risk, reactance risk, messenger fit, and intervention strength before the inoculation lab drafts any counter-narrative.</p>
+          <div class="math-display">V_i = 0.20T_i + 0.20M_i + 0.18R_i + 0.14G_i - 0.08X_i</div>
+          <table>
+            <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Symbol">V_i</td><td data-label="Meaning">Recommended narrative vaccine strength for story i.</td></tr>
+              <tr><td data-label="Symbol">T_i</td><td data-label="Meaning">Threat recognition score.</td></tr>
+              <tr><td data-label="Symbol">M_i</td><td data-label="Meaning">Misinformation risk score.</td></tr>
+              <tr><td data-label="Symbol">R_i</td><td data-label="Meaning">Refutability score.</td></tr>
+              <tr><td data-label="Symbol">G_i</td><td data-label="Meaning">Trusted messenger fit score.</td></tr>
+              <tr><td data-label="Symbol">X_i</td><td data-label="Meaning">Reactance risk penalty.</td></tr>
+            </tbody>
+          </table>
 
           <h3>Bayesian update</h3>
           <div class="math-display">\begin{aligned}
@@ -9461,6 +9699,7 @@ posterior &= Beta(\alpha + successes,\beta + failures)
               <tr><td data-label="Output">ODE curve</td><td data-label="Meaning">Population-level diffusion pathway.</td><td data-label="Caution">Can hide local household variation.</td></tr>
               <tr><td data-label="Output">Agent model</td><td data-label="Meaning">Household and peer-effect pathway.</td><td data-label="Caution">Depends on network assumptions.</td></tr>
               <tr><td data-label="Output">Digital twin</td><td data-label="Meaning">Feedback-adjusted scenario rerun.</td><td data-label="Caution">Only as good as the observed feedback and calibration rule.</td></tr>
+              <tr><td data-label="Output">Inoculation diagnosis</td><td data-label="Meaning">Threat profile, weak-dose claim, refutational move, trusted messenger, and booster plan.</td><td data-label="Caution">Must be reviewed for cultural sensitivity and possible reactance before field use.</td></tr>
               <tr><td data-label="Output">Posterior</td><td data-label="Meaning">Updated uncertainty about trust and barriers.</td><td data-label="Caution">Sparse evidence should widen caution.</td></tr>
               <tr><td data-label="Output">RL reward</td><td data-label="Meaning">Relative intervention score.</td><td data-label="Caution">Shortlist for review, not an automatic decision.</td></tr>
             </tbody>
