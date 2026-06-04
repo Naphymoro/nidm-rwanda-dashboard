@@ -1,0 +1,109 @@
+name: Deploy NDIM Web to Cloud Run
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - "docs/**"
+      - "stress_test_corpus/**"
+      - "VERSION"
+      - ".github/workflows/cloud-run-deploy.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME || 'ndim-engine-web' }}
+  REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY || 'ndim-engine' }}
+  CLOUD_RUN_CPU: ${{ vars.CLOUD_RUN_CPU || '1' }}
+  CLOUD_RUN_MEMORY: ${{ vars.CLOUD_RUN_MEMORY || '2Gi' }}
+  CLOUD_RUN_CONCURRENCY: ${{ vars.CLOUD_RUN_CONCURRENCY || '20' }}
+  CLOUD_RUN_MAX_INSTANCES: ${{ vars.CLOUD_RUN_MAX_INSTANCES || '2' }}
+  CLOUD_RUN_TIMEOUT: ${{ vars.CLOUD_RUN_TIMEOUT || '900' }}
+  NDIM_MAX_UPLOAD_MB: ${{ vars.NDIM_MAX_UPLOAD_MB || '20' }}
+
+jobs:
+  deploy:
+    name: Build and deploy lean Cloud Run service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate required configuration
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: |
+          test -n "$PROJECT_ID" || { echo "::error::Set repository variable GCP_PROJECT_ID"; exit 1; }
+          test -n "$DATABASE_URL" || { echo "::error::Set repository secret DATABASE_URL"; exit 1; }
+          test -n "$WIF_PROVIDER" || { echo "::error::Set repository secret GCP_WORKLOAD_IDENTITY_PROVIDER"; exit 1; }
+          test -n "$GCP_SERVICE_ACCOUNT" || { echo "::error::Set repository secret GCP_SERVICE_ACCOUNT"; exit 1; }
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Artifact Registry
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          gcloud artifacts repositories describe "$ARTIFACT_REPOSITORY" \
+            --project "$PROJECT_ID" \
+            --location "$REGION" >/dev/null 2>&1 || \
+          gcloud artifacts repositories create "$ARTIFACT_REPOSITORY" \
+            --project "$PROJECT_ID" \
+            --location "$REGION" \
+            --repository-format docker \
+            --description "NDIM Engine container images"
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+
+      - name: Build and push container
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/$SERVICE_NAME:$GITHUB_SHA"
+          docker build -f backend/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          gcloud run deploy "$SERVICE_NAME" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --platform managed \
+            --image "$IMAGE" \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances "$CLOUD_RUN_MAX_INSTANCES" \
+            --concurrency "$CLOUD_RUN_CONCURRENCY" \
+            --memory "$CLOUD_RUN_MEMORY" \
+            --cpu "$CLOUD_RUN_CPU" \
+            --timeout "$CLOUD_RUN_TIMEOUT" \
+            --set-env-vars "DATABASE_URL=$DATABASE_URL,NDIM_DEPLOYMENT_MODE=cloud,NDIM_REQUIRE_DATABASE=1,NDIM_MAX_UPLOAD_MB=$NDIM_MAX_UPLOAD_MB,NDIM_VERSION=$(cat VERSION)"
+
+      - name: Show deployed URL
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          gcloud run services describe "$SERVICE_NAME" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --format "value(status.url)"

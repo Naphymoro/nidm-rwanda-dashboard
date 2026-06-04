@@ -1,0 +1,18 @@
+ClimateTales Rwanda bonus manual story
+
+Evidence route: open_story
+Country: Rwanda
+Province: Southern Province
+District: Nyamagabe
+Sector: Kamegeri
+Source type: field_note
+Source name: synthetic-manual-story
+Period: 2026
+Consent: research_use
+Visibility: project_team
+
+In Kamegeri, a savings-group member explained that clean cooking is not rejected because people dislike technology. The problem is that a family meal is a test of care. If beans are hard, if cassava leaves taste wrong, or if a child says the food smells different, the new device is blamed even when the real issue is training or power timing.
+
+She had seen an electric pressure cooker at a demonstration and liked that it reduced smoke and freed time for evening work. But her neighbour warned that electricity could become expensive and that repairs would be impossible after the project staff left. The respondent said she would trust the change if a local woman who cooks the same food demonstrated it twice, if a technician explained what breaks and what does not, and if the savings group could test one device before asking each household to buy.
+
+This story should produce a mixed adoption stance, moderate-to-high barrier strength, moderate trust, clear inoculation opportunity, and strong local grounding. It is designed for manual stress testing, not as real field evidence.

@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NDIM Engine Web View Demo</title>
+  <style>
+    :root {
+      --ink: #11100e;
+      --body: #625643;
+      --muted: #a79a83;
+      --paper: #fbfaf7;
+      --panel: #fffefb;
+      --soft: #f1ede5;
+      --line: #d8cdbb;
+      --line-strong: #11100e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 20% 8%, rgba(216,205,187,.42), transparent 34%),
+        linear-gradient(180deg, #fbfaf7, #f7f2ea);
+      color: var(--ink);
+      font-family: "Myriad Pro", "Segoe UI", Arial, sans-serif;
+      line-height: 1.55;
+    }
+    main { max-width: 1320px; margin: 0 auto; padding: 24px 18px 56px; }
+    h1 { font-size: clamp(34px, 5vw, 70px); line-height: .95; margin: 0 0 10px; letter-spacing: -.02em; }
+    h2, h3, p { margin-top: 0; }
+    p { color: var(--body); font-size: 18px; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+    .kicker {
+      color: var(--muted);
+      font: 800 12px Consolas, monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    a.button, button {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: var(--ink);
+      text-decoration: none;
+      font: 800 14px "Myriad Pro", "Segoe UI", Arial, sans-serif;
+      background: var(--soft);
+      cursor: pointer;
+    }
+    a.primary, button.primary { background: var(--ink); color: white; border-color: var(--ink); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .webview-shell {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--panel);
+      box-shadow: 0 26px 80px rgba(17, 16, 14, .13);
+    }
+    .browser-bar {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.74);
+    }
+    .traffic { display: flex; gap: 7px; }
+    .traffic span { width: 12px; height: 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--soft); }
+    .address {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 14px;
+      color: var(--body);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font: 700 13px Consolas, monospace;
+      background: var(--paper);
+    }
+    .stage-chip {
+      font: 900 12px Consolas, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--soft);
+      white-space: nowrap;
+    }
+    .viewport {
+      position: relative;
+      background: #11100e;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+    }
+    .viewport img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #fbfaf7;
+    }
+    .caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 18px;
+      background: rgba(17,16,14,.88);
+      color: white;
+      padding: 16px;
+      backdrop-filter: blur(12px);
+    }
+    .caption h2 { margin: 0 0 6px; font-size: clamp(22px, 3vw, 36px); line-height: 1.05; }
+    .caption p { margin: 0; color: #eee6da; max-width: 980px; }
+    .controls {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+    }
+    .progress {
+      height: 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--soft);
+    }
+    .progress div { height: 100%; width: 0; background: var(--ink); transition: width .2s ease; }
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .stage-button {
+      justify-content: flex-start;
+      border-radius: 14px;
+      min-height: 58px;
+      padding: 10px;
+      background: var(--panel);
+      color: var(--body);
+      text-align: left;
+      font-weight: 800;
+    }
+    .stage-button.active {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+    .stage-button small {
+      display: block;
+      color: inherit;
+      opacity: .74;
+      font: 800 10px Consolas, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .fallback {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: var(--panel);
+    }
+    @media (max-width: 760px) {
+      .topbar, .controls { grid-template-columns: 1fr; display: grid; }
+      .actions { justify-content: flex-start; }
+      .browser-bar { grid-template-columns: 1fr; }
+      .traffic { display: none; }
+      .caption { position: static; border-radius: 0; }
+      .viewport { aspect-ratio: auto; }
+      .viewport img { height: auto; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <div>
+      <div class="kicker">Web-view walkthrough</div>
+      <h1>NDIM Engine Demo</h1>
+      <p>This is a web-view demo player built from actual NDIM Engine screens. Use the controls to walk testers through the alpha workflow from workspace setup to policy output.</p>
+    </div>
+    <div class="actions">
+      <a class="button primary" href="/">Back to NDIM Engine</a>
+      <a class="button" href="/manual">Open manual</a>
+      <a class="button" href="/demo-video/ndim_engine_stage_demo.gif" download>Download GIF fallback</a>
+    </div>
+  </div>
+
+  <section class="webview-shell" aria-label="NDIM web-view demo player">
+    <div class="browser-bar">
+      <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="address" id="address">http://127.0.0.1:8010/</div>
+      <div class="stage-chip" id="stageChip">Stage 00</div>
+    </div>
+    <div class="viewport">
+      <img id="stageImage" src="/demo-video/slides/00_00_workspace.png" alt="NDIM Engine demo stage" />
+      <div class="caption">
+        <h2 id="stageTitle">Start with a workspace</h2>
+        <p id="stageCaption">Choose, create, duplicate, or import a project container before any analysis begins.</p>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="prevStage" type="button">Previous</button>
+      <button class="primary" id="playPause" type="button">Play</button>
+      <div class="progress" aria-label="Demo progress"><div id="progressFill"></div></div>
+      <button id="nextStage" type="button">Next</button>
+    </div>
+  </section>
+
+  <div class="stage-grid" id="stageGrid" aria-label="Jump to demo stage"></div>
+
+  <section class="fallback">
+    <h2>Fallback animated file</h2>
+    <p>If a tester just needs one downloadable asset, use the GIF fallback. The web-view player above is preferred because it is easier to pause, explain, and inspect stage by stage.</p>
+    <a class="button" href="/demo-video/ndim_engine_stage_demo.gif">Open GIF fallback</a>
+  </section>
+</main>
+
+<script>
+  const stages = [
+    { file: "00_00_workspace.png", title: "Start with a workspace", caption: "Choose, create, duplicate, or import a project container before any analysis begins.", url: "/" },
+    { file: "01_01_intake.png", title: "Narrative intake", caption: "Load field stories, interviews, focus groups, indigenous knowledge, citizen reports, or social feeds with SDMX context.", url: "/?stage=intake" },
+    { file: "02_02_sdmx.png", title: "SDMX gate", caption: "Check source, place, consent, visibility, period, and evidence route before records can influence models.", url: "/?stage=sdmx" },
+    { file: "03_03_repository.png", title: "Governed repository", caption: "Approved and rejected records stay traceable with hashes, reviewer context, and uncommit history.", url: "/?stage=repository" },
+    { file: "04_04_encoding.png", title: "Story-by-story encoding", caption: "Manual, AI, and hybrid encoders score each narrative separately and append results back to the repository.", url: "/?stage=encoding" },
+    { file: "05_05_compartmental.png", title: "Compartmental model", caption: "Encoded trust, barriers, social influence, and inoculation potential feed the S/M/T/I/R equations.", url: "/?stage=compartmental" },
+    { file: "06_06_agents.png", title: "Agent-based model", caption: "Household-level peer effects test whether local network dynamics change the aggregate projection.", url: "/?stage=agents" },
+    { file: "07_07_digital_twin.png", title: "Digital twin feedback", caption: "Observed adoption, trust shifts, and barrier shifts rerun the virtual policy system.", url: "/?stage=digital-twin" },
+    { file: "08_08_bayes.png", title: "Bayesian update", caption: "Prior assumptions become posterior assumptions after accepted evidence and feedback are counted.", url: "/?stage=bayes" },
+    { file: "09_09_rl.png", title: "RL optimizer", caption: "Candidate interventions are stress-tested for reward, cost, risk, and adoption lift.", url: "/?stage=rl" },
+    { file: "10_10_regional_optional.png", title: "Optional regional analysis", caption: "Run this only when evidence must be interpreted by district, province, or grouped region.", url: "/?stage=regional" },
+    { file: "11_11_graph.png", title: "Knowledge graph", caption: "Stories, places, themes, and interventions are linked so shared local meanings are visible.", url: "/?stage=graph" },
+    { file: "12_12_inoculation.png", title: "Inoculation lab", caption: "Counter-narratives act like narrative vaccines and can be tested inside the digital twin.", url: "/?stage=inoculation" },
+    { file: "13_13_policy.png", title: "Policy output", caption: "The final product is a human-readable decision brief with confidence, assumptions, limits, and review status.", url: "/?stage=policy" }
+  ];
+
+  let current = 0;
+  let timer = null;
+  const image = document.getElementById("stageImage");
+  const title = document.getElementById("stageTitle");
+  const caption = document.getElementById("stageCaption");
+  const chip = document.getElementById("stageChip");
+  const address = document.getElementById("address");
+  const progress = document.getElementById("progressFill");
+  const playPause = document.getElementById("playPause");
+  const grid = document.getElementById("stageGrid");
+
+  function setStage(index) {
+    current = Math.max(0, Math.min(stages.length - 1, index));
+    const stage = stages[current];
+    image.src = `/demo-video/slides/${stage.file}`;
+    image.alt = `NDIM Engine web-view demo: ${stage.title}`;
+    title.textContent = stage.title;
+    caption.textContent = stage.caption;
+    chip.textContent = `Stage ${String(current).padStart(2, "0")}`;
+    address.textContent = `http://127.0.0.1:8010${stage.url}`;
+    progress.style.width = `${((current + 1) / stages.length) * 100}%`;
+    document.querySelectorAll(".stage-button").forEach((button, idx) => {
+      button.classList.toggle("active", idx === current);
+    });
+  }
+
+  function stop() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    playPause.textContent = "Play";
+  }
+
+  function play() {
+    stop();
+    playPause.textContent = "Pause";
+    timer = setInterval(() => {
+      if (current >= stages.length - 1) {
+        stop();
+        return;
+      }
+      setStage(current + 1);
+    }, 2600);
+  }
+
+  stages.forEach((stage, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "stage-button";
+    button.innerHTML = `<small>${String(index).padStart(2, "0")}</small>${stage.title}`;
+    button.addEventListener("click", () => { stop(); setStage(index); });
+    grid.appendChild(button);
+  });
+
+  document.getElementById("prevStage").addEventListener("click", () => { stop(); setStage(current - 1); });
+  document.getElementById("nextStage").addEventListener("click", () => { stop(); setStage(current + 1); });
+  playPause.addEventListener("click", () => timer ? stop() : play());
+  setStage(0);
+</script>
+</body>
+</html>

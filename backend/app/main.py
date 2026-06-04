@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import os
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from typing import Any, Dict, List, Optional
@@ -15,14 +15,33 @@ from . import models
 from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
 from .modelling import model_assumptions, run_digital_twin
 from .pipeline import run_experiment_pipeline
+from .security import LOCAL_ORIGIN_REGEX, validate_upload_file
 from .storage import app_paths, diagnostics, ensure_app_dirs, make_full_backup, make_support_bundle, resource_path
 from .validation import VALIDATION_DATASET, evaluate_encoder_against_validation, validation_status
+from .workspaces import (
+    WorkspaceCreateRequest,
+    WorkspaceUpdateRequest,
+    create_workspace,
+    duplicate_workspace,
+    ensure_default_workspaces,
+    export_workspace,
+    get_active_workspace,
+    get_workspace,
+    import_workspace,
+    list_workspaces,
+    set_active_workspace,
+    update_workspace,
+)
 from .workflow_ui import MANUAL_HTML, WORKFLOW_UI_HTML
 
 if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
     ensure_app_dirs()
+ensure_default_workspaces()
 
 STRESS_TEST_INSTRUCTIONS_PATH = resource_path("docs", "ndim_stress_test_corpus_instructions.html")
+DEMO_VIDEO_HTML_PATH = resource_path("docs", "demo_video", "ndim_engine_demo_video.html")
+DEMO_VIDEO_GIF_PATH = resource_path("docs", "demo_video", "ndim_engine_stage_demo.gif")
+DEMO_VIDEO_SLIDES_DIR = resource_path("docs", "demo_video", "slides")
 
 try:
     from .api_routes import router as analytics_router
@@ -39,11 +58,12 @@ except ImportError:
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NDIM Engine API", version="0.8")
+app = FastAPI(title="NDIM Engine API", version=os.getenv("NDIM_VERSION", "0.9.0-alpha.9"))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[],
+    allow_origin_regex=LOCAL_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,7 +84,111 @@ def root():
 
 @app.get("/api/status")
 def api_status():
-    return {"message": "NDIM Engine backend running"}
+    return {
+        "message": "NDIM Engine backend running",
+        "version": app.version,
+        "offline_ready": True,
+        "desktop_mode": os.getenv("NDIM_DESKTOP") == "1",
+        "database_mode": "environment" if os.getenv("DATABASE_URL") else "local_sqlite",
+        "deployment_mode": os.getenv("NDIM_DEPLOYMENT_MODE", "local"),
+        "internet_required": False,
+    }
+
+
+@app.get("/health")
+def health_check():
+    provider_status = llm_provider_status("deterministic")
+    return {
+        "status": "ok",
+        "offline_ready": True,
+        "local_storage": diagnostics(create_dirs=True),
+        "multipart_uploads": multipart_available,
+        "analytics_available": bool(analytics_router),
+        "llm_fallback": provider_status,
+        "deployment_mode": os.getenv("NDIM_DEPLOYMENT_MODE", "local"),
+        "database_required": os.getenv("NDIM_REQUIRE_DATABASE") == "1",
+        "warnings": [] if multipart_available else ["CSV/PDF upload parser is unavailable."],
+    }
+
+
+@app.get("/offline/status")
+def offline_status():
+    return {
+        "mode": "offline-first",
+        "internet_required": False,
+        "local_functions": [
+            "text_ingestion",
+            "csv_ingestion",
+            "pdf_ingestion",
+            "deterministic_encoding",
+            "ledger",
+            "backup",
+            "restore_validation",
+            "simulation",
+            "policy_export",
+            "stress_test_corpus",
+        ],
+        "optional_online_functions": ["user-selected remote LLM providers", "future master repository sync"],
+    }
+
+
+@app.get("/workspaces")
+def workspaces_list():
+    return {"workspaces": list_workspaces()}
+
+
+@app.post("/workspaces")
+def workspaces_create(payload: WorkspaceCreateRequest):
+    return create_workspace(payload)
+
+
+@app.get("/workspaces/active")
+def workspaces_active():
+    return get_active_workspace()
+
+
+@app.post("/workspaces/{workspace_id}/set-active")
+def workspaces_set_active(workspace_id: str):
+    return set_active_workspace(workspace_id)
+
+
+@app.get("/workspaces/{workspace_id}")
+def workspaces_get(workspace_id: str):
+    return get_workspace(workspace_id)
+
+
+@app.put("/workspaces/{workspace_id}")
+def workspaces_update(workspace_id: str, payload: WorkspaceUpdateRequest):
+    return update_workspace(workspace_id, payload)
+
+
+@app.put("/workspaces/{workspace_id}/settings")
+def workspaces_update_settings(workspace_id: str, settings: Dict[str, Any]):
+    return update_workspace(workspace_id, WorkspaceUpdateRequest(settings=settings))
+
+
+@app.post("/workspaces/{workspace_id}/duplicate")
+def workspaces_duplicate(workspace_id: str, payload: Optional[Dict[str, Any]] = None):
+    return duplicate_workspace(workspace_id, (payload or {}).get("name"))
+
+
+@app.get("/workspaces/{workspace_id}/export")
+def workspaces_export(
+    workspace_id: str,
+    mode: str = Query(default="template_only", pattern="^(template_only|template_with_stress_test|full_backup)$"),
+):
+    package = export_workspace(workspace_id, mode)  # type: ignore[arg-type]
+    return FileResponse(package, media_type="application/zip", filename=package.name)
+
+
+if multipart_available:
+    @app.post("/workspaces/import")
+    def workspaces_import(file: UploadFile = File(...)):
+        return import_workspace(file)
+else:
+    @app.post("/workspaces/import")
+    def workspaces_import_unavailable():
+        raise HTTPException(status_code=503, detail="Workspace import requires python-multipart.")
 
 
 @app.get("/desktop/paths")
@@ -100,6 +224,36 @@ def manual():
 def stress_test_corpus():
     return RedirectResponse(url="/manual#stress-test-corpus", status_code=307)
 
+
+@app.get("/demo-video", response_class=HTMLResponse)
+def demo_video():
+    if not DEMO_VIDEO_HTML_PATH.exists():
+        raise HTTPException(status_code=404, detail="Demo video has not been generated yet.")
+    return HTMLResponse(
+        DEMO_VIDEO_HTML_PATH.read_text(encoding="utf-8"),
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
+
+
+@app.get("/demo-video/ndim_engine_stage_demo.gif")
+def demo_video_gif():
+    if not DEMO_VIDEO_GIF_PATH.exists():
+        raise HTTPException(status_code=404, detail="Demo video GIF has not been generated yet.")
+    return FileResponse(DEMO_VIDEO_GIF_PATH, media_type="image/gif", filename=DEMO_VIDEO_GIF_PATH.name)
+
+
+@app.get("/demo-video/slides/{filename}")
+def demo_video_slide(filename: str):
+    if "/" in filename or "\\" in filename or not filename.endswith(".png"):
+        raise HTTPException(status_code=400, detail="Invalid slide filename.")
+    path = DEMO_VIDEO_SLIDES_DIR / filename
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="Demo slide not found.")
+    return FileResponse(path, media_type="image/png", filename=path.name)
+
 @app.get("/analytics/status")
 def analytics_status():
     if analytics_router:
@@ -129,6 +283,7 @@ def sync_ledger(payload: Dict[str, Any], db: Session = Depends(get_db)):
     ledger = payload.get("ledger", [])
     project = payload.get("project", {})
     settings = payload.get("settings", {})
+    workspace_id = payload.get("workspace_id") or project.get("workspace_id") or get_active_workspace().get("workspace_id")
     synced = 0
     for item in records:
         narrative_id = item.get("narrative_id")
@@ -153,6 +308,7 @@ def sync_ledger(payload: Dict[str, Any], db: Session = Depends(get_db)):
         existing = db.get(models.EvidenceLedgerRecord, narrative_id)
         uncommit_history = existing.uncommit_history if existing and isinstance(existing.uncommit_history, list) else []
         governance = {
+            "workspace_id": workspace_id,
             "scan": item.get("scan"),
             "reviewer_signature": item.get("reviewer_signature"),
             "repository_mode": item.get("repository_mode"),
@@ -230,15 +386,20 @@ def sync_ledger(payload: Dict[str, Any], db: Session = Depends(get_db)):
 
 
 @app.get("/ledger/records")
-def ledger_records(db: Session = Depends(get_db)):
+def ledger_records(workspace_id: Optional[str] = None, db: Session = Depends(get_db)):
     rows = db.query(models.EvidenceLedgerRecord).order_by(models.EvidenceLedgerRecord.updated_at.desc()).all()
     output = []
     for row in rows:
         master = {}
+        row_workspace_id = None
         if isinstance(row.governance, dict):
             master = row.governance.get("master_repository") or {}
+            row_workspace_id = row.governance.get("workspace_id")
+        if workspace_id and row_workspace_id != workspace_id:
+            continue
         output.append(
             {
+                "workspace_id": row_workspace_id,
                 "narrative_id": row.narrative_id,
                 "evidence_route": row.evidence_route,
                 "evidence_route_label": row.evidence_route_label,
@@ -293,6 +454,7 @@ def ingest_text(narrative: str, db: Session = Depends(get_db)):
 if multipart_available:
     @app.post("/ingest/csv", response_model=List[NarrativeRecord])
     def ingest_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
+        validate_upload_file(file, [".csv"], "CSV narrative import")
         records = normalize_csv(file)
         for r in records:
             db.add(models.Narrative(
@@ -307,6 +469,7 @@ if multipart_available:
 
     @app.post("/ingest/pdf", response_model=List[NarrativeRecord])
     def ingest_pdf(file: UploadFile = File(...), db: Session = Depends(get_db)):
+        validate_upload_file(file, [".pdf"], "PDF narrative import")
         records = normalize_pdf(file)
         for r in records:
             db.add(models.Narrative(

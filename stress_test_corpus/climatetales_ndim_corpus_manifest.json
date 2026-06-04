@@ -1,0 +1,51 @@
+{
+  "title": "ClimateTales Rwanda NDIM synthetic stress-test corpus",
+  "created": "2026-05-20",
+  "record_count": 60,
+  "routes": {
+    "structured_interview": 10,
+    "open_story": 10,
+    "indigenous_knowledge": 10,
+    "citizen_science": 10,
+    "crowd_batch": 10,
+    "experimental_feed": 10
+  },
+  "country": "Rwanda",
+  "admin_units_covered": [
+    "Eastern Province / Nyagatare / Rwimiyaga",
+    "Eastern Province / Rwamagana / Kigabiro",
+    "Kigali City / Gasabo / Kimironko",
+    "Kigali City / Kicukiro / Gahanga",
+    "Kigali City / Nyarugenge / Nyamirambo",
+    "Northern Province / Musanze / Kinigi",
+    "Northern Province / Musanze / Muhoza",
+    "Southern Province / Huye / Tumba",
+    "Southern Province / Nyamagabe / Kamegeri",
+    "Southern Province / Nyaruguru / Busanze",
+    "Western Province / Rubavu / Gisenyi",
+    "Western Province / Rusizi / Kamembe"
+  ],
+  "files": {
+    "master_csv": "climatetales_ndim_synthetic_narratives_master.csv",
+    "route_csvs": {
+      "structured_interview": "climatetales_structured_interview_synthetic.csv",
+      "open_story": "climatetales_open_story_synthetic.csv",
+      "indigenous_knowledge": "climatetales_indigenous_knowledge_synthetic.csv",
+      "citizen_science": "climatetales_citizen_science_synthetic.csv",
+      "crowd_batch": "climatetales_crowdsourced_batch_synthetic.csv",
+      "experimental_feed": "climatetales_social_media_feeds_synthetic.csv"
+    },
+    "bonus_text": "climatetales_bonus_manual_story.txt",
+    "desk_review_docx": "climatetales_ndim_desk_review_report.docx",
+    "desk_review_pdf": "climatetales_ndim_desk_review_report.pdf"
+  },
+  "grounding_sources": [
+    "AIMS-Imperial ClimateTales proposal, November 2025",
+    "SNV ReCIC Rwanda clean cooking project",
+    "RTI/PLOS One study on fuel pellets and improved cookstoves in Gisenyi",
+    "DelAgua Tubeho Neza project materials",
+    "SEforALL eCooking pilot in Kigali report",
+    "Rwanda clean cooking RBF and EAQIP policy materials"
+  ],
+  "synthetic_data_notice": "Fictional test data for software validation only; not real human-subjects evidence."
+}

@@ -1,0 +1,33 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ndim-engine-web
+  annotations:
+    run.googleapis.com/description: "NDIM Engine lean research web deployment"
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "2"
+        run.googleapis.com/cpu-throttling: "true"
+    spec:
+      containerConcurrency: 20
+      timeoutSeconds: 900
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/ndim-engine/ndim-engine-web:IMAGE_TAG
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+          env:
+            - name: NDIM_DEPLOYMENT_MODE
+              value: cloud
+            - name: NDIM_REQUIRE_DATABASE
+              value: "1"
+            - name: NDIM_MAX_UPLOAD_MB
+              value: "20"
+            - name: DATABASE_URL
+              value: postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE

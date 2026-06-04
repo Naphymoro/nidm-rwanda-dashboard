@@ -1,0 +1,86 @@
+[
+  {
+    "idx": 0,
+    "name": "00_workspace",
+    "title": "Workspace landing",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\00_00_workspace.png"
+  },
+  {
+    "idx": 1,
+    "name": "01_intake",
+    "title": "Narrative intake",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\01_01_intake.png"
+  },
+  {
+    "idx": 2,
+    "name": "02_sdmx",
+    "title": "SDMX gate",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\02_02_sdmx.png"
+  },
+  {
+    "idx": 3,
+    "name": "03_repository",
+    "title": "Repository governance",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\03_03_repository.png"
+  },
+  {
+    "idx": 4,
+    "name": "04_encoding",
+    "title": "Manual AI hybrid encoding",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\04_04_encoding.png"
+  },
+  {
+    "idx": 5,
+    "name": "05_compartmental",
+    "title": "Compartmental model",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\05_05_compartmental.png"
+  },
+  {
+    "idx": 6,
+    "name": "06_agents",
+    "title": "Agent-based model",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\06_06_agents.png"
+  },
+  {
+    "idx": 7,
+    "name": "07_digital_twin",
+    "title": "Digital twin feedback",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\07_07_digital_twin.png"
+  },
+  {
+    "idx": 8,
+    "name": "08_bayes",
+    "title": "Bayesian update",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\08_08_bayes.png"
+  },
+  {
+    "idx": 9,
+    "name": "09_rl",
+    "title": "RL optimizer",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\09_09_rl.png"
+  },
+  {
+    "idx": 10,
+    "name": "10_regional_optional",
+    "title": "Regional analysis optional",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\10_10_regional_optional.png"
+  },
+  {
+    "idx": 11,
+    "name": "11_graph",
+    "title": "Knowledge graph",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\11_11_graph.png"
+  },
+  {
+    "idx": 12,
+    "name": "12_inoculation",
+    "title": "Inoculation lab",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\12_12_inoculation.png"
+  },
+  {
+    "idx": 13,
+    "name": "13_policy",
+    "title": "Policy output",
+    "file": "C:\\Users\\Cecil Ouma\\Documents\\Codex\\2026-05-02\\go-to-my-repo-and-clone\\ndim_rw\\docs\\demo_video\\frames\\13_13_policy.png"
+  }
+]

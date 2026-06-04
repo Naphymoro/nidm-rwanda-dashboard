@@ -7,6 +7,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$BackendRequirements = Join-Path $ProjectRoot "backend\requirements.lock.txt"
+if (!(Test-Path $BackendRequirements)) {
+  $BackendRequirements = Join-Path $ProjectRoot "backend\requirements.txt"
+}
 $RuntimeRoot = Join-Path $ProjectRoot "dist\NDIM Engine Runtime"
 
 if (-not $PythonExe) {
@@ -34,7 +38,7 @@ if (!(Test-Path $PythonRoot)) {
 
 if ($InstallRequirements) {
   & (Join-Path $PythonRoot "python.exe") -m pip install --upgrade pip
-  & (Join-Path $PythonRoot "python.exe") -m pip install -r (Join-Path $ProjectRoot "backend\requirements.txt")
+  & (Join-Path $PythonRoot "python.exe") -m pip install -r $BackendRequirements
   & (Join-Path $PythonRoot "python.exe") -m pip install -r (Join-Path $ProjectRoot "desktop\requirements-desktop.txt")
 }
 

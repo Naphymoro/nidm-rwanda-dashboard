@@ -2,13 +2,37 @@
 
 Research-grade local-first narrative ingestion, evidence governance, modelling, digital-twin, inoculation, and policy-output workflow for the Narrative Diffusion and Inoculation Model.
 
-## Stack
+Current alpha: `0.9.0-alpha.9` adds a web-view demo route, mode-specific encoding, package refreshes, and a lean GitHub-to-Google Cloud Run deployment path for the default web app.
 
-- Frontend: Next.js, TypeScript, CSS3 futuristic dashboard UI
-- Backend: FastAPI, Pydantic, Python scientific stack
-- Database: PostgreSQL/PostGIS-ready schema path, no Supabase dependency
-- Runtime: Docker Compose for local development
-- Deployment target: Render, Railway, Fly.io, or self-hosted VPS. Vercel is optional for frontend only.
+## Production architecture
+
+The canonical alpha runtime is the FastAPI integrated UI. The same backend can run as a local desktop app or as the hosted NDIM Web app.
+
+- Backend and UI: FastAPI, Pydantic, Python scientific stack
+- Database: local SQLite by default, with a PostgreSQL-ready schema path for institutional deployments
+- Desktop launcher: PyInstaller/Tkinter wrapper that starts the local backend and opens the browser
+- Data model: local-first evidence ledger, SDMX-oriented exports, deterministic offline fallback
+
+The `client/`, `frontend/`, and root Next.js `app/` folders remain as legacy/reference UI work. They are not the production desktop UI unless a future architecture decision replaces this local-first runtime. See `docs/ARCHITECTURE_DECISION.md`.
+
+## Lean web deployment
+
+For real users, the recommended default path is NDIM Web:
+
+```text
+GitHub -> GitHub Actions -> Google Artifact Registry -> Google Cloud Run -> PostgreSQL
+```
+
+Use the desktop package only for offline/sensitive fieldwork. Use Colab only for advanced reproducibility notebooks.
+
+The Cloud Run deployment assets are:
+
+- `backend/Dockerfile`
+- `.github/workflows/cloud-run-deploy.yml`
+- `deployment/cloud-run/service.template.yaml`
+- `docs/CLOUD_RUN_RESEARCH_DEPLOYMENT.md`
+
+The hosted app requires `DATABASE_URL`; do not rely on local SQLite on Cloud Run.
 
 ## Core modules
 
@@ -17,9 +41,24 @@ Research-grade local-first narrative ingestion, evidence governance, modelling, 
 3. Manual, AI, and hybrid encoding workflow
 4. Country and administrative-unit categorization
 5. Compartmental model API
-6. Agent-based/hybrid digital-twin API placeholder
-7. RL feedback and model-improvement loop placeholder
-8. Futuristic SaaS research dashboard
+6. Agent-based/hybrid digital-twin API
+7. Bayesian/RL feedback and model-improvement loop
+8. Inoculation diagnosis and counter-narrative testing
+9. Local backup, restore, and support bundle exports
+10. Workspace manager for project presets, duplication, import/export, and active workspace persistence
+11. Research Assistant panel for progress, next-best-action guidance, scientific interpretation, and policy caution
+
+## Supported alpha platforms
+
+- Windows 10/11: installer and portable ZIP release path
+- macOS: PyInstaller app build path, with `.dmg` signing/notarization as the release gate
+- Linux: PyInstaller app build path, with AppImage/`.deb` packaging as the release gate
+
+Minimum recommended hardware:
+
+- 8 GB RAM for routine narrative ingestion and deterministic modelling
+- 16 GB RAM if packaging or running heavy Torch/Pyro analytics locally
+- 2 GB free disk for the app, local database, backups, and stress-test corpus
 
 ## Local development
 
@@ -42,7 +81,7 @@ Open http://127.0.0.1:8010/
 
 ## Desktop application packaging
 
-NDIM Engine can be packaged as a local desktop application for Windows, macOS, and Linux using a PyInstaller launcher. The launcher starts the FastAPI backend locally, opens the UI in the user’s default browser, and keeps data on the user’s machine.
+NDIM Engine can be packaged as a local desktop application for Windows, macOS, and Linux using a PyInstaller launcher. The launcher starts the FastAPI backend locally, opens the UI in the user's default browser, and keeps data on the user's machine.
 
 ### Why this packaging strategy
 
@@ -69,8 +108,39 @@ The desktop data folder contains:
 - `logs/`
 - `backups/`
 - `support/`
+- `workspaces/`
+
+The workspace folder contains project containers such as `NDIM Core` and `ClimateTales Rwanda`. A workspace keeps project templates, repository folders, validation material, stress-test material, and export defaults separate from other projects.
 
 BYOK LLM keys remain session-only unless a future release adds an explicit opt-in secret store.
+
+## Offline guarantees
+
+The desktop app works offline for:
+
+- narrative ingestion,
+- CSV import,
+- PDF import,
+- deterministic/local narrative encoding,
+- inoculation diagnosis fallback,
+- ledger operations,
+- evidence governance,
+- local storage,
+- analytics and modelling that ship with the runtime,
+- backups and restore validation,
+- exports,
+- SDMX package generation,
+- stress-test workflows.
+
+Internet access is only required when a user explicitly chooses a remote LLM provider.
+
+Health endpoints:
+
+- `GET /api/status`
+- `GET /health`
+- `GET /offline/status`
+
+The desktop launcher also includes **Check offline readiness**.
 
 ### Build Windows desktop app
 
@@ -154,12 +224,25 @@ The launcher provides:
 - automatic backend startup on a free local port starting at `8010`
 - clean loading/status window
 - browser launch to the local NDIM UI
+- offline readiness check
 - Open data folder
 - Export support bundle with diagnostics and logs
-- Export full backup
-- Restore full backup
+- Export full backup with manifest hashes
+- Restore full backup with validation before writing files
 
 Support bundles avoid the narrative database by default. Full backups include local research data and should be treated as sensitive.
+
+## Safety and recovery
+
+Read:
+
+- `docs/OFFLINE_INSTALLATION.md`
+- `docs/TROUBLESHOOTING.md`
+- `docs/RECOVERY_GUIDE.md`
+- `docs/PRODUCTION_HARDENING_AUDIT.md`
+- `docs/DEPLOYMENT_MATRIX.md`
+
+Backups include a `backup_manifest.json` file with SHA256 hashes. Restore fails closed if the manifest is missing, hashes do not match, or the ZIP contains unsafe paths.
 
 ### Desktop API helpers
 
@@ -175,4 +258,21 @@ The master repository workflow remains optional. The app prepares SDMX/DSD packa
 
 Best no-Supabase path: Render Blueprint or Railway monorepo deployment with managed PostgreSQL.
 
-Vercel is excellent for the Next.js frontend, but this platform also needs a Python backend and database. For a simpler single-platform deployment, Render or Railway is better than Vercel alone.
+Vercel is excellent for the legacy Next.js frontend, but this platform also needs a Python backend and database. For a simpler single-platform deployment, Render or Railway is better than Vercel alone.
+
+For non-technical field testing, prefer GitHub Releases with platform installers rather than a hosted web link. The desktop package keeps sensitive research data on the user's machine.
+
+## Alpha testing distribution
+
+For invited alpha testers, signing is not a release blocker. Publish unsigned packages through GitHub Releases with clear tester instructions and checksums:
+
+- Windows: `NDIM-Engine-Windows-Portable-<version>.zip` as the preferred alpha route
+- Windows optional: `NDIM-Engine-Setup-<version>.exe`
+- macOS: `NDIM-Engine-<version>.dmg`
+- Linux: `ndim-engine_<version>_amd64.deb`
+- Verification: `SHA256SUMS.txt`
+- Instructions: `ALPHA_TESTER_README.md`
+
+The cross-platform alpha release workflow is `.github/workflows/alpha-release.yml`. It runs the offline smoke test before packaging and uploads artifacts to a prerelease when a tag like `v0.9.0-alpha.8` is pushed.
+
+Read `docs/ALPHA_TESTER_README.md` before sharing builds with testers.

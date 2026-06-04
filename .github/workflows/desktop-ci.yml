@@ -1,0 +1,104 @@
+name: Desktop Production CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Offline smoke test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            backend/requirements.lock.txt
+            desktop/requirements-desktop.txt
+
+      - name: Install pinned runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.lock.txt
+          python -m pip install -r desktop/requirements-desktop.txt
+
+      - name: Run offline production smoke test
+        run: python scripts/smoke_test.py
+
+  package:
+    name: Package launcher (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: windows
+          - os: macos-latest
+            artifact: macos
+          - os: ubuntu-latest
+            artifact: linux
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            backend/requirements.lock.txt
+            desktop/requirements-desktop.txt
+
+      - name: Build Windows desktop package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\scripts\build_desktop.ps1 -UseVenv
+
+      - name: Build Unix desktop package
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          chmod +x scripts/build_desktop.sh
+          USE_VENV=1 ./scripts/build_desktop.sh --clean
+
+      - name: Wrap macOS DMG
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          chmod +x scripts/package_macos_dmg.sh
+          scripts/package_macos_dmg.sh
+
+      - name: Wrap Linux deb
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          chmod +x scripts/package_linux_deb.sh
+          scripts/package_linux_deb.sh
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ndim-engine-${{ matrix.artifact }}-${{ github.sha }}
+          path: |
+            dist/**
+            docs/ALPHA_TESTER_README.md

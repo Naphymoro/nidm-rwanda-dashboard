@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
+
 
 ROOT = Path(SPECPATH).resolve()
 PROJECT = ROOT.parent
@@ -10,6 +12,18 @@ datas = [
     (str(PROJECT / "docs"), "docs"),
     (str(PROJECT / "stress_test_corpus"), "stress_test_corpus"),
 ]
+
+for package in ["fastapi", "uvicorn", "pydantic", "sqlalchemy", "pandas", "numpy", "sklearn", "pyro", "torch", "pypdf"]:
+    try:
+        datas += copy_metadata(package)
+    except Exception:
+        pass
+
+for package in ["pyro", "sklearn", "pypdf"]:
+    try:
+        datas += collect_data_files(package)
+    except Exception:
+        pass
 
 
 a = Analysis(
@@ -20,6 +34,8 @@ a = Analysis(
     hiddenimports=[
         "app.main",
         "app.workflow_ui",
+        "app.security",
+        "app.storage",
         "uvicorn",
         "uvicorn.logging",
         "uvicorn.loops.auto",
@@ -32,7 +48,13 @@ a = Analysis(
         "pypdf",
         "pandas",
         "numpy",
-    ],
+        "torch",
+        "pyro",
+        "sklearn",
+        "scipy",
+    ]
+    + collect_submodules("pyro")
+    + collect_submodules("sklearn"),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

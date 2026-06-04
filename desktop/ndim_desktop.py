@@ -96,11 +96,11 @@ class DesktopApp:
         self.window = Tk()
         self.log("Tk window created")
         self.window.title(APP_TITLE)
-        self.window.geometry("560x330")
-        self.window.minsize(520, 310)
+        self.window.geometry("620x430")
+        self.window.minsize(560, 390)
         self.window.protocol("WM_DELETE_WINDOW", self.shutdown)
 
-        self.status = StringVar(value="Starting local NDIM backend...")
+        self.status = StringVar(value="Starting local NDIM backend in offline-first mode...")
         self.url_text = StringVar(value=self.url)
         self.path_text = StringVar(value=str(self.paths["data"]))
         self._build_ui()
@@ -120,6 +120,7 @@ class DesktopApp:
 
         self.open_app_button = Button(self.window, text="Open NDIM Engine", command=self.open_app, state=DISABLED)
         self.open_app_button.pack(fill=BOTH, padx=34, pady=4)
+        Button(self.window, text="Check offline readiness", command=self.health_check).pack(fill=BOTH, padx=34, pady=4)
         Button(self.window, text="Open data folder", command=lambda: open_folder(self.paths["data"])).pack(fill=BOTH, padx=34, pady=4)
         Button(self.window, text="Export support bundle", command=self.export_support_bundle).pack(fill=BOTH, padx=34, pady=4)
         Button(self.window, text="Export full backup", command=self.export_full_backup).pack(fill=BOTH, padx=34, pady=4)
@@ -194,6 +195,18 @@ class DesktopApp:
         self.opened = True
         webbrowser.open(self.url)
 
+    def health_check(self) -> None:
+        try:
+            with urllib.request.urlopen(f"http://{HOST}:{self.port}/health", timeout=2) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            warnings = payload.get("warnings") or []
+            detail = "NDIM Engine is offline-ready on this computer."
+            if warnings:
+                detail += "\n\nAttention:\n" + "\n".join(f"- {item}" for item in warnings)
+            messagebox.showinfo(APP_TITLE, detail)
+        except Exception as exc:
+            messagebox.showwarning(APP_TITLE, f"NDIM Engine is still starting or needs attention.\n\n{exc}")
+
     def export_support_bundle(self) -> None:
         bundle = self.paths["support"] / f"ndim-support-{time.strftime('%Y%m%dT%H%M%S')}.zip"
         diagnostics = {
@@ -211,34 +224,36 @@ class DesktopApp:
         messagebox.showinfo(APP_TITLE, f"Support bundle created:\n{bundle}")
 
     def export_full_backup(self) -> None:
-        bundle = self.paths["backups"] / f"ndim-full-backup-{time.strftime('%Y%m%dT%H%M%S')}.zip"
-        with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as zf:
-            for item in self.paths["data"].rglob("*"):
-                if item.is_file() and item.resolve() != bundle.resolve():
-                    zf.write(item, item.relative_to(self.paths["data"]).as_posix())
-        messagebox.showinfo(APP_TITLE, f"Full local backup created:\n{bundle}")
+        try:
+            from app.storage import make_full_backup
+
+            bundle = make_full_backup()
+            messagebox.showinfo(APP_TITLE, f"Verified full local backup created:\n{bundle}")
+        except Exception as exc:
+            self.log(f"Full backup failed: {exc}")
+            messagebox.showerror(APP_TITLE, f"Full backup could not be created.\n\n{exc}")
 
     def restore_full_backup(self) -> None:
         backup = filedialog.askopenfilename(title="Select NDIM backup", filetypes=[("Zip files", "*.zip")])
         if not backup:
             return
-        if not messagebox.askyesno(APP_TITLE, "Restore this backup? NDIM will stop and replace local data files."):
+        if not messagebox.askyesno(
+            APP_TITLE,
+            "Restore this backup? NDIM will first verify the backup manifest and file hashes, then replace local data files.",
+        ):
             return
         self.stop_server()
-        with zipfile.ZipFile(backup, "r") as zf:
-            temp_dir = self.paths["data"].parent / "_ndim_restore_tmp"
-            if temp_dir.exists():
-                shutil.rmtree(temp_dir)
-            temp_dir.mkdir(parents=True)
-            zf.extractall(temp_dir)
-            for item in temp_dir.rglob("*"):
-                if item.is_file():
-                    target = self.paths["data"] / item.relative_to(temp_dir)
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(item, target)
-            shutil.rmtree(temp_dir)
-        messagebox.showinfo(APP_TITLE, "Backup restored. Restarting NDIM Engine.")
-        self.start_backend()
+        try:
+            from app.storage import restore_backup_archive
+
+            result = restore_backup_archive(Path(backup))
+            restored = result.get("restored_files", 0)
+            messagebox.showinfo(APP_TITLE, f"Backup verified and restored ({restored} files). Restarting NDIM Engine.")
+            self.start_backend()
+        except Exception as exc:
+            self.log(f"Backup restore failed: {exc}")
+            messagebox.showerror(APP_TITLE, f"Backup restore stopped before changing data.\n\n{exc}")
+            self.start_backend()
 
     def stop_server(self) -> None:
         if self.server is not None:

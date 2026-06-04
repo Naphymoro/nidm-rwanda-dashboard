@@ -137,6 +137,241 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       .reasoning.open {
         transform: translateX(0);
       }
+      .assistant-panel {
+        position: fixed;
+        z-index: 59;
+        top: 18px;
+        right: 18px;
+        bottom: 18px;
+        width: min(420px, calc(100vw - 28px));
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 24px 80px rgba(20, 17, 14, .18);
+        display: flex;
+        flex-direction: column;
+        transform: translateX(calc(100% + 28px));
+        transition: transform .2s ease;
+        overflow: hidden;
+      }
+      .assistant-panel.open {
+        transform: translateX(0);
+      }
+      .floating-assistant {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 74;
+        width: 58px;
+        height: 58px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+        display: inline-grid;
+        place-items: center;
+        box-shadow: 0 18px 48px rgba(20, 17, 14, .24);
+        cursor: pointer;
+      }
+      .floating-assistant:hover,
+      .floating-assistant:focus {
+        background: var(--ink);
+        color: #fff;
+        transform: translateY(-1px);
+      }
+      .floating-assistant .ui-icon {
+        width: 25px;
+        height: 25px;
+      }
+      .floating-assistant span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+      .assistant-body {
+        padding: 16px;
+        overflow: auto;
+        display: grid;
+        gap: 12px;
+      }
+      .assistant-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        padding: 13px;
+      }
+      .assistant-card h3 {
+        margin: 0 0 6px;
+        font-size: 15px;
+      }
+      .assistant-card p,
+      .assistant-card li {
+        color: var(--muted);
+        font-size: 13.5px;
+        line-height: 1.45;
+      }
+      .assistant-progress {
+        display: grid;
+        gap: 7px;
+      }
+      .assistant-progress div {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 6px;
+      }
+      .assistant-progress span {
+        color: var(--soft);
+        font: 10px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .assistant-progress strong {
+        font: 800 12px var(--font-data);
+      }
+      .workspace-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 9px 12px;
+        min-height: 38px;
+      }
+      .workspace-chip span {
+        max-width: 210px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .workspace-modal {
+        position: fixed;
+        z-index: 80;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(20, 17, 14, .42);
+      }
+      .workspace-modal.open {
+        display: flex;
+      }
+      .workspace-dialog {
+        width: min(940px, 100%);
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 0 28px 90px rgba(0,0,0,.28);
+      }
+      .workspace-dialog header {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 20px;
+        border-bottom: 1px solid var(--line);
+      }
+      .workspace-dialog-body {
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+      .workspace-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 12px;
+      }
+      .workspace-list {
+        display: grid;
+        gap: 10px;
+      }
+      .workspace-list-item {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        padding: 12px;
+      }
+      .workspace-list-item.active {
+        border-color: var(--line-strong);
+        box-shadow: inset 3px 0 0 var(--line-strong);
+      }
+      .workspace-list-item.from-scratch {
+        background: color-mix(in srgb, var(--panel-2) 88%, var(--card));
+      }
+      .workspace-list-icon {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel);
+      }
+      .workspace-list-item h3,
+      .workspace-list-item p {
+        margin: 0;
+      }
+      .workspace-list-item p {
+        color: var(--muted);
+        line-height: 1.35;
+      }
+      .workspace-list-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .workspace-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+      }
+      .workspace-card-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .workspace-card.active {
+        border-color: var(--line-strong);
+        box-shadow: inset 3px 0 0 var(--line-strong);
+      }
+      .workspace-card h3 {
+        margin: 0;
+      }
+      .icon-only {
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+      }
+      .icon-only .ui-icon {
+        width: 18px;
+        height: 18px;
+      }
+      .workspace-form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+      }
       .brand {
         height: 66px;
         display: flex;
@@ -240,6 +475,28 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         display: grid;
         gap: 8px;
       }
+      .app.workspace-start-mode .stepper,
+      .app.workspace-start-mode #stageJumpSelect,
+      .app.workspace-start-mode #quickRunButton,
+      .app.workspace-start-mode #toggleTraceButton,
+      .app.workspace-start-mode .run-status {
+        display: none;
+      }
+      .app.workspace-start-mode .sidebar-footer {
+        margin-top: 0;
+      }
+      .start-hint {
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        background: var(--panel-2);
+        color: var(--muted);
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .app.workspace-start-mode .stage-nav {
+        display: none;
+      }
       .theme-toggle {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -261,6 +518,28 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         background: var(--card);
         color: var(--text);
         font-weight: 800;
+      }
+      .theme-icon-button {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        min-height: 38px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--text);
+        padding: 0;
+      }
+      .theme-icon-button:hover,
+      .theme-icon-button:focus {
+        border-color: var(--line-strong);
+        color: var(--text);
+      }
+      .theme-icon-button .ui-icon {
+        width: 17px;
+        height: 17px;
       }
       .main {
         min-width: 0;
@@ -335,34 +614,795 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         border-left: 0;
         border-right: 0;
         border-radius: 0;
-        background: var(--panel);
-        box-shadow: 0 28px 80px rgba(41, 33, 24, .08);
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--panel) 96%, white), var(--panel));
+        box-shadow: 0 18px 54px rgba(41, 33, 24, .07);
         padding: 0;
         overflow: visible;
       }
       .command-center + .stage-card {
         margin-top: 14px;
       }
-      .command-head {
+      .command-center.science-os {
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.82), transparent 360px),
+          var(--panel);
+      }
+      :root[data-theme="dark"] .command-center.science-os {
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.04), transparent 360px),
+          var(--panel);
+      }
+      .science-os .workspace-launchpad {
+        grid-template-columns: minmax(0, 1.35fr) minmax(330px, .72fr);
+        gap: 14px;
+        padding: 18px;
+        border-bottom: 1px solid var(--line);
+        background:
+          radial-gradient(circle at 10% 12%, rgba(183, 145, 88, .13), transparent 24%),
+          radial-gradient(circle at 90% 8%, rgba(20, 17, 14, .05), transparent 28%),
+          linear-gradient(135deg, rgba(255,255,255,.72), rgba(245,239,228,.48));
+      }
+      :root[data-theme="dark"] .science-os .workspace-launchpad {
+        background:
+          radial-gradient(circle at 10% 12%, rgba(214, 189, 149, .08), transparent 24%),
+          linear-gradient(135deg, rgba(255,255,255,.04), transparent 62%);
+      }
+      .science-os .workspace-prime,
+      .science-os .workspace-switcher,
+      .science-os .agent-cockpit,
+      .os-stage-card,
+      .os-repository-card,
+      .os-assistant-card,
+      .os-metric {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--card) 92%, var(--panel));
+      }
+      .science-os .workspace-prime {
+        padding: clamp(18px, 2.3vw, 28px);
+      }
+      .science-os .workspace-title-row h2 {
+        max-width: 780px;
+        font-size: clamp(38px, 5.5vw, 76px);
+        line-height: .94;
+        letter-spacing: -.04em;
+      }
+      .science-os .workspace-title-row p {
+        max-width: 780px;
+        margin-top: 14px;
+        font-size: clamp(15px, 1.35vw, 20px);
+        line-height: 1.48;
+      }
+      .science-os .workspace-badge {
+        background: var(--ink);
+        color: var(--paper);
+        border-color: var(--ink);
+      }
+      .workspace-context-card {
+        margin-top: 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: color-mix(in srgb, var(--card) 88%, var(--panel));
+        padding: 13px 14px;
+        max-width: 860px;
+        box-shadow: inset 3px 0 0 var(--line-strong);
+      }
+      .workspace-context-card span {
+        display: block;
+        color: var(--soft);
+        font: 850 10px var(--font-data);
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .workspace-context-card strong {
+        display: block;
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1.15;
+      }
+      .workspace-context-card p {
+        margin: 5px 0 0 !important;
+        max-width: 760px !important;
+        font-size: 13.5px !important;
+        line-height: 1.45 !important;
+      }
+      .workspace-support-line {
+        color: var(--muted) !important;
+        font-size: clamp(14px, 1.12vw, 17px) !important;
+        line-height: 1.45 !important;
+        margin-top: 12px !important;
+      }
+      .workspace-capability-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .workspace-capability {
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: color-mix(in srgb, var(--panel-2) 88%, var(--card));
+        padding: 12px;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.42;
+      }
+      .workspace-capability strong {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--text);
+        font-size: 13.5px;
+      }
+      .workspace-command-row {
+        display: grid;
+        grid-template-columns: minmax(180px, .65fr) minmax(0, 1fr);
+        gap: 10px;
+        align-items: stretch;
+        margin-top: 16px;
+      }
+      .workspace-command-row .start-control {
+        align-self: stretch;
+      }
+      .workspace-command-row .start-button {
+        min-height: 54px;
+      }
+      .workspace-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .workspace-quick-actions .button {
+        min-height: 54px;
+        justify-content: center;
+      }
+      .workspace-signal-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .workspace-signal {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel-2);
+        color: var(--muted);
+        padding: 8px 11px;
+        font: 850 10px var(--font-data);
+        letter-spacing: .07em;
+        text-transform: uppercase;
+      }
+      .workspace-signal strong {
+        color: var(--text);
+      }
+      .science-os .workspace-side-stack {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 14px;
+      }
+      .science-os .workspace-switcher {
+        padding: 14px;
+      }
+      .science-os .agent-cockpit {
+        grid-template-columns: 68px minmax(0, 1fr);
+        padding: 14px;
+        align-content: start;
+      }
+      .science-os .agent-orb {
+        width: 68px;
+        height: 68px;
+      }
+      .os-phase-rail {
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--panel) 96%, white);
+      }
+      .os-phase-rail .flow-lane {
+        border: 0;
+        background: transparent;
+        padding: 0;
+      }
+      .science-os .flow-card {
+        min-height: 54px;
+        border-radius: 999px;
+        background: var(--card);
+      }
+      .os-workbench-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.16fr) minmax(320px, .74fr);
+        gap: 14px;
+        padding: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      .os-stage-card {
+        padding: clamp(18px, 2.2vw, 28px);
+      }
+      .os-stage-card h2 {
+        margin: 8px 0 10px;
+        font-size: clamp(32px, 4.2vw, 62px);
+        line-height: .98;
+        letter-spacing: -.035em;
+      }
+      .os-stage-card p {
+        max-width: 840px;
+        color: var(--muted);
+        font-size: clamp(15px, 1.2vw, 19px);
+        line-height: 1.52;
+      }
+      .os-action-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .os-action-row .button {
+        min-height: 48px;
+        padding-inline: 18px;
+      }
+      .os-stage-insight-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .os-stage-insight {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel-2);
+        padding: 12px;
+      }
+      .os-stage-insight strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 13px;
+      }
+      .os-stage-insight span {
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.42;
+      }
+      .os-right-column {
+        display: grid;
+        gap: 14px;
+        align-content: start;
+      }
+      .os-assistant-card,
+      .os-repository-card {
+        padding: 14px;
+      }
+      .os-repository-card {
+        grid-column: 1 / -1;
+      }
+      .os-assistant-card h3,
+      .os-repository-card h3 {
+        margin: 6px 0 8px;
+        font-size: 19px;
+        line-height: 1.15;
+      }
+      .os-assistant-card p,
+      .os-repository-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .os-repository-table {
+        display: grid;
+        gap: 0;
+        margin-top: 12px;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        overflow: hidden;
+      }
+      .os-repository-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(90px, .55fr) minmax(100px, .7fr);
+        gap: 8px;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+        font-size: 12px;
+      }
+      .os-repository-row:last-child {
+        border-bottom: 0;
+      }
+      .os-repository-row.header {
+        background: var(--panel-2);
+        color: var(--soft);
+        font: 900 9px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .os-repository-row span {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .os-metrics-bar {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      .os-metric {
+        padding: 12px;
+      }
+      .os-metric span {
+        display: block;
+        color: var(--soft);
+        font: 900 9px var(--font-data);
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+      .os-metric strong {
+        display: block;
+        margin-top: 6px;
+        font: 900 24px var(--font-data);
+        letter-spacing: .01em;
+      }
+      .os-system-drawer {
+        margin: 0;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 0;
+      }
+      .os-system-drawer summary {
+        cursor: pointer;
+        padding: 14px 18px;
+        color: var(--muted);
+        font: 900 11px var(--font-data);
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+      .os-system-drawer[open] summary {
+        border-bottom: 1px solid var(--line);
+      }
+      .os-system-drawer-body {
+        padding: 16px 18px;
+      }
+      .workspace-launchpad {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(330px, .8fr);
+        gap: 12px;
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+        background:
+          radial-gradient(circle at 8% 10%, rgba(183, 145, 88, .10), transparent 28%),
+          linear-gradient(135deg, rgba(255,255,255,.68), rgba(245, 239, 228, .52));
+      }
+      .workspace-prime,
+      .workspace-switcher,
+      .agent-cockpit {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--card);
+        padding: 14px;
+      }
+      .workspace-side-stack {
+        min-width: 0;
+        display: grid;
+        gap: 12px;
+      }
+      .workspace-prime {
+        display: grid;
+        gap: 14px;
+        align-content: start;
+      }
+      .workspace-title-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .workspace-title-row h2 {
+        margin: 0;
+        font-size: clamp(26px, 3vw, 42px);
+        line-height: 1.02;
+        letter-spacing: -.02em;
+      }
+      .workspace-title-row p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        max-width: 760px;
+        line-height: 1.45;
+      }
+      .workspace-badge {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel-2);
+        padding: 8px 10px;
+        color: var(--soft);
+        font: 900 10px var(--font-data);
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+      .workspace-route-strip,
+      .agent-action-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .workspace-route-strip {
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel-2);
+        padding: 9px;
+      }
+      .workspace-route-label {
+        flex: 0 0 auto;
+        color: var(--soft);
+        font: 900 9px var(--font-data);
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        padding: 0 3px;
+      }
+      .workspace-actions-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: color-mix(in srgb, var(--card) 74%, var(--panel-2));
+        padding: 10px;
+      }
+      .workspace-actions-card .eyebrow {
+        margin-bottom: 8px;
+      }
+      .workspace-action-grid {
+        display: grid;
+        grid-template-columns: minmax(180px, .9fr) minmax(0, 1.35fr);
+        gap: 10px;
+        align-items: stretch;
+      }
+      .workspace-secondary-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+        gap: 8px;
+      }
+      .workspace-secondary-actions .button {
+        min-height: 46px;
+        border-radius: 13px;
+        font-size: 13px;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+      }
+      .start-control {
+        position: relative;
+        display: inline-grid;
+        gap: 10px;
+        align-self: start;
+      }
+      .start-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 48px;
+        width: 100%;
+        padding: 10px 16px;
+        border-radius: 14px;
+        font-size: 14px;
+        justify-content: center;
+      }
+      .start-menu {
+        width: min(420px, calc(100vw - 36px));
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 22px 80px rgba(20, 17, 14, .18);
+        padding: 10px;
+        display: grid;
+        gap: 8px;
+      }
+      .start-action {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        color: var(--text);
+        padding: 10px;
+        text-align: left;
+      }
+      .start-action:hover {
+        border-color: var(--line-strong);
+      }
+      .start-action strong {
+        display: block;
+        font-size: 13px;
+      }
+      .start-action span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11.5px;
+        line-height: 1.35;
+      }
+      .start-existing-list {
+        display: grid;
+        gap: 7px;
+        margin-top: 2px;
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+      }
+      .ui-icon {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+        flex: 0 0 auto;
+      }
+      .icon-cell {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel-2);
+        display: grid;
+        place-items: center;
+        color: var(--ink);
+      }
+      .workspace-pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--muted);
+        padding: 6px 9px;
+        font: 850 9px var(--font-data);
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        line-height: 1.15;
+        max-width: 190px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .workspace-pill.more {
+        color: var(--text);
+        background: var(--card);
+      }
+      .workspace-pill.grade {
+        margin-left: auto;
+        color: var(--ink);
+        background: color-mix(in srgb, var(--amber) 12%, var(--panel));
+      }
+      .workspace-switcher h3,
+      .agent-cockpit h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+      .workspace-switcher p,
+      .agent-cockpit p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+      .workspace-mini-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .workspace-mini {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel);
+        color: var(--text);
+        padding: 10px;
+      }
+      .workspace-mini.active {
+        border-color: var(--ink);
+        box-shadow: inset 0 0 0 1px var(--ink);
+      }
+      .workspace-mini strong {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .workspace-mini span {
+        display: block;
+        margin-top: 3px;
+        color: var(--soft);
+        font: 800 10px var(--font-data);
+        letter-spacing: .06em;
+        text-transform: uppercase;
+      }
+      .workspace-mini b {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        background: var(--panel-2);
+        font: 900 11px var(--font-data);
+      }
+      .agent-cockpit {
+        display: grid;
+        grid-template-columns: 78px minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+      }
+      .agent-orb {
+        width: 78px;
+        height: 78px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at center, var(--card) 0 58%, transparent 59%),
+          conic-gradient(var(--ink) var(--pct), var(--line) 0);
+        border: 1px solid var(--line);
+      }
+      .agent-orb strong {
+        display: block;
+        font: 900 21px var(--font-data);
+        line-height: 1;
+      }
+      .agent-orb span {
+        display: block;
+        margin-top: 3px;
+        color: var(--soft);
+        font: 800 9px var(--font-data);
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        text-align: center;
+      }
+      .agent-worklist {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 7px;
+        margin-top: 2px;
+      }
+      .agent-worklist.compact {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .agent-workitem {
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+        padding: 8px;
+      }
+      .agent-workitem .agent-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 99px;
+        background: var(--soft);
+        margin-left: 4px;
+      }
+      .agent-workitem.done .agent-dot {
+        background: var(--green);
+      }
+      .agent-workitem strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      .agent-workitem span:last-child {
+        color: var(--soft);
+        font: 900 9px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .start-panels {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        padding: 0 16px 16px;
+      }
+      .start-panel {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        padding: 14px;
+      }
+      .start-panel h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+      .start-panel p {
+        color: var(--muted);
+        margin: 0;
+        font-size: 12.8px;
+        line-height: 1.5;
+      }
+      .command-head,
+      .workbench-overview {
         display: grid;
         grid-template-columns: minmax(0, .95fr) minmax(360px, .72fr);
         gap: 14px;
         align-items: start;
         padding: 16px;
       }
-      .command-head h2 {
+      .workbench-overview {
+        grid-template-columns: minmax(0, 1fr) minmax(320px, .55fr);
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--panel) 97%, white);
+      }
+      .command-head h2,
+      .workbench-overview h2 {
         margin: 0;
         max-width: 820px;
-        font-size: clamp(24px, 2.4vw, 34px);
-        line-height: 1.05;
+        font-size: clamp(24px, 2.15vw, 34px);
+        line-height: 1.08;
         letter-spacing: -.015em;
       }
-      .command-head p {
+      .command-head p,
+      .workbench-overview p {
         margin: 10px 0 0;
         max-width: 820px;
         color: var(--muted);
         font-size: 13px;
         line-height: 1.5;
+      }
+      .workbench-main,
+      .workbench-next {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        padding: 14px;
+      }
+      .workbench-next {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+      .workbench-next h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .workbench-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .workbench-tools .button {
+        min-height: 36px;
+      }
+      .next-action-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .next-action-row .button {
+        justify-content: center;
+      }
+      .workbench-science-grid {
+        display: grid;
+        grid-template-columns: minmax(0, .95fr) minmax(320px, .55fr);
+        gap: 14px;
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .workbench-science-grid > * {
+        min-width: 0;
       }
       .current-intel {
         border: 1px solid var(--line);
@@ -370,6 +1410,11 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         background: var(--card);
         padding: 12px;
         min-width: 0;
+      }
+      .current-intel h3 {
+        margin: 6px 0 0;
+        font-size: 18px;
+        line-height: 1.15;
       }
       .hero-side {
         display: grid;
@@ -614,9 +1659,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       .status-chip.warn::before { background: var(--amber); }
       .command-metrics {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
         gap: 8px;
-        padding: 0 18px 18px;
+        padding: 16px;
       }
       .command-metric {
         border: 1px solid var(--line);
@@ -665,6 +1710,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         padding: 5px 9px;
         text-align: center;
         transition: color .16s ease, transform .16s ease;
+      }
+      .flow-lane.workbench-flow {
+        background: color-mix(in srgb, var(--panel) 95%, white);
       }
       .flow-card:hover {
         transform: translateY(-1px);
@@ -827,6 +1875,173 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         margin: 0 0 8px;
         font-size: clamp(24px, 3vw, 38px);
         line-height: 1.05;
+      }
+      .stage-launcher {
+        max-width: none;
+        width: 100%;
+        margin: 14px 0 0;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(255,255,255,.72), transparent 58%),
+          var(--panel);
+        padding: clamp(16px, 2.4vw, 24px);
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+        gap: 18px;
+        align-items: stretch;
+      }
+      :root[data-theme="dark"] .stage-launcher {
+        background:
+          linear-gradient(135deg, rgba(255,255,255,.05), transparent 58%),
+          var(--panel);
+      }
+      .stage-launcher h2 {
+        margin: 0 0 8px;
+        font-size: clamp(28px, 4vw, 52px);
+        line-height: .98;
+        letter-spacing: -.02em;
+      }
+      .stage-launcher p {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .stage-launcher-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .stage-launcher .button {
+        min-height: 44px;
+      }
+      .stage-launcher-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .stage-launcher-note {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        padding: 13px;
+        min-height: 112px;
+      }
+      .stage-launcher-note strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+      .stage-launcher-note span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .stage-workspace-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 88;
+        display: none;
+        background: rgba(20, 17, 14, .38);
+        backdrop-filter: blur(3px);
+      }
+      .stage-workspace-backdrop.open {
+        display: block;
+      }
+      .stage-workspace {
+        position: fixed;
+        z-index: 89;
+        top: 18px;
+        right: 18px;
+        bottom: 18px;
+        width: min(1180px, calc(100vw - 36px));
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 0 34px 120px rgba(20, 17, 14, .34);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transform: translateX(calc(100% + 42px));
+        opacity: .3;
+        pointer-events: none;
+        transition: transform .24s ease, opacity .24s ease;
+      }
+      .stage-workspace.open {
+        transform: translateX(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .stage-workspace-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: start;
+        padding: 18px;
+        border-bottom: 1px solid var(--line);
+        background:
+          linear-gradient(135deg, rgba(255,255,255,.78), transparent 70%),
+          var(--panel);
+      }
+      :root[data-theme="dark"] .stage-workspace-head {
+        background:
+          linear-gradient(135deg, rgba(255,255,255,.05), transparent 70%),
+          var(--panel);
+      }
+      .stage-workspace-head h2 {
+        margin: 0 0 7px;
+        font-size: clamp(24px, 3vw, 42px);
+        line-height: 1;
+      }
+      .stage-workspace-head p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .stage-workspace-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .stage-workspace-body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding: 18px;
+      }
+      .stage-workspace-body > .stage-card {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        padding: 0;
+      }
+      .stage-workspace-body > .context-stage-nav {
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        margin: 18px -18px -18px;
+        padding: 12px 18px;
+        border-top: 1px solid var(--line);
+        background: color-mix(in srgb, var(--panel) 94%, transparent);
+        backdrop-filter: blur(12px);
+      }
+      .stage-workspace-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .stage-workspace-summary span {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        padding: 7px 10px;
+        color: var(--muted);
+        font: 800 10px var(--font-data);
+        text-transform: uppercase;
+        letter-spacing: .07em;
       }
       .copy {
         margin: 0 0 16px;
@@ -2026,7 +3241,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
         }
         .grid-2 { grid-template-columns: 1fr; }
-        .command-head, .intake-utility-grid, .compact-control-grid, .intake-step-grid, .intake-review-grid { grid-template-columns: 1fr; }
+        .workspace-launchpad, .workspace-side-stack, .workspace-command-row, .start-panels, .command-head, .workbench-overview, .workbench-science-grid, .os-workbench-grid, .intake-utility-grid, .compact-control-grid, .intake-step-grid, .intake-review-grid { grid-template-columns: 1fr; }
+        .os-metrics-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .os-stage-insight-grid { grid-template-columns: 1fr; }
         .flow-lane { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .chain-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       }
@@ -2084,6 +3301,51 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         .content { --content-x: 14px; padding: 14px var(--content-x); }
         .stage-card { border-radius: 14px; }
         .command-center { border-radius: 0; }
+        .stage-workspace {
+          top: 10px;
+          right: 10px;
+          bottom: 10px;
+          width: calc(100vw - 20px);
+          border-radius: 18px;
+        }
+        .stage-workspace-head {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          padding: 14px;
+        }
+        .stage-workspace-actions {
+          justify-content: stretch;
+        }
+        .stage-workspace-actions .button {
+          flex: 1 1 180px;
+        }
+        .floating-assistant {
+          right: 16px;
+          bottom: 16px;
+          width: 52px;
+          height: 52px;
+        }
+        .stage-workspace-summary span {
+          flex: 1 1 150px;
+          text-align: center;
+          overflow-wrap: anywhere;
+        }
+        .workspace-launchpad { padding: 12px; }
+        .workspace-title-row { flex-direction: column; }
+        .workspace-title-row h2 { font-size: clamp(30px, 10vw, 48px); }
+        .workspace-badge { align-self: flex-start; }
+        .workspace-quick-actions { grid-template-columns: 1fr; }
+        .agent-cockpit { grid-template-columns: 1fr; }
+        .agent-orb { width: 92px; height: 92px; }
+        .agent-worklist.compact {
+          grid-template-columns: 1fr;
+        }
+        .workspace-action-grid {
+          grid-template-columns: 1fr;
+        }
+        .workspace-secondary-actions {
+          grid-template-columns: 1fr;
+        }
         .command-head { padding: 14px; }
         .command-head h2 { font-size: clamp(26px, 9vw, 38px); }
         .flow-lane {
@@ -2109,7 +3371,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         .flow-card small { display: none !important; }
         .stage-card { padding: 14px; }
         .stage-card h2 { font-size: clamp(24px, 8vw, 34px); }
-        .field-grid, .grid-3, .metric-grid, .command-metrics, .governance-grid, .compare-grid, .intake-utility-grid, .compact-control-grid, .intake-step-grid, .intake-review-grid, .compact-select-row { grid-template-columns: 1fr; }
+        .field-grid, .grid-3, .metric-grid, .command-metrics, .os-metrics-bar, .governance-grid, .compare-grid, .intake-utility-grid, .compact-control-grid, .intake-step-grid, .intake-review-grid, .compact-select-row { grid-template-columns: 1fr; }
+        .os-repository-row { grid-template-columns: 1fr; }
         input, select { min-height: 44px; }
         textarea { min-height: 160px; }
         .button, .manual-link {
@@ -2184,11 +3447,33 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         .current-intel strong { font-size: 16px; }
         .panel, .metric, .score-rule, .record-card, .question-card, .payload-item { border-radius: 11px; }
         .plot-card svg { height: 180px; }
+        .stage-launcher {
+          grid-template-columns: 1fr;
+          padding: 14px;
+        }
+        .stage-launcher-grid {
+          grid-template-columns: 1fr;
+        }
+        .stage-workspace {
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          border-radius: 0;
+        }
+        .stage-workspace-head {
+          grid-template-columns: 1fr;
+        }
+        .stage-workspace-actions {
+          justify-content: stretch;
+        }
+        .stage-workspace-actions .button {
+          flex: 1 1 100%;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="app">
+    <div class="app" id="appShell">
       <aside class="sidebar">
         <div class="brand">
           <div class="mark">ND</div>
@@ -2199,14 +3484,11 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         </div>
         <div class="stepper">
           <p class="section-label">Workflow stages</p>
-          <p class="stage-scroll-hint">All 13 stages are active. Scroll this list or use Jump to stage in the top bar.</p>
+          <p class="stage-scroll-hint">Click a stage to open its focused task workspace, or use Jump to stage in the top bar.</p>
           <div class="step-list" id="stepList"></div>
         </div>
         <div class="sidebar-footer">
-          <div class="theme-toggle" id="themeToggle">
-            <button data-theme="dark">dark</button>
-            <button class="active" data-theme="light">light</button>
-          </div>
+          <p class="eyebrow">0.9.0-alpha.8</p>
           <a class="button" href="/manual" target="_blank" rel="noreferrer">Tool manual</a>
           <a class="button" href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub source</a>
         </div>
@@ -2221,9 +3503,11 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <p id="topCopy">Start by defining the evidence context, country, location, source, and narrative text.</p>
           </div>
           <div class="top-actions">
+            <button class="workspace-chip" id="workspaceButton" type="button" title="Open Workspace Manager">Workspace: <span id="workspaceName">loading</span></button>
             <select id="stageJumpSelect" class="stage-jump" aria-label="Jump to workflow stage"></select>
-            <button class="button primary" id="quickRunButton" type="button">Run stage</button>
+            <button class="button primary" id="quickRunButton" type="button">Run current stage</button>
             <button class="button" id="toggleTraceButton" type="button">Activity log</button>
+            <button class="theme-icon-button" id="themeIconToggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"></button>
             <div class="run-status" id="runStatus"><span class="dot"></span><span>idle</span></div>
           </div>
         </header>
@@ -2243,13 +3527,69 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <h2>System actions</h2>
           <div class="button-row" style="margin-top: 10px;">
             <button class="button" id="clearTrace" type="button">Clear log</button>
-            <button class="button" id="closeTraceButton" type="button">Close</button>
+            <button class="button icon-only" id="closeTraceButton" type="button" aria-label="Close activity log" title="Close activity log">
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
+            </button>
           </div>
         </div>
         <div class="reason-body" id="traceBody"></div>
       </aside>
+      <aside class="assistant-panel" id="assistantPanel">
+        <div class="reason-head">
+          <p class="eyebrow" id="assistantEyebrow">Research Assistant</p>
+          <h2>Workflow guide</h2>
+          <div class="button-row" style="margin-top: 10px;">
+            <button class="button icon-only" id="closeAssistantButton" type="button" aria-label="Close research assistant" title="Close research assistant">
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="assistant-body" id="assistantBody"></div>
+      </aside>
     </div>
     <div class="toast" id="toast">Ready</div>
+    <button class="floating-assistant" id="floatingAssistantButton" type="button" aria-label="Open research assistant" title="Open research assistant">
+      <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3a7 7 0 0 0-7 7v3a4 4 0 0 0 4 4h1l2 3 2-3h1a4 4 0 0 0 4-4v-3a7 7 0 0 0-7-7z"></path>
+        <path d="M9 10h.01"></path>
+        <path d="M15 10h.01"></path>
+        <path d="M9.5 13a4 4 0 0 0 5 0"></path>
+      </svg>
+      <span>Open research assistant</span>
+    </button>
+    <div class="workspace-modal" id="workspaceModal" aria-hidden="true">
+      <div class="workspace-dialog" role="dialog" aria-modal="true" aria-labelledby="workspaceModalTitle">
+        <header>
+          <div>
+            <p class="eyebrow">Workspace Manager</p>
+            <h2 id="workspaceModalTitle">Project workspaces</h2>
+            <p class="copy">Load, duplicate, import, export, or create a workspace. Records and templates stay separated by workspace.</p>
+          </div>
+          <button class="button icon-only" id="closeWorkspaceModal" type="button" aria-label="Close workspace manager" title="Close workspace manager">
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
+          </button>
+        </header>
+        <div class="workspace-dialog-body" id="workspaceModalBody"></div>
+      </div>
+    </div>
+    <div class="stage-workspace-backdrop" id="stageWorkspaceBackdrop" aria-hidden="true"></div>
+    <aside class="stage-workspace" id="stageWorkspace" role="dialog" aria-modal="true" aria-labelledby="stageWorkspaceTitle" aria-hidden="true">
+      <header class="stage-workspace-head">
+        <div>
+          <p class="eyebrow" id="stageWorkspaceKicker">Focused stage task</p>
+          <h2 id="stageWorkspaceTitle">Current stage</h2>
+          <p id="stageWorkspaceCopy">Open the current workflow task.</p>
+          <div class="stage-workspace-summary" id="stageWorkspaceSummary"></div>
+        </div>
+        <div class="stage-workspace-actions">
+          <button class="button primary" id="runStagePrimaryAction" type="button">Run primary action</button>
+          <button class="button icon-only" id="closeStageWorkspace" type="button" aria-label="Close focused task" title="Close focused task">
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </header>
+      <div class="stage-workspace-body" id="stageWorkspaceBody"></div>
+    </aside>
 
     <script>
       const steps = [
@@ -2411,11 +3751,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
 
       const evidenceModes = [
         { id: "structured_interview", title: "Structured interview", short: "Q1-Q5 field protocol", detail: "Comparable enumerator-led interview data with respondent profile and post-interview coding." },
+        { id: "focus_group", title: "Focus group", short: "Facilitated group discussion", detail: "Group discussion transcript, community dialogue, or FGD notes with facilitator context, speaker roles, consent, and group dynamics." },
         { id: "open_story", title: "Open story", short: "Multi-paragraph narrative", detail: "Community account, oral history, meeting note, or lived-experience story without forcing Q1-Q5." },
         { id: "indigenous_knowledge", title: "Indigenous knowledge", short: "Situated community knowledge", detail: "Local practice, seasonal memory, elder testimony, cultural explanation, or ecological observation." },
         { id: "citizen_science", title: "Citizen science report", short: "Community observation", detail: "Crowdsourced observation with place, time, confidence, validation, consent, and review status." },
         { id: "crowd_batch", title: "Crowdsourced batch", short: "Many stories at once", detail: "CSV or text batch from community submissions that needs moderation, deduplication, and approval." },
-        { id: "experimental_feed", title: "Social Media Feeds", short: "Social/community feed evidence", detail: "X/Twitter, Facebook, LinkedIn, WhatsApp, YouTube, TikTok, Instagram, radio, community forums, or news comments. These are evidence inputs that must pass governance before modelling." }
+        { id: "experimental_feed", title: "Social Media Feeds", short: "Social/community feed evidence", detail: "X/Twitter, Facebook, LinkedIn, WhatsApp, YouTube, TikTok, Instagram, radio, community forums, or news comments. These are evidence inputs that must pass governance before modelling." },
+        { id: "custom_evidence", title: "Other / custom evidence", short: "User-defined evidence route", detail: "Use this when a project has narrative, observation, document, media transcript, administrative note, or mixed evidence that does not fit the standard routes." }
       ];
 
       const socialFeedSources = [
@@ -2474,6 +3816,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           validationStatus: "pending",
           benefitSharing: "",
           feedSources: [],
+          customRouteName: "",
+          customEvidenceType: "narrative",
           q1: "",
           q2: "",
           q3: "",
@@ -2486,7 +3830,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           socialInfluence: ""
         },
         text: "",
-        intakeOption: "manual",
+        intakeOption: "manual_entry",
+        intakeImportMode: "manual_entry",
         records: [],
         importedRecords: [],
         selectedRecordId: "",
@@ -2565,6 +3910,19 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         inoculationApplied: false,
         policy: null,
         repositoryOpen: false,
+        workspace: {
+          active: null,
+          list: [],
+          managerOpen: false,
+          started: false,
+          startOpen: false,
+          startMode: "menu",
+          assistantOpen: false,
+          exportMode: "template_only"
+        },
+        stageWorkspace: {
+          open: false
+        },
         trace: [
           ["idle", "Ready to begin", "Choose country/location and paste the narrative evidence. Nothing is sent to the model until the SDMX gate passes."]
         ]
@@ -2586,6 +3944,162 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         });
         if (!response.ok) throw new Error(`Backend returned ${response.status}`);
         return response.json();
+      }
+
+      function workspaceSettings() {
+        return state.workspace.active?.settings || {};
+      }
+
+      function workspaceName() {
+        return state.workspace.active?.name || "NDIM Core";
+      }
+
+      function workspaceId() {
+        return state.workspace.active?.workspace_id || "ndim-core";
+      }
+
+      function activeEvidenceModes() {
+        const enabled = workspaceSettings().enabled_evidence_routes;
+        if (!Array.isArray(enabled) || !enabled.length) return evidenceModes;
+        const filtered = evidenceModes.filter((mode) => enabled.includes(mode.id));
+        let modes = filtered.length ? filtered : evidenceModes;
+        const focusGroup = evidenceModes.find((mode) => mode.id === "focus_group");
+        if (focusGroup && !modes.some((mode) => mode.id === "focus_group")) {
+          const structuredIndex = modes.findIndex((mode) => mode.id === "structured_interview");
+          modes = structuredIndex >= 0
+            ? [...modes.slice(0, structuredIndex + 1), focusGroup, ...modes.slice(structuredIndex + 1)]
+            : [focusGroup, ...modes];
+        }
+        const custom = evidenceModes.find((mode) => mode.id === "custom_evidence");
+        return custom && !modes.some((mode) => mode.id === "custom_evidence") ? [...modes, custom] : modes;
+      }
+
+      function workspaceStageLabel(step) {
+        return workspaceSettings().stage_labels?.[step.id] || step.title;
+      }
+
+      function workspaceStageSub(step) {
+        if (workspaceId() === "climatetales-rwanda") {
+          const custom = {
+            intake: "ethnography, digital listening",
+            encoding: "risk, trust, messenger fit",
+            compartmental: "influence simulation",
+            digital: "field feedback loop",
+            inoculation: "SBCC and counter-narratives",
+            policy: "workshop and project reports"
+          };
+          return custom[step.id] || step.sub;
+        }
+        return step.sub;
+      }
+
+      function applyWorkspaceDefaults(workspace) {
+        if (!workspace) return;
+        const settings = workspace.settings || {};
+        const countries = Array.isArray(settings.countries) && settings.countries.length ? settings.countries : null;
+        if (countries && !countries.includes(state.meta.country)) state.meta.country = countries[0];
+        if (settings.default_language) state.meta.language = settings.default_language;
+        if (settings.default_source_type) state.meta.sourceType = settings.default_source_type;
+        if (settings.default_period) state.meta.period = settings.default_period;
+        if (settings.default_evidence_route) state.template.evidenceMode = settings.default_evidence_route;
+        const consent = settings.consent_defaults || {};
+        if (consent.visibility) state.governance.visibility = consent.visibility;
+        if (consent.consent) state.governance.consent = consent.consent;
+        if (consent.repository_mode) state.governance.repositoryMode = consent.repository_mode;
+        const llm = settings.llm_defaults || {};
+        if (llm.provider) state.llmProvider = llm.provider;
+        const priors = settings.bayesian_priors || {};
+        state.priors = { ...state.priors, ...priors };
+        const enabled = activeEvidenceModes();
+        if (!enabled.some((mode) => mode.id === state.template.evidenceMode)) {
+          state.template.evidenceMode = enabled[0]?.id || "structured_interview";
+        }
+      }
+
+      async function loadWorkspaceState() {
+        try {
+          const [active, list] = await Promise.all([
+            apiJson("/workspaces/active"),
+            apiJson("/workspaces")
+          ]);
+          state.workspace.active = active;
+          state.workspace.list = list.workspaces || [];
+          applyWorkspaceDefaults(active);
+          trace("workspace", "Workspace loaded", `${workspaceName()} is active. Evidence, templates, model defaults, repository behavior, and assistant guidance now follow this workspace.`);
+        } catch (error) {
+          state.workspace.active = {
+            workspace_id: "ndim-core",
+            name: "NDIM Core",
+            description: "Fallback local workspace.",
+            settings: {}
+          };
+          trace("workspace", "Workspace service unavailable", error.message || "Using local fallback workspace.");
+        }
+      }
+
+      async function setActiveWorkspace(workspaceId) {
+        const active = await apiJson(`/workspaces/${encodeURIComponent(workspaceId)}/set-active`, { method: "POST" });
+        const list = await apiJson("/workspaces");
+        state.workspace.active = active;
+        state.workspace.list = list.workspaces || [];
+        applyWorkspaceDefaults(active);
+        trace("workspace", "Workspace switched", `${workspaceName()} is now active. New evidence will use this workspace's defaults.`);
+        toast("Workspace switched");
+        render();
+      }
+
+      async function createWorkspaceFromManager() {
+        const name = $("workspaceNewName")?.value?.trim();
+        if (!name) {
+          toast("Workspace name required");
+          return;
+        }
+        const country = $("workspaceNewCountry")?.value?.trim();
+        if (!country) {
+          toast("Country required");
+          return;
+        }
+        const payload = {
+          name,
+          description: $("workspaceNewDescription")?.value || "",
+          country,
+          domain: $("workspaceNewDomain")?.value?.trim() || "general narrative evidence"
+        };
+        const workspace = await apiJson("/workspaces", { method: "POST", body: JSON.stringify(payload) });
+        await setActiveWorkspace(workspace.workspace_id);
+        startWorkspaceSession(`${workspace.name} was created and loaded.`);
+        state.workspace.managerOpen = false;
+      }
+
+      async function duplicateWorkspaceById(sourceId) {
+        const source = (state.workspace.list || []).find((item) => item.workspace_id === sourceId);
+        const defaultName = `${source?.name || "Workspace"} Copy`;
+        const workspace = await apiJson(`/workspaces/${encodeURIComponent(sourceId)}/duplicate`, {
+          method: "POST",
+          body: JSON.stringify({ name: defaultName })
+        });
+        await setActiveWorkspace(workspace.workspace_id);
+        startWorkspaceSession(`${workspace.name} was duplicated from ${source?.name || sourceId} and loaded.`);
+        trace("workspace", "Workspace duplicated", `${source?.name || sourceId} was copied into ${workspace.name}.`);
+      }
+
+      async function exportActiveWorkspace() {
+        const mode = $("workspaceExportMode")?.value || state.workspace.exportMode || "template_only";
+        if (mode === "full_backup" && !confirm("Full workspace backup may include sensitive records. Continue only if you have permission to export them.")) return;
+        window.open(`/workspaces/${encodeURIComponent(workspaceId())}/export?mode=${encodeURIComponent(mode)}`, "_blank", "noopener,noreferrer");
+        trace("workspace", "Workspace export requested", `${workspaceName()} export mode: ${mode.replace(/_/g, " ")}.`);
+      }
+
+      async function importWorkspaceFromFile(file) {
+        if (!file) return;
+        const form = new FormData();
+        form.append("file", file);
+        const response = await fetch("/workspaces/import", { method: "POST", body: form });
+        if (!response.ok) throw new Error(`Import failed (${response.status})`);
+        const workspace = await response.json();
+        await setActiveWorkspace(workspace.workspace_id);
+        startWorkspaceSession(`${workspace.name} was imported and loaded.`);
+        trace("workspace", "Workspace imported", `${workspace.name} was imported and set active.`);
       }
 
       async function refreshAnalyticsStatus() {
@@ -2677,6 +4191,54 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           '"': "&quot;",
           "'": "&#039;"
         }[char]));
+      }
+
+      function icon(name) {
+        const paths = {
+          start: '<path d="M5 4l14 8-14 8z"></path>',
+          folder: '<path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 7V6a2 2 0 0 1 2-2h4l2 3"></path>',
+          plus: '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
+          copy: '<rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>',
+          import: '<path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path>',
+          export: '<path d="M12 21V9"></path><path d="M7 14l5-5 5 5"></path><path d="M5 3h14"></path>',
+          assistant: '<path d="M12 3a7 7 0 0 0-7 7v3a4 4 0 0 0 4 4h1l2 3 2-3h1a4 4 0 0 0 4-4v-3a7 7 0 0 0-7-7z"></path><path d="M9 10h.01"></path><path d="M15 10h.01"></path><path d="M9.5 13a4 4 0 0 0 5 0"></path>',
+          log: '<path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path>',
+          manual: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path><path d="M4 5.5v16"></path><path d="M8 7h8"></path><path d="M8 11h7"></path>',
+          evidence: '<path d="M4 4h16v16H4z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path>',
+          shield: '<path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"></path><path d="M9 12l2 2 4-5"></path>',
+          model: '<path d="M4 17l6-6 4 4 6-8"></path><path d="M4 20h16"></path>',
+          policy: '<path d="M6 3h9l3 3v15H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6"></path><path d="M9 17h6"></path>',
+          warning: '<path d="M12 3l10 18H2z"></path><path d="M12 9v5"></path><path d="M12 17h.01"></path>',
+          check: '<path d="M20 6L9 17l-5-5"></path>',
+          clock: '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
+          graph: '<circle cx="6" cy="7" r="2"></circle><circle cx="18" cy="7" r="2"></circle><circle cx="12" cy="17" r="2"></circle><path d="M8 8l3 7"></path><path d="M16 8l-3 7"></path><path d="M8 7h8"></path>',
+          x: '<path d="M18 6 6 18"></path><path d="M6 6l12 12"></path>',
+          sun: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M4.93 19.07l1.41-1.41"></path><path d="M17.66 6.34l1.41-1.41"></path>',
+          moon: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z"></path>'
+        };
+        return `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.folder}</svg>`;
+      }
+
+      function iconCell(name) {
+        return `<span class="icon-cell">${icon(name)}</span>`;
+      }
+
+      function setTheme(theme) {
+        const nextTheme = theme === "dark" ? "dark" : "light";
+        document.documentElement.dataset.theme = nextTheme;
+        try {
+          window.localStorage?.setItem("ndim_theme", nextTheme);
+        } catch (_) {}
+        const toggle = $("themeIconToggle");
+        if (toggle) {
+          const target = nextTheme === "dark" ? "light" : "dark";
+          toggle.innerHTML = icon(nextTheme === "dark" ? "sun" : "moon");
+          toggle.setAttribute("aria-label", `Switch to ${target} mode`);
+          toggle.setAttribute("title", `Switch to ${target} mode`);
+        }
+        document.querySelectorAll("#themeToggle button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.theme === nextTheme);
+        });
       }
 
       function mathBlock(tex, note = "") {
@@ -2813,6 +4375,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           validation_summary: calibrationSummary(),
           analytics_status: state.analyticsStatus?.available ? "advanced" : "fallback_or_unavailable",
           analytics_summary: analyticsSummary(),
+          regional_analysis_status: state.regional ? "included" : "not_run_pooled_evidence_only",
           uncertainty_summary: finalUncertaintySummary(),
           inoculation_threat_profile: {
             top_threat: inoculation.top_threat,
@@ -2898,26 +4461,30 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       }
 
       function currentEvidenceMode() {
-        return evidenceModes.find((mode) => mode.id === state.template.evidenceMode) || evidenceModes[0];
+        return activeEvidenceModes().find((mode) => mode.id === state.template.evidenceMode) || activeEvidenceModes()[0] || evidenceModes[0];
       }
 
       function collectionTemplateId() {
         const mode = state.template.evidenceMode || "structured_interview";
         if (mode === "structured_interview") return "clean-cooking-pressure-cooker-q1-q5-v1";
+        if (mode === "focus_group") return "ndim-focus-group-discussion-v1";
         if (mode === "indigenous_knowledge") return "ndim-indigenous-knowledge-record-v1";
         if (mode === "citizen_science") return "ndim-citizen-science-observation-v1";
         if (mode === "crowd_batch") return "ndim-crowdsourced-batch-v1";
         if (mode === "experimental_feed") return "ndim-social-media-feed-v1";
+        if (mode === "custom_evidence") return "ndim-custom-evidence-route-v1";
         return "ndim-open-narrative-v1";
       }
 
       function narrativeEvidenceTitle() {
         const mode = currentEvidenceMode();
         if (mode.id === "structured_interview") return "Structured interview response";
+        if (mode.id === "focus_group") return "Focus group discussion";
         if (mode.id === "indigenous_knowledge") return "Indigenous knowledge record";
         if (mode.id === "citizen_science") return "Citizen science observation";
         if (mode.id === "crowd_batch") return "Crowdsourced narrative";
         if (mode.id === "experimental_feed") return "Social media feed item";
+        if (mode.id === "custom_evidence") return state.template.customRouteName || "Custom evidence record";
         return "Open narrative";
       }
 
@@ -2958,6 +4525,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
               citizen_confidence: state.template.citizenConfidence,
               validation_status: state.template.validationStatus,
               benefit_sharing: state.template.benefitSharing,
+              custom_route_name: state.template.customRouteName,
+              custom_evidence_type: state.template.customEvidenceType,
               consent_tier: state.governance.consent,
               visibility: state.governance.visibility,
               manual_scores: state.manualScores,
@@ -2997,7 +4566,10 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             questionTitle: question.title
           })
         ) : [];
-        const fromFreeText = splitNarratives(state.text).map((text, index) =>
+        const freeTextBlocks = state.intakeImportMode === "single" && state.text.trim()
+          ? [state.text.trim()]
+          : splitNarratives(state.text);
+        const fromFreeText = freeTextBlocks.map((text, index) =>
           narrativeRecord(text, fromQuestions.length + index, { questionId: state.template.evidenceMode, questionTitle: narrativeEvidenceTitle() })
         );
         state.records = [...fromQuestions, ...fromFreeText];
@@ -3333,7 +4905,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 question_title: questionTitle,
                 ui: "csv-import",
                 evidence_mode: evidenceMode,
-                evidence_mode_label: evidenceModes.find((mode) => mode.id === evidenceMode)?.title || evidenceMode,
+            evidence_mode_label: (activeEvidenceModes().find((mode) => mode.id === evidenceMode) || evidenceModes.find((mode) => mode.id === evidenceMode))?.title || evidenceMode,
                 collection_template: row.collection_template || collectionTemplateId(),
                 knowledge_type: row.knowledge_type || "",
                 knowledge_holder: row.knowledge_holder || "",
@@ -3348,6 +4920,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 citizen_confidence: row.citizen_confidence || row.confidence || "",
                 validation_status: row.validation_status || "",
                 benefit_sharing: row.benefit_sharing || "",
+                custom_route_name: row.custom_route_name || "",
+                custom_evidence_type: row.custom_evidence_type || "",
                 consent_tier: row.consent_tier || state.governance.consent,
                 visibility: row.visibility || state.governance.visibility
               }
@@ -3395,6 +4969,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         state.template.validationStatus = row.validation_status || state.template.validationStatus || "pending";
         state.template.translationNotes = row.translation_notes || state.template.translationNotes;
         state.template.benefitSharing = row.benefit_sharing || state.template.benefitSharing;
+        state.template.customRouteName = row.custom_route_name || state.template.customRouteName;
+        state.template.customEvidenceType = row.custom_evidence_type || state.template.customEvidenceType;
         state.template.q1 = row.q1 || state.template.q1;
         state.template.q2 = row.q2 || state.template.q2;
         state.template.q3 = row.q3 || state.template.q3;
@@ -3552,6 +5128,14 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             ["Core narrative questions", `${qCount} of ${narrativeQuestions.length} answered`, qCount > 0]
           );
         }
+        if (state.template.evidenceMode === "focus_group") {
+          checks.push(
+            ["Focus group ID", state.template.interviewId || "recommended", true],
+            ["Group profile", state.template.respondentProfile, Boolean(state.template.respondentProfile)],
+            ["Community validation", state.template.communityValidation, Boolean(state.template.communityValidation)],
+            ["Validation status", state.template.validationStatus, Boolean(state.template.validationStatus)]
+          );
+        }
         if (state.template.evidenceMode === "indigenous_knowledge") {
           checks.push(
             ["Knowledge type", state.template.knowledgeType, Boolean(state.template.knowledgeType)],
@@ -3577,6 +5161,12 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           checks.push(
             ["Selected platforms", (state.template.feedSources || []).join(", "), Array.isArray(state.template.feedSources) && state.template.feedSources.length > 0],
             ["Feed validation status", state.template.validationStatus, Boolean(state.template.validationStatus)]
+          );
+        }
+        if (state.template.evidenceMode === "custom_evidence") {
+          checks.push(
+            ["Custom route name", state.template.customRouteName, Boolean(state.template.customRouteName)],
+            ["Custom evidence type", state.template.customEvidenceType, Boolean(state.template.customEvidenceType)]
           );
         }
         checks.push(["Narrative observations", `${state.records.length} parsed`, state.records.length > 0]);
@@ -3644,6 +5234,12 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           toast("Add interview ID");
           return false;
         }
+        if (state.template.evidenceMode === "focus_group" && !state.template.respondentProfile) {
+          setStatus("error");
+          trace("blocked", "Missing focus group profile", "Focus group mode needs a short group profile so reviewers know whose voices shaped the discussion.");
+          toast("Add focus group profile");
+          return false;
+        }
         if (state.template.evidenceMode === "indigenous_knowledge" && (!state.template.knowledgeType || !state.template.knowledgeHolder)) {
           setStatus("error");
           trace("blocked", "Missing knowledge metadata", "Indigenous knowledge mode requires a knowledge type and knowledge holder category before review.");
@@ -3654,6 +5250,12 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           setStatus("error");
           trace("blocked", "Missing citizen-science metadata", "Citizen science mode requires contributor type and observation date for validation.");
           toast("Complete citizen report metadata");
+          return false;
+        }
+        if (state.template.evidenceMode === "custom_evidence" && (!state.template.customRouteName || !state.template.customEvidenceType)) {
+          setStatus("error");
+          trace("blocked", "Missing custom evidence metadata", "Custom evidence requires a route name and evidence type so the repository and SDMX gate can explain what was ingested.");
+          toast("Name the custom evidence route");
           return false;
         }
         state.completed.add("intake");
@@ -3683,9 +5285,33 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         scrollToActiveStage();
       }
 
+      function openStageWorkspace(index = state.step) {
+        if (!state.workspace.started) {
+          state.workspace.startOpen = true;
+          trace("workspace", "Start workspace menu opened", "Choose or create a workspace before opening stage tasks.");
+          render();
+          return;
+        }
+        const nextIndex = Math.max(0, Math.min(steps.length - 1, index));
+        if (steps[nextIndex]?.id !== "repository") state.repositoryOpen = false;
+        state.step = nextIndex;
+        state.stageWorkspace.open = true;
+        trace("stage", "Focused stage task opened", `${steps[nextIndex].num} ${workspaceStageLabel(steps[nextIndex])} is open as a guided task workspace.`);
+        render();
+        requestAnimationFrame(() => $("stageWorkspaceBody")?.scrollTo({ top: 0, behavior: "smooth" }));
+      }
+
+      function closeStageWorkspace() {
+        state.stageWorkspace.open = false;
+        trace("stage", "Focused stage task closed", `${currentStep().num} ${workspaceStageLabel(currentStep())} remains selected in the workbench.`);
+        render();
+      }
+
       function scrollToActiveStage() {
         requestAnimationFrame(() => {
-          const stage = document.querySelector(".stage-card, .repository-full-view");
+          const stage = state.stageWorkspace.open
+            ? document.querySelector(".stage-workspace.open")
+            : document.querySelector(".stage-launcher, .repository-full-view");
           if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
         });
       }
@@ -3778,7 +5404,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             trace("finish", "Workflow complete", "Policy output, audit payload, and export controls are ready. Returning to intake so another evidence route can begin.");
             goStep(0);
           } else {
-            const missing = steps.filter((step) => step.id !== "policy" && !state.completed.has(step.id)).map((step) => step.title);
+            const missing = steps.filter((step) => !["policy", "regional"].includes(step.id) && !state.completed.has(step.id)).map((step) => step.title);
             toast("Run policy output first");
             trace("finish", "Finish blocked", missing.length ? `Complete or review these stages before final export: ${missing.join(", ")}. Then run full policy pipeline.` : "All prior stages are ready. Click Run full policy pipeline in Policy output before finishing.");
             scrollToActiveStage();
@@ -3825,9 +5451,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           return;
         }
         if (id === "regional" && !state.regional) {
-          toast("Run regional analysis first");
-          trace("blocked", "Regional analysis not run", "Run place-based analysis so interventions can be crafted for isolated regions or grouped evidence.");
-          return;
+          trace("optional", "Regional analysis skipped", "Regional analysis is optional. Policy output will use pooled evidence and state that place-specific analysis was not run.");
         }
         if (id === "graph" && !state.graph) {
           toast("Build knowledge graph first");
@@ -3843,25 +5467,223 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       }
 
       function renderStepList() {
+        if (!state.workspace.started) {
+          $("stepList").innerHTML = `
+            <div class="start-hint">
+              <strong>Start a workspace first.</strong><br>
+              The scientific workflow appears after a project workspace is loaded.
+            </div>
+          `;
+          return;
+        }
         $("stepList").innerHTML = steps.map((step, index) => `
           <button class="step-button ${index === state.step ? "active" : ""} ${state.completed.has(step.id) ? "done" : ""}" data-step="${index}" type="button">
             <span class="num">${step.num}</span>
-            <span><strong>${step.title}</strong><span>${step.sub}</span></span>
+            <span><strong>${escapeHtml(workspaceStageLabel(step))}</strong><span>${escapeHtml(workspaceStageSub(step))}</span></span>
           </button>
         `).join("");
         document.querySelectorAll("[data-step]").forEach((button) => {
-          button.addEventListener("click", () => goStep(Number(button.dataset.step)));
+          button.addEventListener("click", () => openStageWorkspace(Number(button.dataset.step)));
         });
       }
 
       function renderStageJump() {
         const select = $("stageJumpSelect");
         if (!select) return;
+        if (!state.workspace.started) {
+          select.innerHTML = '<option>Start workspace first</option>';
+          select.disabled = true;
+          return;
+        }
+        select.disabled = false;
         select.innerHTML = steps.map((step, index) => `
-          <option value="${index}" ${index === state.step ? "selected" : ""}>${step.num} ${escapeHtml(step.title)}</option>
+          <option value="${index}" ${index === state.step ? "selected" : ""}>${step.num} ${escapeHtml(workspaceStageLabel(step))}</option>
         `).join("");
         select.value = String(state.step);
-        select.onchange = () => goStep(Number(select.value));
+        select.onchange = () => openStageWorkspace(Number(select.value));
+      }
+
+      function workspaceReadinessPercent() {
+        const gates = [
+          Boolean(state.workspace.active),
+          state.records.length > 0,
+          approvedRecords().length > 0,
+          state.encoded.length > 0,
+          Boolean(state.comp || state.agents),
+          Boolean(state.digital),
+          Boolean(state.bayes || state.rl),
+          Boolean(state.policy)
+        ];
+        return Math.round((gates.filter(Boolean).length / gates.length) * 100);
+      }
+
+      function assistantWorkItems() {
+        return [
+          ["Workspace loaded", Boolean(state.workspace.active)],
+          ["Evidence staged", state.records.length > 0],
+          ["Governance reviewed", approvedRecords().length > 0],
+          ["Narratives encoded", state.encoded.length > 0],
+          ["Models executed", Boolean(state.comp || state.agents)],
+          ["Twin updated", Boolean(state.digital)],
+          ["Policy brief ready", Boolean(state.policy)]
+        ];
+      }
+
+      function workspaceSummaryText() {
+        const settings = workspaceSettings();
+        const country = (settings.countries || [state.meta.country || "Rwanda"]).join(", ");
+        const routes = activeEvidenceModes().map((mode) => mode.title).slice(0, 4).join(", ");
+        const domain = settings.domain || "narrative evidence";
+        return `${workspaceName()} is configured for ${domain} in ${country}. Active intake routes include ${routes || "the core NDIM evidence routes"}.`;
+      }
+
+      function startWorkspaceSession(detail = "Workspace loaded") {
+        state.workspace.started = true;
+        state.workspace.startOpen = false;
+        state.workspace.startMode = "menu";
+        trace("workspace", "Workspace session started", detail);
+      }
+
+      function renderStartMenu() {
+        if (!state.workspace.startOpen) return "";
+        return `
+          <div class="start-menu" role="menu" aria-label="Start workspace options">
+            <button class="start-action" data-start-action="continue" type="button">
+              ${iconCell("start")}<span><strong>Continue last workspace</strong><span>Open ${escapeHtml(workspaceName())} and reveal the guided workflow.</span></span>
+            </button>
+            <button class="start-action" data-start-action="open" type="button">
+              ${iconCell("folder")}<span><strong>Open existing workspace</strong><span>Choose from saved local project workspaces.</span></span>
+            </button>
+            ${state.workspace.startMode === "open" ? `
+              <div class="start-existing-list">
+                ${(state.workspace.list || []).map((item) => `
+                  <button class="workspace-mini ${item.workspace_id === workspaceId() ? "active" : ""}" data-workspace-open-quick="${escapeHtml(item.workspace_id)}" type="button">
+                    <span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.domain || item.workspace_id)}</span></span>
+                    <b>${item.workspace_id === workspaceId() ? "ON" : "GO"}</b>
+                  </button>
+                `).join("")}
+              </div>
+            ` : ""}
+            <button class="start-action" data-start-action="create" type="button">
+              ${iconCell("plus")}<span><strong>Create new workspace</strong><span>Start a new country, district, study, or policy programme.</span></span>
+            </button>
+            <button class="start-action" data-start-action="import" type="button">
+              ${iconCell("import")}<span><strong>Import workspace package</strong><span>Load a workspace shared from another computer.</span></span>
+            </button>
+          </div>
+        `;
+      }
+
+      function renderWorkspaceLaunchpad() {
+        const settings = workspaceSettings();
+        const readiness = workspaceReadinessPercent();
+        const allModes = activeEvidenceModes().map((mode) => mode.title);
+        const modes = allModes.slice(0, 5);
+        const extraModes = Math.max(0, allModes.length - modes.length);
+        const activeId = workspaceId();
+        const workspaces = (state.workspace.list || []).slice(0, 3);
+        const title = "NDIM Engine";
+        const summary = "NDIM Engine is a local-first scientific workbench for studying how narratives, misinformation, trust, social influence, and intervention messages shape adoption decisions in communities. It turns field stories into governed evidence, encodes narrative mechanisms, simulates diffusion with compartmental and agent-based models, updates uncertainty through Bayesian learning, tests inoculation strategies in a digital twin, and produces human-reviewed policy briefs.";
+        return `
+          <div class="workspace-launchpad workspace-os" aria-label="Workspace launchpad">
+            <section class="workspace-prime">
+              <div class="workspace-title-row">
+                <div>
+                  <p class="eyebrow">Narrative Diffusion and Inoculation Model</p>
+                  <h2>${escapeHtml(title)}</h2>
+                  <p>${escapeHtml(summary)}</p>
+                  <p class="workspace-support-line">From field narratives to traceable model evidence, intervention testing, and policy-ready decision support.</p>
+                </div>
+                <span class="workspace-badge">local-first research tool</span>
+              </div>
+              <div class="workspace-capability-row" aria-label="NDIM scientific capabilities">
+                <div class="workspace-capability"><strong>Governed evidence</strong>SDMX metadata, consent, review status, hashes, and an audit trail before evidence can influence models.</div>
+                <div class="workspace-capability"><strong>Scientific modelling</strong>Narrative encoding, ODE flow, agent behaviour, Bayesian updating, RL optimisation, and digital-twin feedback.</div>
+                <div class="workspace-capability"><strong>Policy safety</strong>Uncertainty, assumptions, limitations, confidence level, and required human review in every policy output.</div>
+              </div>
+              ${state.workspace.started ? `
+                <div class="workspace-context-card" role="status" aria-label="Active workspace context">
+                  <span>Project context loaded</span>
+                  <strong>${escapeHtml(workspaceName())}</strong>
+                  <p>${escapeHtml(workspaceSummaryText())}</p>
+                </div>
+              ` : ""}
+              <div class="workspace-command-row">
+                <div class="start-control">
+                  <button class="button primary start-button" data-start-toggle type="button">${icon("start")} ${state.workspace.started ? "Switch workspace" : "Start workspace"}</button>
+                  ${renderStartMenu()}
+                </div>
+                <div class="workspace-quick-actions">
+                  <button class="button" data-open-workspace-manager type="button">${icon("folder")} Workspace manager</button>
+                  <button class="button" data-start-action="create" type="button">${icon("plus")} New workspace</button>
+                  <a class="button" href="/manual#workspaces" target="_blank" rel="noreferrer">${icon("manual")} Workspace guide</a>
+                </div>
+              </div>
+              <div class="workspace-signal-row" aria-label="Workspace evidence routes">
+                <span class="workspace-signal"><strong>Routes</strong> ${modes.map(escapeHtml).join(" / ")}${extraModes ? ` / +${extraModes}` : ""}</span>
+                <span class="workspace-signal"><strong>Grade</strong> ${escapeHtml(evidenceGrade())}</span>
+                <span class="workspace-signal"><strong>Offline</strong> ready</span>
+                <span class="workspace-signal"><strong>Storage</strong> local</span>
+              </div>
+            </section>
+            <div class="workspace-side-stack">
+              <section class="workspace-switcher">
+                <p class="eyebrow">${state.workspace.started ? "Open workspaces" : "Project choices"}</p>
+                <h3>${state.workspace.started ? "Switch without losing context" : "Load before analysis"}</h3>
+                <p>${state.workspace.started ? "Change projects from the list below, or keep this workspace active while you finish the evidence-to-policy chain." : "Start from a saved workspace, duplicate a project, or create a new workspace before importing evidence."}</p>
+                <div class="workspace-mini-list">
+                  ${state.workspace.started ? workspaces.map((item) => `
+                    <button class="workspace-mini ${item.workspace_id === activeId ? "active" : ""}" data-workspace-open-quick="${escapeHtml(item.workspace_id)}" type="button">
+                      <span><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.domain || item.workspace_id)}</span></span>
+                      <b>${item.workspace_id === activeId ? "ON" : "GO"}</b>
+                    </button>
+                  `).join("") : `
+                    <div class="start-panel">
+                      <h3>${icon("folder")} Existing</h3>
+                      <p>Open ClimateTales Rwanda, NDIM Core, or another local project.</p>
+                    </div>
+                    <div class="start-panel">
+                      <h3>${icon("plus")} New</h3>
+                      <p>Create a project with its own country, route, and export rules.</p>
+                    </div>
+                    <div class="start-panel">
+                      <h3>${icon("copy")} Duplicate</h3>
+                      <p>Open Workspace manager, then use the duplicate icon beside the workspace you want to copy.</p>
+                    </div>
+                  `}
+                </div>
+              </section>
+              <section class="agent-cockpit" aria-label="Research assistant progress">
+                <div class="agent-orb" style="--pct:${readiness}%;">
+                  <div><strong>${readiness}</strong><span>ready</span></div>
+                </div>
+                <div>
+                  <p class="eyebrow">Research assistant</p>
+                  <h3>${state.workspace.started ? "Watching the workflow" : "I will guide the setup"}</h3>
+                  <p>${escapeHtml(state.workspace.started ? assistantNextAction() : "Start by choosing a workspace. I will then reveal the workflow, explain each stage, track what is complete, and warn when evidence is not ready for policy use.")}</p>
+                </div>
+                <div class="agent-worklist compact">
+                  ${assistantWorkItems().map(([label, done]) => `
+                    <div class="agent-workitem ${done ? "done" : ""}">
+                      <span class="agent-dot"></span>
+                      <strong>${escapeHtml(label)}</strong>
+                      <span>${done ? "done" : "waiting"}</span>
+                    </div>
+                  `).join("")}
+                </div>
+              </section>
+            </div>
+          </div>
+        `;
+      }
+
+      function scientificCautionText() {
+        if (!state.records.length) return "Begin with governed evidence. Models stay advisory until narratives have source, place, consent, visibility, and reviewer context.";
+        if (!approvedRecords().length) return "Evidence is staged but not yet accepted. Approve, reject, and commit records before treating them as model-ready observations.";
+        if (!state.encoded.length) return "Accepted evidence exists, but encoding has not yet converted stories into model inputs. Use manual, LLM-assisted, or hybrid scoring next.";
+        if (!state.digital && !state.comp && !state.agents) return "Encoded narratives are ready. Run the compartmental and agent-based models before interpreting adoption pathways.";
+        if (!state.policy) return "Model outputs are available, but the policy brief still needs uncertainty, assumptions, limitations, and human review before use.";
+        return "A policy output exists. Treat it as a decision brief for review, not an automatic policy decision.";
       }
 
       function renderCommandCenter() {
@@ -3870,42 +5692,118 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const adoption = bestAdoptionSignal();
         const encodedSummary = state.encoded.length ? `${state.encoded.length}/${state.records.length || state.encoded.length}` : "0";
         const topLocation = [state.meta.country, state.meta.district || state.meta.province].filter(Boolean).join(" / ") || "not set";
+        const recordSummary = state.records.length ? `${state.records.length} staged record${state.records.length === 1 ? "" : "s"}` : "No records staged yet";
+        const recordExplanation = state.records.length
+          ? "Review staged narratives, approvals, repository state, and evidence seal before sending results into the model chain."
+          : "Records appear here only after you upload or manually load evidence, then stage and validate it.";
+        const repoPreview = state.records.slice(0, 3).map((record, index) => `
+          <div class="os-repository-row">
+            <span title="${escapeHtml(record.narrative_id || `record-${index + 1}`)}">${escapeHtml(record.narrative_id || `record-${index + 1}`)}</span>
+            <span title="${escapeHtml(recordRouteLabel(record))}">${escapeHtml(recordRouteLabel(record))}</span>
+            <span title="${escapeHtml(recordStatusLabel(record))}">${escapeHtml(recordStatusLabel(record))}</span>
+          </div>
+        `).join("");
         return `
-          <section class="command-center" aria-label="NDIM command center">
-            <div class="flow-lane">
-              ${workflowPhases.map(renderFlowCard).join("")}
-            </div>
-            <div class="command-head">
-              <div>
-                <p class="eyebrow">Evidence-to-policy workbench</p>
-                <h2>Evidence, readiness, and next action in one place</h2>
-                <p>Use this workbench to see what evidence exists, whether it has passed governance, which model stage is active, and what must happen next before policy output is credible.</p>
-                <div class="reference-links" aria-label="Tool references">
-                  <a class="button" href="/manual" target="_blank" rel="noreferrer">Open tool manual</a>
-                  <a class="button" href="#narrativeRepository" data-jump-repository>Open narrative repository</a>
-                  <button class="button" data-open-full-repository type="button">Open full repository</button>
-                </div>
-                <div class="status-chip-row">
-                  ${statusChip("Evidence staged", state.records.length > 0)}
-                  ${statusChip("Approved evidence", approvedRecords().length > 0)}
-                  ${statusChip("Tamper seal", Boolean(state.governance.lastDigest))}
-                  ${statusChip("Encoding ready", state.encoded.length > 0)}
-                  ${statusChip("Model feedback loop", Boolean(state.digital || state.bayes || state.rl))}
-                  ${statusChip("Policy audit", Boolean(state.policy))}
-                </div>
-              </div>
-              <div class="hero-side">
-                ${renderSystemDynamicsMap()}
+          <section class="command-center science-os" aria-label="NDIM scientific workbench">
+            ${renderWorkspaceLaunchpad()}
+            <div class="os-phase-rail" aria-label="Evidence-to-policy phases">
+              <div class="flow-lane workbench-flow">
+                ${workflowPhases.map(renderFlowCard).join("")}
               </div>
             </div>
-            <div class="command-metrics">
-              ${commandMetric("Observations", state.records.length || "-")}
-              ${commandMetric("Approved", approvedRecords().length || "-")}
-              ${commandMetric("Encoded stories", encodedSummary)}
-              ${commandMetric("Model signal", adoption)}
-              ${commandMetric("Evidence grade", evidenceGrade())}
-              ${commandMetric("Validation", state.validation?.status || "checking")}
-              ${commandMetric("Evidence seal", shortHash(state.governance.lastDigest))}
+            <div class="os-workbench-grid">
+              <section class="os-stage-card">
+                <p class="eyebrow">Active scientific task</p>
+                <h2>${escapeHtml(step.num)} ${escapeHtml(step.title)}</h2>
+                <p>${escapeHtml(assistantNextAction())}</p>
+                <div class="os-action-row">
+                  <button class="button primary" id="workbenchRunButton" type="button">${icon("start")} Run current stage</button>
+                  <button class="button" data-open-stage-workspace type="button">${icon("folder")} Open focused task</button>
+                  <button class="button" id="workbenchTraceButton" type="button">${icon("log")} Activity log</button>
+                </div>
+                <div class="os-stage-insight-grid">
+                  <div class="os-stage-insight">
+                    <strong>Input</strong>
+                    <span>${escapeHtml(stageInputSummary(step.id))}</span>
+                  </div>
+                  <div class="os-stage-insight">
+                    <strong>Scientific check</strong>
+                    <span>${escapeHtml(stageAdvice(step.id))}</span>
+                  </div>
+                  <div class="os-stage-insight">
+                    <strong>Status</strong>
+                    <span>${escapeHtml(stageCompletionLabel(step.id))}</span>
+                  </div>
+                </div>
+              </section>
+              <div class="os-right-column">
+                <section class="os-assistant-card">
+                  <p class="eyebrow">Research assistant</p>
+                  <h3>What to know now</h3>
+                  <p>${escapeHtml(scientificCautionText())}</p>
+                  <div class="agent-worklist" style="margin-top: 12px;">
+                    ${assistantWorkItems().slice(0, 4).map(([label, done]) => `
+                      <div class="agent-workitem ${done ? "done" : ""}">
+                        <span class="agent-dot"></span>
+                        <strong>${escapeHtml(label)}</strong>
+                        <span>${done ? "done" : "waiting"}</span>
+                      </div>
+                    `).join("")}
+                  </div>
+                </section>
+              </div>
+              <section class="os-repository-card" id="narrativeRepository">
+                <p class="eyebrow">Narrative repository</p>
+                <h3>${escapeHtml(recordSummary)}</h3>
+                <p>${escapeHtml(recordExplanation)}</p>
+                <div class="os-repository-table" aria-label="Repository preview">
+                  <div class="os-repository-row header"><span>Narrative</span><span>Route</span><span>Status</span></div>
+                  ${repoPreview || `<div class="os-repository-row"><span>Waiting for staged records.</span><span>-</span><span>-</span></div>`}
+                </div>
+                <div class="workbench-tools" aria-label="Repository actions">
+                  <a class="button" href="#narrativeRepository" data-jump-repository>${icon("evidence")} Repository view</a>
+                  <button class="button" data-open-full-repository type="button">${icon("folder")} Full repository</button>
+                </div>
+              </section>
+            </div>
+            <div class="os-metrics-bar" aria-label="Workspace metrics">
+              <div class="os-metric"><span>Observations</span><strong>${escapeHtml(state.records.length || "-")}</strong></div>
+              <div class="os-metric"><span>Approved</span><strong>${escapeHtml(approvedRecords().length || "-")}</strong></div>
+              <div class="os-metric"><span>Encoded</span><strong>${escapeHtml(encodedSummary)}</strong></div>
+              <div class="os-metric"><span>Model signal</span><strong>${escapeHtml(adoption)}</strong></div>
+              <div class="os-metric"><span>Location</span><strong title="${escapeHtml(topLocation)}">${escapeHtml(topLocation)}</strong></div>
+              <div class="os-metric"><span>Validation</span><strong>${escapeHtml(state.validation?.status || "checking")}</strong></div>
+              <div class="os-metric"><span>Seal</span><strong>${escapeHtml(shortHash(state.governance.lastDigest))}</strong></div>
+            </div>
+            <details class="os-system-drawer">
+              <summary>View NDIM system map and feedback chain</summary>
+              <div class="os-system-drawer-body">
+                <div class="hero-side">
+                  ${renderSystemDynamicsMap()}
+                </div>
+              </div>
+            </details>
+          </section>
+        `;
+      }
+
+      function renderStartExperience() {
+        return `
+          <section class="command-center science-os start-only" aria-label="NDIM start workspace">
+            ${renderWorkspaceLaunchpad()}
+            <div class="start-panels">
+              <div class="start-panel">
+                <h3>${icon("evidence")} Evidence to policy</h3>
+                <p>NDIM turns governed narrative evidence into encoding, models, uncertainty updates, intervention tests, and policy outputs.</p>
+              </div>
+              <div class="start-panel">
+                <h3>${icon("assistant")} Assistant guided</h3>
+                <p>The Research Assistant stays visible, explains what to do next, and keeps scientific caution in plain language.</p>
+              </div>
+              <div class="start-panel">
+                <h3>${icon("shield")} Local first</h3>
+                <p>Your workspace, repository, hashes, approvals, and exports stay local unless you deliberately export or sync them.</p>
+              </div>
             </div>
           </section>
         `;
@@ -3934,7 +5832,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
 
       function recordRouteLabel(record) {
         const modeId = record?.metadata?.provenance?.evidence_mode || record?.metadata?.evidence_mode || state.template.evidenceMode;
-        return evidenceModes.find((mode) => mode.id === modeId)?.title || modeId || "Narrative";
+        return (activeEvidenceModes().find((mode) => mode.id === modeId) || evidenceModes.find((mode) => mode.id === modeId))?.title || modeId || "Narrative";
       }
 
       function recordAdminLabel(record) {
@@ -4022,7 +5920,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   label: "Intake", sub: "stories + context", stepIndex: 0,
                   ids: ["intake"], isReady: state.records.length > 0,
                   chip: String(state.records.length || "0"),
-                  tip: "Structured interviews, open stories, indigenous knowledge, citizen science, batches, and social feeds enter with context."
+                  tip: "Structured interviews, focus groups, open stories, indigenous knowledge, citizen science, batches, and social feeds enter with context."
                 })}
                 ${node({
                   x: 160, y: 44, w: 112, h: 64,
@@ -4104,6 +6002,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <td title="${escapeHtml(recordAdminLabel(record))}">${escapeHtml(recordAdminLabel(record))}</td>
             <td>${escapeHtml(recordSourceLabel(record))}</td>
             <td>${escapeHtml(recordStatusLabel(record))}</td>
+            <td>${repositoryEncodingCell(record, "manual")}</td>
+            <td>${repositoryEncodingCell(record, "ai")}</td>
+            <td>${repositoryEncodingCell(record, "hybrid")}</td>
             <td>${escapeHtml(shortHash(gov.evidence_hash || gov.content_hash || ""))}</td>
             <td>${escapeHtml(reason)}${masterStatus ? `<br><small>Master: ${escapeHtml(masterStatus)}</small>` : ""}</td>
             <td>${escapeHtml(committed)}</td>
@@ -4124,9 +6025,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <p>${escapeHtml(description)}</p>
             <div class="repository-table-wrap">
               <table class="repository-table">
-                <thead><tr><th>Narrative ID</th><th>Route</th><th>Place</th><th>Source</th><th>Status</th><th>Seal</th><th>Decision / reason</th><th>Committed</th><th>Action</th></tr></thead>
+                <thead><tr><th>Narrative ID</th><th>Route</th><th>Place</th><th>Source</th><th>Status</th><th>Manual</th><th>AI</th><th>Hybrid</th><th>Seal</th><th>Decision / reason</th><th>Committed</th><th>Action</th></tr></thead>
                 <tbody>
-                  ${records.length ? records.map((record) => renderRepositoryRow(record, section)).join("") : `<tr><td colspan="9">No records in this repository section.</td></tr>`}
+                  ${records.length ? records.map((record) => renderRepositoryRow(record, section)).join("") : `<tr><td colspan="12">No records in this repository section.</td></tr>`}
                 </tbody>
               </table>
             </div>
@@ -4171,12 +6072,19 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             trust: typeof encoded.trust_score === "number" ? encoded.trust_score : null,
             barrier: typeof encoded.adoption_barrier_score === "number" ? encoded.adoption_barrier_score : null,
             confidence: typeof encoded.confidence === "number" ? encoded.confidence : null,
+            manual: encodingSummaryForRecord(record, "manual"),
+            ai: encodingSummaryForRecord(record, "ai"),
+            hybrid: encodingSummaryForRecord(record, "hybrid"),
             text: record.text || ""
           };
         });
         return {
           generatedAt: new Date().toLocaleString(),
           project: "NDIM Engine narrative repository",
+          workspace: {
+            workspace_id: workspaceId(),
+            name: workspaceName()
+          },
           batchSeal: shortHash(state.governance.lastDigest),
           records
         };
@@ -4226,7 +6134,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
     <header>
       <p class="meta">Standalone repository view</p>
       <h1>NDIM Narrative Repository</h1>
-      <p>This tab is generated from the current local workflow ledger. It keeps long repository review outside the main workflow screen. Batch seal: <strong>${escapeHtml(payload.batchSeal || "not sealed")}</strong>. Generated: ${escapeHtml(payload.generatedAt)}.</p>
+      <p><strong>Workspace:</strong> ${escapeHtml(payload.workspace?.name || "NDIM Core")} (${escapeHtml(payload.workspace?.workspace_id || "ndim-core")}). This tab is generated from the current local workflow ledger. It keeps long repository review outside the main workflow screen. Batch seal: <strong>${escapeHtml(payload.batchSeal || "not sealed")}</strong>. Generated: ${escapeHtml(payload.generatedAt)}.</p>
     </header>
     <section class="filters" aria-label="Repository filters">
       <div><label for="status">Status</label><select id="status"></select></div>
@@ -4287,11 +6195,15 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
     function row(record) {
       const canUncommit = record.statusGroup === "accepted" || record.statusGroup === "rejected";
       const themes = (record.themes || []).slice(0, 4).map((theme) => '<span class="pill">' + esc(theme) + '</span>').join('');
+      const enc = (summary) => summary ? esc(summary.label) : "-";
       return '<tr>' +
         '<td data-label="Narrative ID"><strong>' + esc(record.id) + '</strong><br><span class="meta">' + esc(record.seal || "no seal") + '</span></td>' +
         '<td data-label="Route">' + esc(record.route) + '</td>' +
         '<td data-label="Place">' + esc(record.place) + '</td>' +
         '<td data-label="Status">' + esc(record.status) + '<br><span class="meta">' + esc(record.master || "") + '</span></td>' +
+        '<td data-label="Manual">' + enc(record.manual) + '</td>' +
+        '<td data-label="AI">' + enc(record.ai) + '</td>' +
+        '<td data-label="Hybrid">' + enc(record.hybrid) + '</td>' +
         '<td data-label="Reviewer">' + esc(record.reviewer || "-") + '<br>' + esc(record.reason || "") + '</td>' +
         '<td data-label="Themes">' + (themes || "-") + '</td>' +
         '<td data-label="Summary" class="summary">' + esc((record.text || "").slice(0, 240)) + ((record.text || "").length > 240 ? "..." : "") + '</td>' +
@@ -4301,7 +6213,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
     function section(title, group, rows, description) {
       const subset = rows.filter((record) => record.statusGroup === group);
       return '<h2>' + esc(title) + '</h2><p>' + esc(description) + '</p>' +
-        (subset.length ? '<table><thead><tr><th>Narrative ID</th><th>Route</th><th>Place</th><th>Status</th><th>Reviewer</th><th>Themes</th><th>Summary</th><th>Action</th></tr></thead><tbody>' + subset.map(row).join('') + '</tbody></table>' : '<div class="empty">No records in this section.</div>');
+        (subset.length ? '<table><thead><tr><th>Narrative ID</th><th>Route</th><th>Place</th><th>Status</th><th>Manual</th><th>AI</th><th>Hybrid</th><th>Reviewer</th><th>Themes</th><th>Summary</th><th>Action</th></tr></thead><tbody>' + subset.map(row).join('') + '</tbody></table>' : '<div class="empty">No records in this section.</div>');
     }
     async function uncommit(index) {
       if (!window.opener || !window.opener.ndimRepositoryUncommit) {
@@ -4348,8 +6260,10 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const payload = repositoryStandalonePayload();
         const opened = window.open("", "_blank");
         if (!opened) {
-          toast("Repository tab blocked");
-          trace("repository", "Repository tab blocked", "The browser blocked the standalone repository tab. Allow popups for this local tool and try again.");
+          state.repositoryOpen = true;
+          toast("Repository opened inside tool");
+          trace("repository", "Repository tab blocked; opened in workspace", "The browser blocked the standalone repository tab, so NDIM opened the full repository inside the active workflow.");
+          render();
           return;
         }
         opened.document.open();
@@ -4427,7 +6341,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <h2>Narrative review, accepted, and rejected repositories</h2>
                 <p>Records move from the active approval queue into the accepted or rejected repository only after Commit reviewed records. Accepted local records can then be packaged for a federated master repository with an SDMX structure and tamper-evident approval seal.</p>
               </div>
-              ${forceOpen ? `<button class="button" data-flow-step="${stepIndexById("gate")}" type="button">Back to SDMX gate</button>` : `<button class="button" data-close-full-repository type="button">Close repository</button>`}
+              ${forceOpen ? `<button class="button" data-flow-step="${stepIndexById("gate")}" type="button">Back to SDMX gate</button>` : `<button class="button icon-only" data-close-full-repository type="button" aria-label="Close repository" title="Close repository">${icon("x")}</button>`}
             </div>
             <div class="metric-grid">
               <div class="metric"><span class="mini-label">Filtered records</span><strong>${filtered.length}</strong></div>
@@ -4497,6 +6411,54 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return `${state.records.length} ${currentEvidenceMode().title.toLowerCase()} observation(s) staged from ${sourceTypes}; ${stats.approved} approved, ${stats.flagged} flagged. Active place lens: ${places || state.meta.country}.${seal}`;
       }
 
+      function stageCompletionLabel(id = currentStep().id) {
+        if (state.completed.has(id)) return "complete";
+        if (id === "intake" && state.records.length) return "ready for governance";
+        if (id === "gate" && activeReviewRecords().length) return "needs review";
+        if (id === "repository" && approvedRecords().length) return "accepted evidence ready";
+        if (id === "encoding" && approvedRecords().length) return "ready to encode";
+        if (id === "regional" && !state.regional) return "optional";
+        if (id === "policy" && state.policy) return "brief ready";
+        return "waiting";
+      }
+
+      function stagePrimaryActionLabel(id = currentStep().id) {
+        return {
+          intake: state.records.length ? "Refresh SDMX record preview" : "Validate and stage evidence",
+          gate: "Refresh SDMX gate",
+          repository: "Refresh repository status",
+          encoding: "Run encoding",
+          compartmental: "Run compartmental model",
+          agents: "Run agent-based model",
+          digital: "Run digital twin",
+          bayes: "Run Bayesian update",
+          rl: "Run RL optimizer",
+          regional: "Run optional regional analysis",
+          graph: "Build knowledge graph",
+          inoculation: "Run inoculation lab",
+          policy: "Run policy output"
+        }[id] || "Run primary action";
+      }
+
+      function stageInputSummary(id = currentStep().id) {
+        const summaries = {
+          intake: state.records.length ? `${state.records.length} staged record(s) available` : "Evidence route, file or text, SDMX dimensions, and narrative body",
+          gate: state.records.length ? `${activeReviewRecords().length} active review record(s), ${pendingCommitRecords().length} waiting for commit` : "Staged narrative records",
+          repository: `${acceptedRepositoryRecords().length} accepted, ${rejectedRepositoryRecords().length} rejected, ${activeReviewRecords().length} active`,
+          encoding: approvedRecords().length ? `${approvedRecords().length} accepted record(s) ready` : "Accepted repository records",
+          compartmental: state.encoded.length ? `${state.encoded.length} encoded narrative(s)` : "Encoded trust and barrier inputs",
+          agents: state.encoded.length ? `${state.encoded.length} encoded narrative(s)` : "Encoded evidence and peer-effect settings",
+          digital: state.comp || state.agents ? "Model outputs plus field feedback" : "Compartmental or agent model output",
+          bayes: state.digital ? "Digital twin feedback and priors" : "Model output plus prior assumptions",
+          rl: state.bayes ? "Posterior trust/barrier assumptions" : "Bayesian posterior",
+          regional: state.encoded.length ? "Encoded records with place metadata" : "Encoded regional evidence",
+          graph: approvedRecords().length ? "Accepted stories, themes, and places" : "Accepted repository records",
+          inoculation: state.encoded.length ? "Encoded threat and misinformation signals" : "Encoded narratives",
+          policy: approvedRecords().length ? "Accepted evidence, model outputs, and audit trail" : "Completed evidence-to-policy chain"
+        };
+        return summaries[id] || "Current stage inputs";
+      }
+
       function stageAdvice(id) {
         const advice = {
           intake: "Create traceable narrative observations before any model receives evidence.",
@@ -4508,7 +6470,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           digital: "Feed field observations back into the model before drawing conclusions.",
           bayes: "Turn priors and observations into posterior trust and barrier assumptions.",
           rl: "Let the optimizer test intervention packages while keeping human review in control.",
-          regional: "Analyse each region alone or as a grouped evidence set before intervention design.",
+          regional: "Optional: analyse each region alone or as a grouped evidence set when place-sensitive recommendations are needed.",
           graph: "Connect stories, places, themes, trust, and barriers for qualitative sense-making.",
         inoculation: "Generate pre-bunking and refutation drafts from encoded narrative risk.",
           policy: "Produce the reviewable policy brief, assumptions, and audit payload."
@@ -4516,12 +6478,195 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return advice[id] || "Continue the evidence-to-policy workflow.";
       }
 
+      function renderStageLauncher() {
+        const step = currentStep();
+        return `
+          <section class="stage-launcher" aria-label="Current stage launcher">
+            <div>
+              <p class="eyebrow">Focused task workspace</p>
+              <h2>${escapeHtml(step.num)} ${escapeHtml(workspaceStageLabel(step))}</h2>
+              <p>${escapeHtml(stageAdvice(step.id))}</p>
+              <div class="stage-workspace-summary">
+                <span>${escapeHtml(stageCompletionLabel(step.id))}</span>
+                <span>${escapeHtml(workspaceStageSub(step))}</span>
+                <span>${escapeHtml(confidenceLevel())} confidence</span>
+              </div>
+              <div class="stage-launcher-actions">
+                <button class="button primary" data-open-stage-workspace type="button">${icon("start")} Open focused task</button>
+                <button class="button" data-run-stage-direct type="button">${escapeHtml(stagePrimaryActionLabel(step.id))}</button>
+              </div>
+            </div>
+            <div class="stage-launcher-grid">
+              <div class="stage-launcher-note">
+                <strong>What NDIM needs</strong>
+                <span>${escapeHtml(stageInputSummary(step.id))}</span>
+              </div>
+              <div class="stage-launcher-note">
+                <strong>What NDIM checks</strong>
+                <span>${escapeHtml(stageAdvice(step.id))}</span>
+              </div>
+              <div class="stage-launcher-note">
+                <strong>What changed</strong>
+                <span>${escapeHtml(stageCompletionLabel(step.id) === "complete" ? "This stage has produced usable output for downstream stages." : "No final output yet. Open the task workspace to complete or review this stage.")}</span>
+              </div>
+              <div class="stage-launcher-note">
+                <strong>Next action</strong>
+                <span>${escapeHtml(assistantNextAction())}</span>
+              </div>
+            </div>
+          </section>
+        `;
+      }
+
       function bindCommandCenter() {
+        const topRunButton = $("quickRunButton");
+        if (topRunButton) topRunButton.onclick = () => openStageWorkspace(state.step);
+        const topTraceButton = $("toggleTraceButton");
+        if (topTraceButton) topTraceButton.onclick = () => {
+          document.querySelector(".reasoning").classList.toggle("open");
+        };
+        const topAssistantButton = $("toggleAssistantButton");
+        if (topAssistantButton) topAssistantButton.onclick = () => {
+          state.workspace.assistantOpen = !state.workspace.assistantOpen;
+          renderAssistant();
+        };
+        const floatingAssistantButton = $("floatingAssistantButton");
+        if (floatingAssistantButton) floatingAssistantButton.onclick = () => {
+          state.workspace.assistantOpen = true;
+          trace("assistant", "Research assistant opened", "The floating assistant is reading the current stage, workspace, evidence status, and next action.");
+          renderAssistant();
+        };
+        const closeAssistantButton = $("closeAssistantButton");
+        if (closeAssistantButton) closeAssistantButton.onclick = () => {
+          state.workspace.assistantOpen = false;
+          renderAssistant();
+        };
+        const topWorkspaceButton = $("workspaceButton");
+        if (topWorkspaceButton) topWorkspaceButton.onclick = () => {
+          state.workspace.managerOpen = true;
+          trace("workspace", "Workspace manager opened", "Choose, create, duplicate, import, or export a project workspace.");
+          render();
+        };
+        const closeWorkspaceModal = $("closeWorkspaceModal");
+        if (closeWorkspaceModal) closeWorkspaceModal.onclick = () => {
+          state.workspace.managerOpen = false;
+          renderWorkspaceManager();
+        };
+        const workspaceModal = $("workspaceModal");
+        if (workspaceModal) workspaceModal.onclick = (event) => {
+          if (event.target === workspaceModal) {
+            state.workspace.managerOpen = false;
+            renderWorkspaceManager();
+          }
+        };
+        const backButton = $("backButton");
+        if (backButton) backButton.onclick = () => goStep(state.step - 1);
+        const nextButton = $("nextButton");
+        if (nextButton) nextButton.onclick = () => {
+          if (!state.workspace.started) {
+            state.workspace.startOpen = true;
+            state.workspace.startMode = "menu";
+            trace("workspace", "Start workspace menu opened", "Choose an existing workspace, create one, duplicate one, or import a package.");
+            render();
+            return;
+          }
+          nextStep();
+        };
+        const resetStageButton = $("resetStageButton");
+        if (resetStageButton) resetStageButton.onclick = resetCurrentStage;
+        const closeTraceButton = $("closeTraceButton");
+        if (closeTraceButton) closeTraceButton.onclick = () => {
+          document.querySelector(".reasoning").classList.remove("open");
+        };
+        const clearTraceButton = $("clearTrace");
+        if (clearTraceButton) clearTraceButton.onclick = () => {
+          state.trace = [["idle", "Log cleared", "The workflow state is unchanged; only the visible reasoning log was cleared."]];
+          renderTrace();
+        };
+        const themeIconToggle = $("themeIconToggle");
+        if (themeIconToggle) themeIconToggle.onclick = () => {
+          setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+        };
         const runButton = $("workbenchRunButton");
-        if (runButton) runButton.addEventListener("click", runCurrentStageShortcut);
+        if (runButton) runButton.addEventListener("click", () => openStageWorkspace(state.step));
         const traceButton = $("workbenchTraceButton");
         if (traceButton) traceButton.addEventListener("click", () => {
           document.querySelector(".reasoning").classList.toggle("open");
+        });
+        document.querySelectorAll("[data-start-toggle]").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.workspace.startOpen = !state.workspace.startOpen;
+            if (state.workspace.startOpen && !state.workspace.startMode) state.workspace.startMode = "menu";
+            trace("workspace", "Start workspace menu toggled", "Choose whether to continue, open, create, or import a workspace. Duplicating is available beside each existing workspace.");
+            render();
+          });
+        });
+        document.querySelectorAll("[data-start-action]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const action = button.dataset.startAction;
+            if (action === "continue") {
+              startWorkspaceSession(`${workspaceName()} is active. The guided NDIM workflow is now visible.`);
+              render();
+              return;
+            }
+            if (action === "open") {
+              state.workspace.startOpen = true;
+              state.workspace.startMode = state.workspace.startMode === "open" ? "menu" : "open";
+              trace("workspace", "Existing workspaces requested", "Select the project workspace NDIM should run.");
+              render();
+              return;
+            }
+            if (action === "create" || action === "import") {
+              state.workspace.managerOpen = true;
+              state.workspace.startOpen = false;
+              trace("workspace", `${action} workspace selected`, "The workspace manager is open with existing workspace, blank workspace, duplicate, import, and export controls.");
+              render();
+            }
+          });
+        });
+        document.querySelectorAll("[data-open-workspace-manager]").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.workspace.managerOpen = true;
+            trace("workspace", "Workspace manager opened", "Choose, create, duplicate, import, or export a project workspace.");
+            render();
+          });
+        });
+        document.querySelectorAll("[data-open-assistant-panel]").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.workspace.assistantOpen = true;
+            trace("assistant", "Research assistant opened", "The assistant is reading the active workspace, stage progress, evidence counts, and next action.");
+            render();
+          });
+        });
+        document.querySelectorAll("[data-open-stage-workspace]").forEach((button) => {
+          button.addEventListener("click", () => openStageWorkspace(state.step));
+        });
+        document.querySelectorAll("[data-run-stage-direct]").forEach((button) => {
+          button.addEventListener("click", runCurrentStageShortcut);
+        });
+        const closeStageButton = $("closeStageWorkspace");
+        if (closeStageButton) closeStageButton.onclick = closeStageWorkspace;
+        const stageBackdrop = $("stageWorkspaceBackdrop");
+        if (stageBackdrop) stageBackdrop.onclick = closeStageWorkspace;
+        const runStagePrimary = $("runStagePrimaryAction");
+        if (runStagePrimary) runStagePrimary.onclick = runCurrentStageShortcut;
+        document.querySelectorAll("[data-workspace-open-quick]").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const target = button.dataset.workspaceOpenQuick;
+            if (!target) return;
+            if (target === workspaceId()) {
+              startWorkspaceSession(`${workspaceName()} is active. The guided NDIM workflow is now visible.`);
+              render();
+              return;
+            }
+            try {
+              await setActiveWorkspace(target);
+              startWorkspaceSession(`${workspaceName()} is now the active project workspace.`);
+              render();
+            } catch (error) {
+              toast(error.message || "Workspace not opened");
+            }
+          });
         });
         document.querySelectorAll("[data-jump-repository]").forEach((button) => {
           button.addEventListener("click", (event) => {
@@ -4623,11 +6768,11 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           });
         });
         document.querySelectorAll("[data-flow-step]").forEach((button) => {
-          button.addEventListener("click", () => goStep(Number(button.dataset.flowStep)));
+          button.addEventListener("click", () => openStageWorkspace(Number(button.dataset.flowStep)));
           button.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              goStep(Number(button.dataset.flowStep));
+              openStageWorkspace(Number(button.dataset.flowStep));
             }
           });
         });
@@ -4649,7 +6794,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function syncWorkflowStagesOffset() {
         const stepper = document.querySelector(".stepper");
         const label = document.querySelector(".stepper .section-label");
-        const stageCard = document.querySelector(".stage-card, .repository-full-view");
+        const stageCard = document.querySelector(".stage-launcher, .repository-full-view");
         if (!stepper || !label || !stageCard) return;
         if (window.innerWidth <= 980) {
           stepper.style.paddingTop = "";
@@ -4664,19 +6809,276 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         });
       }
 
+      function assistantStatusValue(value) {
+        if (value === true) return "yes";
+        if (value === false) return "not yet";
+        return String(value ?? "-");
+      }
+
+      function assistantNextAction() {
+        const id = currentStep().id;
+        if (id === "intake") return state.records.length ? "Review SDMX readiness and continue to governance." : "Load or paste evidence, then stage narrative records.";
+        if (id === "gate") return pendingCommitRecords().length ? "Commit reviewed records into the accepted or rejected repository." : activeReviewRecords().length ? "Approve or reject each active record." : "Continue to repository review.";
+        if (id === "repository") return approvedRecords().length ? "Continue to encoding with accepted evidence." : "Approve and commit at least one record before modelling.";
+        if (id === "encoding") return state.encoded.length ? "Review encoding outputs, then run the population model." : "Run manual, AI, or hybrid encoding on accepted records.";
+        if (id === "compartmental") return state.comp ? "Compare the ODE result with the agent-based model." : "Run the S/M/T/I/R compartmental model.";
+        if (id === "agents") return state.agents ? "Use field feedback to update the digital twin." : "Run the household and peer-effects model.";
+        if (id === "digital") return state.digital ? "Update uncertainty with the Bayesian stage." : "Enter field feedback and run the digital twin.";
+        if (id === "bayes") return state.bayes ? "Run RL to shortlist intervention packages." : "Run the Bayesian posterior update.";
+        if (id === "rl") return state.rl ? "Move to optional regional analysis or continue to synthesis." : "Run the policy optimizer.";
+        if (id === "regional") return state.regional ? "Build the knowledge graph." : "Optional stage: run place-based analysis when you need district or region-specific recommendations, or continue with pooled evidence.";
+        if (id === "graph") return state.graph ? "Generate inoculation narratives." : "Build the story/theme/place graph.";
+        if (id === "inoculation") return state.inoculation ? "Apply or review narrative vaccines, then export policy output." : "Generate counter-narratives for human review.";
+        return state.policy ? "Export the HTML/PDF brief and archive the audit payload." : "Run the policy output stage.";
+      }
+
+      function assistantInterpretation() {
+        const id = currentStep().id;
+        const thin = approvedRecords().length < 3;
+        const caution = thin ? "Evidence is thin. Treat model output as exploratory until more records are approved and encoded." : "Evidence volume is improving, but human review is still required before policy use.";
+        const snippets = {
+          intake: "The workspace determines which evidence routes, templates, and project defaults are active. Good modelling starts with clean context.",
+          gate: "Governance protects the research chain: consent, visibility, approval, rejection, commit history, and hashes decide what can influence the model.",
+          repository: "Only accepted committed records should feed encoding and modelling. Rejected records stay visible for audit but do not influence policy output.",
+          encoding: "Encoding converts narrative meaning into trust, barrier, confidence, theme, and inoculation-risk signals.",
+          compartmental: "The ODE model estimates aggregate movement through susceptible, misinformed, truth-aligned, inoculated, and resistant states.",
+          agents: "The agent model checks whether household heterogeneity and peer effects change the adoption pathway.",
+          digital: "The twin is a feedback-adjusted scenario model. It is not a claim of real adoption unless calibrated with repeated field observations.",
+          bayes: "Posterior values show how evidence changes prior assumptions. Wide uncertainty should slow policy claims.",
+          rl: "The optimizer ranks intervention packages; it does not replace political, ethical, or field judgment.",
+          regional: "Regional comparison helps decide whether a national message is appropriate or whether districts need different interventions.",
+          graph: "The graph shows repeated story structures by place and theme, useful for seeing where narratives cluster.",
+          inoculation: "Inoculation drafts are narrative vaccines: weak-dose claim, refutation, trusted messenger, and booster plan.",
+          policy: "The final brief should state confidence, assumptions, limitations, uncertainty, and required human review."
+        };
+        return `${snippets[id] || ""} ${caution}`;
+      }
+
+      function renderAssistant() {
+        const panel = $("assistantPanel");
+        const body = $("assistantBody");
+        if (!panel || !body) return;
+        panel.classList.toggle("open", Boolean(state.workspace.assistantOpen));
+        const step = currentStep();
+        const settings = workspaceSettings();
+        const projectGuidance = settings.assistant?.project_guidance || [];
+        body.innerHTML = `
+          <div class="assistant-card">
+            <h3>${escapeHtml(state.workspace.started ? workspaceStageLabel(step) : "Start workspace")}</h3>
+            <p><strong>Workspace:</strong> ${escapeHtml(workspaceName())}</p>
+            <p>${escapeHtml(state.workspace.started ? assistantInterpretation() : "Choose, create, duplicate, or import a workspace. After that I will reveal the NDIM workflow and guide each scientific stage in plain language.")}</p>
+          </div>
+          <div class="assistant-card">
+            <h3>Progress</h3>
+            <div class="assistant-progress">
+              <div><span>Evidence collected</span><strong>${assistantStatusValue(state.records.length)}</strong></div>
+              <div><span>Pending review</span><strong>${activeReviewRecords().length}</strong></div>
+              <div><span>Accepted</span><strong>${approvedRecords().length}</strong></div>
+              <div><span>Encoded</span><strong>${state.encoded.length}</strong></div>
+              <div><span>Model run</span><strong>${assistantStatusValue(Boolean(state.comp || state.agents))}</strong></div>
+              <div><span>Digital twin</span><strong>${assistantStatusValue(Boolean(state.digital))}</strong></div>
+              <div><span>Bayesian</span><strong>${assistantStatusValue(Boolean(state.bayes))}</strong></div>
+              <div><span>Policy brief</span><strong>${assistantStatusValue(Boolean(state.policy))}</strong></div>
+            </div>
+          </div>
+          <div class="assistant-card">
+            <h3>Work plan</h3>
+            <div class="agent-worklist">
+              ${assistantWorkItems().map(([label, done]) => `
+                <div class="agent-workitem ${done ? "done" : ""}">
+                  <span class="agent-dot"></span>
+                  <strong>${escapeHtml(label)}</strong>
+                  <span>${done ? "done" : "waiting"}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+          <div class="assistant-card">
+            <h3>Next best action</h3>
+            <p>${escapeHtml(state.workspace.started ? assistantNextAction() : "Click Start workspace, then choose Continue last workspace, Open existing workspace, Create new workspace, Duplicate workspace, or Import workspace package.")}</p>
+          </div>
+          <div class="assistant-card">
+            <h3>Scientific caution</h3>
+            <p>${escapeHtml(evidenceGrade() === "do not use for policy" ? "Do not use this run for policy yet. Add evidence, review records, and rerun validation/model stages." : "Use outputs as decision support, not automatic decisions. Check assumptions, evidence grade, and human review status.")}</p>
+          </div>
+          ${projectGuidance.length ? `<div class="assistant-card"><h3>Workspace guidance</h3><ul>${projectGuidance.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>` : ""}
+        `;
+      }
+
+      function renderWorkspaceManager() {
+        const modal = $("workspaceModal");
+        const body = $("workspaceModalBody");
+        if (!modal || !body) return;
+        modal.classList.toggle("open", Boolean(state.workspace.managerOpen));
+        modal.setAttribute("aria-hidden", state.workspace.managerOpen ? "false" : "true");
+        const activeId = workspaceId();
+        body.innerHTML = `
+          <section>
+            <h3>Start from</h3>
+            <p class="copy">Choose <strong>From scratch</strong> for a new project, or open/duplicate an existing workspace. NDIM Core is only the built-in fallback template; it does not need to be your active project.</p>
+            <div class="workspace-list">
+              <div class="workspace-list-item from-scratch">
+                <div class="workspace-list-icon">${icon("plus")}</div>
+                <div>
+                  <h3>From scratch</h3>
+                  <p>Begin with a blank project container, then define the country, domain, evidence routes, repository rules, and export settings.</p>
+                  <p class="mini-label">NEW WORKSPACE / BLANK SETUP</p>
+                </div>
+                <div class="workspace-list-actions">
+                  <button class="button primary" data-workspace-from-scratch type="button">Set up new workspace</button>
+                </div>
+              </div>
+              ${(state.workspace.list || []).map((item) => {
+                const isCurrent = state.workspace.started && item.workspace_id === activeId;
+                return `
+                <div class="workspace-list-item ${isCurrent ? "active" : ""}">
+                  <div class="workspace-list-icon">${icon("folder")}</div>
+                  <div>
+                    <h3>${escapeHtml(item.name)}</h3>
+                    <p>${escapeHtml(item.description || item.domain || "NDIM workspace")}</p>
+                    <p class="mini-label">${escapeHtml(item.workspace_id)}${item.countries?.length ? ` / ${escapeHtml(item.countries.join(", "))}` : ""}</p>
+                  </div>
+                  <div class="workspace-list-actions">
+                    <button class="button ${isCurrent ? "primary" : ""}" data-workspace-open="${escapeHtml(item.workspace_id)}" type="button">${isCurrent ? "Current" : "Open"}</button>
+                    <button class="button icon-only" data-workspace-duplicate="${escapeHtml(item.workspace_id)}" type="button" title="Duplicate ${escapeHtml(item.name)}" aria-label="Duplicate ${escapeHtml(item.name)}">${icon("copy")}</button>
+                  </div>
+                </div>
+              `}).join("")}
+            </div>
+          </section>
+          <section class="panel" id="workspaceCreatePanel">
+            <h3>Create blank workspace</h3>
+            <p>Use this for a genuinely new study, country, policy programme, or fieldwork stream. It is not prefilled from ClimateTales or the active workspace.</p>
+            <div class="workspace-form-grid">
+              <div class="field"><label for="workspaceNewName">Workspace name</label><input id="workspaceNewName" placeholder="e.g., Clean Cooking Ghana Pilot" /></div>
+              <div class="field"><label for="workspaceNewCountry">Country</label><input id="workspaceNewCountry" placeholder="e.g., Ghana" /></div>
+              <div class="field"><label for="workspaceNewDomain">Domain</label><input id="workspaceNewDomain" placeholder="e.g., clean cooking, climate communication" /></div>
+              <div class="field"><label for="workspaceNewDescription">Description</label><input id="workspaceNewDescription" placeholder="Short project purpose" /></div>
+            </div>
+            <div class="button-row"><button class="button primary" id="createWorkspaceButton" type="button">Create workspace</button></div>
+          </section>
+          <section class="panel">
+            <h3>Import and export</h3>
+            <p>Export defaults to template-only so sensitive narratives are not shared by accident. Use the duplicate icon in Open workspace when you want to copy a specific existing workspace.</p>
+            <div class="workspace-form-grid">
+              <div class="field"><label for="workspaceExportMode">Export mode</label><select id="workspaceExportMode">
+                <option value="template_only">Template only</option>
+                <option value="template_with_stress_test">Template + stress-test data</option>
+                <option value="full_backup">Full workspace backup</option>
+              </select></div>
+              <div class="field"><label for="workspaceImportFile">Import package</label><input id="workspaceImportFile" type="file" accept=".zip,.ndim-workspace" /></div>
+            </div>
+            <div class="button-row">
+              <button class="button" id="exportWorkspaceButton" type="button">Export active workspace</button>
+            </div>
+          </section>
+        `;
+        document.querySelectorAll("[data-workspace-open]").forEach((button) => {
+          button.addEventListener("click", async () => {
+            if (button.dataset.workspaceOpen !== activeId) {
+              await setActiveWorkspace(button.dataset.workspaceOpen);
+            }
+            startWorkspaceSession(`${workspaceName()} is now the active project workspace.`);
+            state.workspace.managerOpen = false;
+            render();
+          });
+        });
+        document.querySelectorAll("[data-workspace-from-scratch]").forEach((button) => {
+          button.addEventListener("click", () => {
+            $("workspaceCreatePanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            setTimeout(() => $("workspaceNewName")?.focus(), 80);
+            trace("workspace", "Blank workspace setup selected", "Fill the create form to define a new workspace from scratch.");
+          });
+        });
+        document.querySelectorAll("[data-workspace-duplicate]").forEach((button) => {
+          button.addEventListener("click", async () => {
+            try {
+              await duplicateWorkspaceById(button.dataset.workspaceDuplicate);
+              state.workspace.managerOpen = false;
+              render();
+            } catch (error) {
+              toast(error.message || "Workspace not duplicated");
+            }
+          });
+        });
+        $("createWorkspaceButton")?.addEventListener("click", async () => {
+          try { await createWorkspaceFromManager(); render(); } catch (error) { toast(error.message || "Workspace not created"); }
+        });
+        $("exportWorkspaceButton")?.addEventListener("click", exportActiveWorkspace);
+        $("workspaceImportFile")?.addEventListener("change", async (event) => {
+          try {
+            await importWorkspaceFromFile(event.target.files && event.target.files[0]);
+            state.workspace.managerOpen = false;
+            render();
+          } catch (error) {
+            toast(error.message || "Workspace import failed");
+          }
+        });
+      }
+
+      function renderStageWorkspace() {
+        const panel = $("stageWorkspace");
+        const backdrop = $("stageWorkspaceBackdrop");
+        const body = $("stageWorkspaceBody");
+        const title = $("stageWorkspaceTitle");
+        const copy = $("stageWorkspaceCopy");
+        const kicker = $("stageWorkspaceKicker");
+        const summary = $("stageWorkspaceSummary");
+        const runButton = $("runStagePrimaryAction");
+        if (!panel || !backdrop || !body || !title || !copy || !kicker || !summary) return;
+        const open = Boolean(state.workspace.started && state.stageWorkspace.open);
+        panel.classList.toggle("open", open);
+        backdrop.classList.toggle("open", open);
+        panel.setAttribute("aria-hidden", open ? "false" : "true");
+        backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+        if (!open) {
+          body.innerHTML = "";
+          return;
+        }
+        const step = currentStep();
+        kicker.textContent = `Stage ${step.num} / focused task`;
+        title.textContent = workspaceStageLabel(step);
+        copy.textContent = stageAdvice(step.id);
+        summary.innerHTML = `
+          <span>${escapeHtml(stageCompletionLabel(step.id))}</span>
+          <span>${escapeHtml(stageInputSummary(step.id))}</span>
+          <span>${escapeHtml(assistantNextAction())}</span>
+        `;
+        if (runButton) runButton.textContent = stagePrimaryActionLabel(step.id);
+        body.innerHTML = renderStage(step.id) + renderContextStageNav();
+        bindStage(step.id);
+        bindContextStageNav();
+        renderMath();
+      }
+
       function render() {
         const step = currentStep();
-        $("topTitle").textContent = step.title;
-        $("topCopy").textContent = step.sub;
+        $("appShell")?.classList.toggle("workspace-start-mode", !state.workspace.started);
+        $("topTitle").textContent = state.workspace.started ? workspaceStageLabel(step) : "Start NDIM workspace";
+        $("topCopy").textContent = state.workspace.started ? workspaceStageSub(step) : "Choose or create the project container that NDIM will run.";
+        if ($("workspaceName")) $("workspaceName").textContent = workspaceName();
+        if ($("assistantEyebrow")) $("assistantEyebrow").textContent = workspaceSettings().assistant?.name || "Research Assistant";
         renderStepList();
         renderStageJump();
+        renderAssistant();
+        renderWorkspaceManager();
+        if (!state.workspace.started) {
+          state.stageWorkspace.open = false;
+          $("stagePanel").innerHTML = renderStartExperience();
+          $("backButton").disabled = true;
+          $("nextButton").textContent = "Start";
+          bindCommandCenter();
+          renderStageWorkspace();
+          renderMath();
+          syncWorkflowStagesOffset();
+          return;
+        }
         const floatingRepository = step.id === "repository" ? "" : renderFullRepositoryView();
-        $("stagePanel").innerHTML = renderCommandCenter() + renderStage(step.id) + renderContextStageNav() + floatingRepository;
+        $("stagePanel").innerHTML = renderCommandCenter() + renderStageLauncher() + floatingRepository;
         $("backButton").disabled = state.step === 0;
         $("nextButton").textContent = state.step === steps.length - 1 ? "Finish" : "Next";
         bindCommandCenter();
-        bindStage(step.id);
-        bindContextStageNav();
+        renderStageWorkspace();
         renderMath();
         syncWorkflowStagesOffset();
       }
@@ -4700,10 +7102,10 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function renderContextStageNav() {
         const next = steps[state.step + 1];
         const isLast = state.step === steps.length - 1;
-        const nextLabel = isLast ? "Finish and return to intake" : `Continue to ${next.num} ${next.title}`;
+        const nextLabel = isLast ? "Finish and return to intake" : `Continue to ${next.num} ${workspaceStageLabel(next)}`;
         const note = isLast
           ? "At the end, Finish returns to the beginning so another evidence route can be tested."
-          : `Next stage: ${next.title.toLowerCase()}. The page will jump to the active stage top.`;
+          : `Next stage: ${workspaceStageLabel(next).toLowerCase()}. The page will jump to the active stage top.`;
         return `
           <div class="context-stage-nav" aria-label="Current stage navigation">
             <span class="nav-note">${escapeHtml(note)}</span>
@@ -4733,11 +7135,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function sourceTypeForMode(mode) {
         return {
           structured_interview: "interview",
+          focus_group: "focus_group",
           open_story: "field_note",
           indigenous_knowledge: "indigenous_knowledge",
           citizen_science: "citizen_report",
           crowd_batch: "csv",
-          experimental_feed: "social_feed"
+          experimental_feed: "social_feed",
+          custom_evidence: "custom_evidence"
         }[mode] || "field_note";
       }
 
@@ -4852,12 +7256,14 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
 
       function intakeOptionActionLabel(option = state.intakeOption) {
         return {
-          manual: "Open intake guide",
-          corpus: "Open stress-test guide",
+          batch: "Open batch file",
+          single: "Open single story",
+          manual_entry: "Start manual entry",
+          guide: "Open intake guide",
           copy: "Copy field template",
-          download: "Download CSV template",
+          download: "Download template",
           reset: "Reset intake"
-        }[option] || "Run intake helper";
+        }[option] || "Start manual entry";
       }
 
       function renderIntakeLoadPanel() {
@@ -4865,27 +7271,30 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <div class="panel file-control-panel">
             <div>
               <span class="step-kicker">Step 2 / load or paste evidence</span>
-              <h3>Load evidence file or one sample story</h3>
-              <p>For stress tests, click <strong>Open text or CSV file</strong> and choose one file from <code>stress_test_corpus/</code>. TXT, MD, CSV, JSON, XML, and SDMX files are accepted.</p>
-              <div class="button-row" style="margin-top: 12px;">
-                <label class="button primary" for="fileInput">Open text or CSV file</label>
-                <button class="button green" id="loadSample" type="button">Load one sample story</button>
-                <input id="fileInput" type="file" accept=".txt,.md,.csv,.json,.xml,.sdmx" hidden />
-              </div>
-              <p class="select-note">Load one sample story fills a single built-in Rwanda example for manual intake practice. It is not the stress-test corpus.</p>
-            </div>
-            <div class="intake-option-strip">
-              <h3>Intake Option</h3>
-              <div class="compact-select-row">
-                <div class="field"><label for="intakeOptionSelect">Intake helper</label><select id="intakeOptionSelect">
-                  <option ${selectedAttr("manual", state.intakeOption)} value="manual">Open manual</option>
+              <h3>Choose how to add evidence</h3>
+              <p>Select whether you are importing many narratives, opening one story file, or manually adding evidence in the form below. TXT, MD, CSV, JSON, XML, and SDMX files are accepted.</p>
+              <div class="compact-select-row" style="margin-top: 12px;">
+                <div class="field"><label for="intakeOptionSelect">Evidence input method</label><select id="intakeOptionSelect">
+                  <option ${selectedAttr("batch", state.intakeOption)} value="batch">Batch import: CSV or text</option>
+                  <option ${selectedAttr("single", state.intakeOption)} value="single">Single story import</option>
+                  <option ${selectedAttr("manual_entry", state.intakeOption)} value="manual_entry">Manual entry</option>
+                  <option ${selectedAttr("guide", state.intakeOption)} value="guide">Open intake guide</option>
                   <option ${selectedAttr("copy", state.intakeOption)} value="copy">Copy field template</option>
                   <option ${selectedAttr("download", state.intakeOption)} value="download">Download CSV template</option>
                   <option ${selectedAttr("reset", state.intakeOption)} value="reset">Reset intake</option>
                 </select></div>
-                <button class="button" id="runIntakeOption" type="button">${escapeHtml(intakeOptionActionLabel())}</button>
+                <button class="button primary" id="runIntakeOption" type="button">${escapeHtml(intakeOptionActionLabel())}</button>
               </div>
-              <p class="select-note">Choose a supporting intake helper. The button label tells you exactly what will open, copy, download, or reset.</p>
+              <input id="fileInput" type="file" accept=".txt,.md,.csv,.json,.xml,.sdmx" hidden />
+              <p class="select-note">Batch import can load CSV rows or paragraph-separated text. Single story import loads one file into the current route. Manual entry keeps the user in the form.</p>
+              <div class="guide-note" style="margin-top: 12px;">
+                <strong>Single-story practice</strong>
+                <p>To test one story, choose <b>Single story import</b> or <b>Manual entry</b>. The tool no longer loads a hidden built-in sample from this panel, because stress testing should use explicit files from the corpus or text you paste yourself.</p>
+              </div>
+            </div>
+            <div class="intake-option-strip">
+              <h3>Input method explained</h3>
+              <p class="select-note">${escapeHtml(state.intakeOption === "batch" ? "Use this when testing a corpus or loading many field records at once." : state.intakeOption === "single" ? "Use this when reviewing one story, interview transcript, or field note." : state.intakeOption === "manual_entry" ? "Use this when typing or pasting evidence directly into the route-specific form." : "This option supports the intake workflow without adding evidence.")}</p>
             </div>
           </div>
         `;
@@ -4940,6 +7349,15 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             ["Current cooking methods", state.template.cookingMethods, Boolean(state.template.cookingMethods)],
             ...narrativeQuestions.map((question) => [question.title, state.template[question.id], Boolean(state.template[question.id])])
           );
+        } else if (state.template.evidenceMode === "focus_group") {
+          rows.push(
+            ["Focus group ID", state.template.interviewId || "recommended", true],
+            ["Group profile", state.template.respondentProfile, Boolean(state.template.respondentProfile)],
+            ["Common cooking methods", state.template.cookingMethods || "recommended", true],
+            ["Contributor type", state.template.contributorType || "recommended", true],
+            ["Community validation", state.template.communityValidation, Boolean(state.template.communityValidation)],
+            ["Validation status", state.template.validationStatus, Boolean(state.template.validationStatus)]
+          );
         } else if (state.template.evidenceMode === "indigenous_knowledge") {
           rows.push(
             ["Knowledge record ID", state.template.interviewId || "recommended", true],
@@ -4963,6 +7381,15 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             ["Feed sources", (state.template.feedSources || []).join(", "), Array.isArray(state.template.feedSources) && state.template.feedSources.length > 0],
             ["Validation status", state.template.validationStatus, Boolean(state.template.validationStatus)],
             ["Attribution", state.template.attribution || "mode-dependent", true],
+            ["Interpretation notes", state.template.translationNotes || "recommended", true]
+          );
+        } else if (state.template.evidenceMode === "custom_evidence") {
+          rows.push(
+            ["Custom route name", state.template.customRouteName, Boolean(state.template.customRouteName)],
+            ["Custom evidence type", state.template.customEvidenceType, Boolean(state.template.customEvidenceType)],
+            ["Record or batch ID", state.template.interviewId || "recommended", true],
+            ["Attribution", state.template.attribution || "mode-dependent", true],
+            ["Validation status", state.template.validationStatus || "mode-dependent", true],
             ["Interpretation notes", state.template.translationNotes || "recommended", true]
           );
         } else {
@@ -5004,7 +7431,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <div class="field"><label for="country">Country</label><select id="country">${countries.map((country) => `<option ${selectedAttr(country, state.meta.country)}>${country}</option>`).join("")}</select></div>
             ${renderAdminFields()}
             <div class="field"><label for="language">Language</label><select id="language"><option ${selectedAttr("en", state.meta.language)} value="en">English</option><option ${selectedAttr("rw", state.meta.language)} value="rw">Kinyarwanda</option><option ${selectedAttr("fr", state.meta.language)} value="fr">French</option><option ${selectedAttr("sw", state.meta.language)} value="sw">Swahili</option></select></div>
-            <div class="field"><label for="sourceType">Source type</label><select id="sourceType"><option ${selectedAttr("field_note", state.meta.sourceType)} value="field_note">Field note</option><option ${selectedAttr("interview", state.meta.sourceType)} value="interview">Interview</option><option ${selectedAttr("focus_group", state.meta.sourceType)} value="focus_group">Focus group</option><option ${selectedAttr("oral_history", state.meta.sourceType)} value="oral_history">Oral history</option><option ${selectedAttr("community_meeting", state.meta.sourceType)} value="community_meeting">Community meeting</option><option ${selectedAttr("citizen_report", state.meta.sourceType)} value="citizen_report">Citizen report</option><option ${selectedAttr("indigenous_knowledge", state.meta.sourceType)} value="indigenous_knowledge">Indigenous knowledge</option><option ${selectedAttr("radio", state.meta.sourceType)} value="radio">Radio transcript</option><option ${selectedAttr("social_feed", state.meta.sourceType)} value="social_feed">Social/community feed</option><option ${selectedAttr("policy_brief", state.meta.sourceType)} value="policy_brief">Policy brief</option><option ${selectedAttr("csv", state.meta.sourceType)} value="csv">CSV extract</option><option ${selectedAttr("sdmx", state.meta.sourceType)} value="sdmx">SDMX exchange</option></select></div>
+            <div class="field"><label for="sourceType">Source type</label><select id="sourceType"><option ${selectedAttr("field_note", state.meta.sourceType)} value="field_note">Field note</option><option ${selectedAttr("interview", state.meta.sourceType)} value="interview">Interview</option><option ${selectedAttr("focus_group", state.meta.sourceType)} value="focus_group">Focus group</option><option ${selectedAttr("oral_history", state.meta.sourceType)} value="oral_history">Oral history</option><option ${selectedAttr("community_meeting", state.meta.sourceType)} value="community_meeting">Community meeting</option><option ${selectedAttr("citizen_report", state.meta.sourceType)} value="citizen_report">Citizen report</option><option ${selectedAttr("indigenous_knowledge", state.meta.sourceType)} value="indigenous_knowledge">Indigenous knowledge</option><option ${selectedAttr("radio", state.meta.sourceType)} value="radio">Radio transcript</option><option ${selectedAttr("social_feed", state.meta.sourceType)} value="social_feed">Social/community feed</option><option ${selectedAttr("custom_evidence", state.meta.sourceType)} value="custom_evidence">Custom evidence</option><option ${selectedAttr("policy_brief", state.meta.sourceType)} value="policy_brief">Policy brief</option><option ${selectedAttr("csv", state.meta.sourceType)} value="csv">CSV extract</option><option ${selectedAttr("sdmx", state.meta.sourceType)} value="sdmx">SDMX exchange</option></select></div>
             <div class="field"><label for="sourceName">Source name</label><input id="sourceName" value="${escapeHtml(state.meta.sourceName)}" /></div>
             <div class="field"><label for="period">Period</label><input id="period" value="${escapeHtml(state.meta.period)}" /></div>
           </div>
@@ -5023,6 +7450,25 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <div class="field"><label for="respondentProfile">Respondent profile</label><input id="respondentProfile" value="${escapeHtml(state.template.respondentProfile)}" placeholder="age range, gender, occupation" /></div>
                 <div class="field"><label for="decisionMaker">Primary cooking decision-maker</label><select id="decisionMaker"><option value="">Select</option><option ${selectedAttr("yes", state.template.decisionMaker)} value="yes">Yes</option><option ${selectedAttr("no", state.template.decisionMaker)} value="no">No</option><option ${selectedAttr("shared", state.template.decisionMaker)} value="shared">Shared decision</option></select></div>
                 <div class="field"><label for="cookingMethods">Current cooking method(s)</label><input id="cookingMethods" value="${escapeHtml(state.template.cookingMethods)}" placeholder="charcoal, firewood, LPG..." /></div>
+              </div>
+            </div>
+          `;
+        }
+        if (mode === "focus_group") {
+          return `
+            <div class="panel" style="margin-top: 14px;">
+              <h3>Focus group metadata</h3>
+              <p>Use this for facilitated group discussions. Capture the group context, moderator, consent level, speaker composition, and any translation notes before modelling.</p>
+              <div class="field-grid" style="margin-top: 12px;">
+                ${renderRecordIdField("Focus group ID", "e.g., FGD-RW-MUS-001")}
+                <div class="field"><label for="respondentProfile">Group profile</label><input id="respondentProfile" value="${escapeHtml(state.template.respondentProfile)}" placeholder="e.g., 8 women farmers, 3 youth, 1 cooperative leader" /></div>
+                <div class="field"><label for="cookingMethods">Common cooking method(s)</label><input id="cookingMethods" value="${escapeHtml(state.template.cookingMethods)}" placeholder="firewood, charcoal, LPG, improved cookstove..." /></div>
+                ${renderContributorTypeField(false)}
+                ${renderAttributionField()}
+                ${renderLocationPrecisionField()}
+                ${renderCommunityValidationField()}
+                ${renderValidationStatusField()}
+                ${renderTranslationField()}
               </div>
             </div>
           `;
@@ -5098,6 +7544,31 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             </div>
           `;
         }
+        if (mode === "custom_evidence") {
+          return `
+            <div class="panel" style="margin-top: 14px;">
+              <h3>Other / custom evidence setup</h3>
+              <p>Name the evidence route and classify the evidence type. NDIM will keep it coherent by writing it to the same governed observation table with custom-route provenance.</p>
+              <div class="field-grid" style="margin-top: 12px;">
+                <div class="field"><label for="customRouteName">Evidence route name</label><input id="customRouteName" value="${escapeHtml(state.template.customRouteName)}" placeholder="e.g., district workshop note, market observation..." /></div>
+                <div class="field"><label for="customEvidenceType">Evidence type</label><select id="customEvidenceType">
+                  <option ${selectedAttr("narrative", state.template.customEvidenceType)} value="narrative">Narrative</option>
+                  <option ${selectedAttr("observation", state.template.customEvidenceType)} value="observation">Observation</option>
+                  <option ${selectedAttr("document", state.template.customEvidenceType)} value="document">Document</option>
+                  <option ${selectedAttr("media_transcript", state.template.customEvidenceType)} value="media_transcript">Media transcript</option>
+                  <option ${selectedAttr("administrative_note", state.template.customEvidenceType)} value="administrative_note">Administrative note</option>
+                  <option ${selectedAttr("mixed", state.template.customEvidenceType)} value="mixed">Mixed evidence</option>
+                </select></div>
+                ${renderRecordIdField("Custom record ID", "e.g., CUSTOM-RW-MUS-001")}
+                ${renderContributorTypeField(false)}
+                ${renderAttributionField()}
+                ${renderLocationPrecisionField()}
+                ${renderValidationStatusField()}
+                ${renderTranslationField()}
+              </div>
+            </div>
+          `;
+        }
         return `
           <div class="panel" style="margin-top: 14px;">
             <h3>Open story record</h3>
@@ -5137,11 +7608,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const mode = state.template.evidenceMode;
         const placeholder = {
           structured_interview: "Optional extra notes that did not fit Q1-Q5. Separate extra narratives with blank lines...",
+          focus_group: "Paste the focus group transcript, facilitator notes, speaker excerpts, or thematic summary. Preserve group dynamics, consensus, disagreement, and local terms...",
           open_story: "Paste the full story in the contributor's own words. Keep sequence, emotion, local terms, and context...",
           indigenous_knowledge: "Record the knowledge carefully: local practice, seasonal memory, elder testimony, cultural explanation, or ecological observation...",
           citizen_science: "Paste the observation: what was seen, where, when, by whom, and how confident the contributor is...",
           crowd_batch: "Paste one submitted story per paragraph, or load a CSV with evidence_mode, country, admin fields, and narrative/text/quote columns...",
-          experimental_feed: "Paste one social media post, community comment, radio transcript excerpt, WhatsApp summary, or moderated feed item per line. Each line becomes an observation after governance..."
+          experimental_feed: "Paste one social media post, community comment, radio transcript excerpt, WhatsApp summary, or moderated feed item per line. Each line becomes an observation after governance...",
+          custom_evidence: "Describe the custom evidence in plain language. Keep enough context for SDMX dimensions, provenance, review, and later interpretation..."
         }[mode] || "Paste narrative evidence here...";
         return `
           <div class="panel" style="margin-top: 14px;">
@@ -5166,6 +7639,22 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
               <p>Complete these after the interview; they travel with the records for encoding comparison and policy audit.</p>
               <div style="margin-top: 10px;">${renderCodingFields()}</div>
               <div class="guide-note"><strong>Optional probes for enumerators</strong><p>Can you give an example? What happened next? How did that make you feel? What did others do in that situation?</p></div>
+            </div>
+          `;
+        }
+        if (mode === "focus_group") {
+          return `
+            <div class="panel">
+              ${summary}
+              <h3 style="margin-top: 16px;">Focus group discussion prompts</h3>
+              <div class="check-list">
+                ${knowledgePrompt("Composition", "Who was in the room, what roles did they represent, and whose voice may be missing?")}
+                ${knowledgePrompt("Consensus", "Which views were widely shared, and which were contested or minority views?")}
+                ${knowledgePrompt("Influence", "Which trusted messengers, peer groups, leaders, or institutions shaped the discussion?")}
+                ${knowledgePrompt("Risk", "What misinformation, fear, identity tension, or adoption barrier appeared in the group?")}
+              </div>
+              <h3 style="margin-top: 16px;">Optional analytic coding</h3>
+              <div style="margin-top: 10px;">${renderCodingFields()}</div>
             </div>
           `;
         }
@@ -5211,7 +7700,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
               <div class="template-table" style="margin-top: 12px;">
                 <div class="template-row head"><span>Column</span><span>Purpose</span><span>Required</span></div>
                 ${[
-                  ["evidence_mode", "structured_interview, open_story, indigenous_knowledge, citizen_science, crowd_batch, or experimental_feed", "yes"],
+                  ["evidence_mode", "structured_interview, focus_group, open_story, indigenous_knowledge, citizen_science, crowd_batch, experimental_feed, or custom_evidence", "yes"],
                   ["country/admin fields", "Country and country-specific administrative unit columns", "yes"],
                   ["source_name/period/language", "Provenance and SDMX dimensions", "yes"],
                   ["narrative/text/quote", "The submitted story text", "yes"],
@@ -5231,6 +7720,22 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 ${knowledgePrompt("Counter-feed", "Use these to detect misinformation patterns and draft responses, not to make final policy claims.")}
                 ${knowledgePrompt("Promotion path", "A feed item can become core evidence only after review in the SDMX gate.")}
               </div>
+            </div>
+          `;
+        }
+        if (mode === "custom_evidence") {
+          return `
+            <div class="panel">
+              ${summary}
+              <h3 style="margin-top: 16px;">Custom evidence route</h3>
+              <p>Use this only when the standard evidence routes do not fit. NDIM will still convert the input into the same SDMX-compatible observation structure and mark it as a custom route in the repository.</p>
+              <div class="check-list">
+                ${knowledgePrompt("Traceability", "Name what kind of evidence this is so reviewers know why it does not fit a standard route.")}
+                ${knowledgePrompt("Governance", "Custom evidence still needs source, consent, visibility, period, location, and review before modelling.")}
+                ${knowledgePrompt("Audit trail", "The repository will label this as custom_route and keep the custom name/type in provenance.")}
+              </div>
+              <h3 style="margin-top: 16px;">Optional analytic coding</h3>
+              <div style="margin-top: 10px;">${renderCodingFields()}</div>
             </div>
           `;
         }
@@ -5355,9 +7860,10 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
 
       function renderEvidenceModeSelector() {
         const selected = currentEvidenceMode();
+        const modes = activeEvidenceModes();
         return `
           <div class="field" style="margin-top: 10px;"><label for="evidenceModeSelect">Evidence route</label><select id="evidenceModeSelect">
-            ${evidenceModes.map((mode) => `<option ${selectedAttr(mode.id, state.template.evidenceMode)} value="${escapeHtml(mode.id)}">${escapeHtml(mode.title)}</option>`).join("")}
+            ${modes.map((mode) => `<option ${selectedAttr(mode.id, state.template.evidenceMode)} value="${escapeHtml(mode.id)}">${escapeHtml(mode.title)}</option>`).join("")}
           </select></div>
           <div class="route-context">
             <h3>${escapeHtml(selected.title)}</h3>
@@ -5473,6 +7979,31 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return (state.encoded || []).find((item) => item.narrative_id === record?.narrative_id)
           || Object.values(state.encodingRuns || {}).flat().find((item) => item.narrative_id === record?.narrative_id)
           || null;
+      }
+
+      function encodingSummaryForRecord(record, mode) {
+        const item = encodedFor(mode, record?.narrative_id);
+        if (!item) return null;
+        const trust = typeof item.trust_score === "number" ? item.trust_score.toFixed(2) : "-";
+        const barrier = typeof item.adoption_barrier_score === "number" ? item.adoption_barrier_score.toFixed(2) : "-";
+        const confidence = typeof item.confidence === "number" ? item.confidence.toFixed(2) : "-";
+        const phi = typeof item.manual_scorecard?.phi === "number" ? item.manual_scorecard.phi.toFixed(3) : null;
+        return {
+          mode,
+          trust,
+          barrier,
+          confidence,
+          phi,
+          label: `${mode}: trust ${trust}, barrier ${barrier}, conf ${confidence}${phi ? `, Phi ${phi}` : ""}`,
+          themes: (item.themes || []).join(", "),
+          notes: item.model_notes || item.reviewer_notes || ""
+        };
+      }
+
+      function repositoryEncodingCell(record, mode) {
+        const summary = encodingSummaryForRecord(record, mode);
+        if (!summary) return "-";
+        return `<strong>${escapeHtml(summary.mode)}</strong><br/><small>${escapeHtml(`trust ${summary.trust} | barrier ${summary.barrier} | conf ${summary.confidence}${summary.phi ? ` | Phi ${summary.phi}` : ""}`)}</small>`;
       }
 
       function recordThemes(record) {
@@ -5601,7 +8132,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function sdmxCodelists(records = acceptedRepositoryRecords()) {
         const values = (getter) => [...new Set(records.map(getter).filter(Boolean).map(String))].sort();
         return {
-          evidence_route: evidenceModes.map((mode) => ({ id: mode.id, name: mode.title })),
+          evidence_route: activeEvidenceModes().map((mode) => ({ id: mode.id, name: mode.title })),
           country: values((record) => record.metadata?.country).map((id) => ({ id, name: id })),
           admin_unit: values(recordAdminLabel).map((id) => ({ id, name: id })),
           source_type: values((record) => record.metadata?.source_type).map((id) => ({ id, name: id })),
@@ -6022,6 +8553,92 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         `).join("") + (state.records.length > 6 ? `<div class="payload-item"><strong>${state.records.length - 6} more observations</strong><p>They are included in batch encoding and modelling.</p></div>` : "");
       }
 
+      function renderEncodingModePanel(record, card, reviewed, records) {
+        if (state.encodingMode === "manual") {
+          return `
+            <div class="grid-2" style="margin-top: 14px;">
+              <div class="panel">
+                <h3>Manual encoder: current story only</h3>
+                <p>Score one narrative at a time. Save the current score, review the comparison block, then continue to the next story. This prevents batch imports from being treated as one merged narrative.</p>
+                ${renderStoryNavigator()}
+                <div class="field-grid" style="margin-top: 12px;">
+                  <div class="field"><label for="encoderName">Encoder name or ID</label><input id="encoderName" value="${escapeHtml(state.encoderName)}" placeholder="e.g., coder-01" /></div>
+                  <div class="field"><label>Manual progress</label><input value="${reviewed} of ${records.length} reviewed" disabled /></div>
+                </div>
+                ${renderManualScorecard(record, card)}
+                <div class="button-row">
+                  <button class="button primary" id="runCurrentEncoding" type="button">Save current manual score and continue</button>
+                  <button class="button" id="resetEncoding" type="button">Reset encoding</button>
+                </div>
+              </div>
+              <div>
+                <div class="panel" style="margin-bottom: 14px;">
+                  <h3>Encoding queue</h3>
+                  <p>Each CSV row or staged story remains separate. Select any story to revise it; saved manual scores appear in the repository as columns.</p>
+                  ${renderEncodingQueue()}
+                </div>
+                ${renderEncodingComparison()}
+                ${renderEncodingTable()}
+                ${renderInoculationDiagnosisPanel()}
+              </div>
+            </div>
+          `;
+        }
+        if (state.encodingMode === "ai") {
+          return `
+            <div class="grid-2" style="margin-top: 14px;">
+              <div class="panel">
+                <h3>AI encoder: pre-code one story or the accepted queue</h3>
+                <p>The AI encoder reads narrative content and returns structured scores. If no real provider key is configured, NDIM labels and uses the deterministic fallback instead of pretending it called an LLM.</p>
+                ${renderStoryNavigator()}
+                ${renderLLMSettings()}
+                <div class="button-row">
+                  <button class="button primary" id="runCurrentEncoding" type="button">Encode current story with AI</button>
+                  <button class="button" id="runEncoding" type="button">Encode all accepted stories with AI</button>
+                  <button class="button" id="resetEncoding" type="button">Reset encoding</button>
+                </div>
+              </div>
+              <div>
+                <div class="panel" style="margin-bottom: 14px;">
+                  <h3>Story queue and AI progress</h3>
+                  <p>AI results are stored separately from manual scores. You can manually encode one narrative first, then run AI to compare the two.</p>
+                  ${renderEncodingQueue()}
+                </div>
+                ${renderEncodingComparison()}
+                ${renderEncodingTable()}
+                ${renderInoculationDiagnosisPanel()}
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="grid-2" style="margin-top: 14px;">
+            <div class="panel">
+              <h3>Hybrid encoder: compare human and AI evidence</h3>
+              <p>Hybrid mode is for adjudication. It keeps manual and AI scores visible, then creates a reviewed model input that can be used by the ODE, agent model, digital twin, and policy brief.</p>
+              ${renderStoryNavigator()}
+              ${renderLLMSettings()}
+              <div class="button-row">
+                <button class="button primary" id="runCurrentEncoding" type="button">Run hybrid for current story</button>
+                <button class="button" id="runEncoding" type="button">Run hybrid for all accepted stories</button>
+                <button class="button green" id="runAllEncodingModes" type="button">Compare manual, AI, and hybrid</button>
+                <button class="button" id="resetEncoding" type="button">Reset encoding</button>
+              </div>
+            </div>
+            <div>
+              <div class="panel" style="margin-bottom: 14px;">
+                <h3>Comparison queue</h3>
+                <p>Use this queue to inspect whether human and AI coding disagree. Disagreement is useful evidence: it should trigger review, not automatic deletion.</p>
+                ${renderEncodingQueue()}
+              </div>
+              ${renderEncodingComparison()}
+              ${renderEncodingTable()}
+              ${renderInoculationDiagnosisPanel()}
+            </div>
+          </div>
+        `;
+      }
+
       function renderEncoding() {
         const record = currentReviewRecord();
         const card = ensureManualScorecard(record);
@@ -6031,41 +8648,13 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <section class="stage-card">
             <p class="eyebrow">Stage 4</p>
             <h2>Story-by-story encoding</h2>
-            <p class="copy">Each approved narrative is encoded as its own scientific observation. Manual scoring now uses explicit numeric entries and coding rules, while AI and hybrid modes can still pre-code or compare results.</p>
+            <p class="copy">Encoding converts each approved narrative into six auditable variables: exposure/emotional intensity, credibility, trust alignment, inoculation potential, barrier pressure, and social influence. These values become model inputs rather than decorative labels.</p>
             <div class="grid-3">
-              ${renderEncodingOption("manual", "Manual / rule-based", "Transparent local scoring. Good for audits, offline review, and when no model key is configured.")}
-              ${renderEncodingOption("ai", "AI encoder", "Uses the backend OpenAI path when OPENAI_API_KEY is configured; otherwise falls back safely.")}
-              ${renderEncodingOption("hybrid", "Hybrid review", "AI/fallback score plus a human-review flag before the model uses it.")}
+              ${renderEncodingOption("manual", "Manual / rule-based", "One story at a time, with explicit researcher scores and justifications.")}
+              ${renderEncodingOption("ai", "AI encoder", "One story or full accepted queue, using BYOK provider or labelled fallback.")}
+              ${renderEncodingOption("hybrid", "Hybrid review", "Compare manual and AI results before accepting a model-ready score.")}
             </div>
-            <div class="grid-2" style="margin-top: 14px;">
-              <div class="panel">
-                <h3>Manual researcher scorecard</h3>
-                <p>Score the current story from 0 to 1. Write short justifications so another researcher can audit why each value was chosen.</p>
-                ${renderStoryNavigator()}
-                <div class="field-grid" style="margin-top: 12px;">
-                  <div class="field"><label for="encoderName">Encoder name or ID</label><input id="encoderName" value="${escapeHtml(state.encoderName)}" placeholder="e.g., coder-01" /></div>
-                  <div class="field"><label>Manual batch progress</label><input value="${reviewed} of ${records.length} reviewed" disabled /></div>
-                </div>
-                ${renderManualScorecard(record, card)}
-              </div>
-              <div>
-                <div class="panel" style="margin-bottom: 14px;">
-                  <h3>Batch review queue</h3>
-                  <p>A CSV import becomes a queue of individual narratives. Use the queue or Next buttons to encode story by story; batch runs only automate scoring, they do not merge the stories.</p>
-                  ${renderEncodingQueue()}
-                </div>
-                ${renderLLMSettings()}
-                <div class="button-row" style="margin-top: 0;">
-                  <button class="button primary" id="runEncoding" type="button">Run selected encoder</button>
-                  <button class="button green" id="runCurrentEncoding" type="button">Encode current then next</button>
-                  <button class="button" id="runAllEncodingModes" type="button">Compare all modes</button>
-                  <button class="button" id="resetEncoding" type="button">Reset encoding</button>
-                </div>
-                ${renderEncodingTable()}
-                ${renderEncodingComparison()}
-                ${renderInoculationDiagnosisPanel()}
-              </div>
-            </div>
+            ${renderEncodingModePanel(record, card, reviewed, records)}
           </section>
         `;
       }
@@ -6179,11 +8768,18 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         }
         const scores = { ...defaultManualScores(), ...(card.scores || {}) };
         const phi = computePhi(scores);
+        const metricItems = [
+          ["Phi", phi.toFixed(4)],
+          ["E exposure", scores.E.toFixed(2)],
+          ["C credibility", scores.C.toFixed(2)],
+          ["tau trust", scores.tau.toFixed(2)],
+          ["kappa inoculation", scores.kappa.toFixed(2)],
+          ["B barrier", scores.B.toFixed(2)],
+          ["S social", scores.S.toFixed(2)]
+        ];
         return `
           <div class="metric-grid" style="margin-top: 12px;">
-            <div class="metric"><span class="mini-label">Phi</span><strong>${phi.toFixed(4)}</strong></div>
-            <div class="metric"><span class="mini-label">Trust</span><strong>${scores.tau.toFixed(2)}</strong></div>
-            <div class="metric"><span class="mini-label">Barrier</span><strong>${scores.B.toFixed(2)}</strong></div>
+            ${metricItems.map(([label, value]) => `<div class="metric"><span class="mini-label">${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}
           </div>
           <div class="scorecard-grid">
             ${manualEncodingVariables.map((variable) => renderScoreRule(variable, scores, card.notes || {})).join("")}
@@ -6356,6 +8952,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <h3>S/M/T/I/R meaning</h3>
                 ${mathBlock("\\begin{aligned}\\frac{dS}{dt} &= -\\beta_mSM - \\beta_tST - \\iota S \\\\ \\frac{dM}{dt} &= \\beta_mSM - \\rho M - \\sigma MI \\\\ \\frac{dT}{dt} &= \\beta_tST + \\rho M - \\mu T \\\\ \\frac{dI}{dt} &= \\iota S + \\sigma MI - \\gamma I \\\\ \\frac{dR}{dt} &= \\gamma I + \\eta T \\\\ \\Phi_i &= 0.30E_i + 0.30C_i + 0.20\\tau_i + 0.20\\kappa_i \\end{aligned}", "Phi changes beta_t, rho, and iota through narrative strength.")}
                 <div class="guide-note"><strong>Guiding note</strong><p>Read this as the executable NDIM compartment model. The backend now carries S, M, T, I, and R compartments plus an adoption signal and uncertainty band. If a future endpoint falls back to a prototype curve, the model type label will say so clearly.</p></div>
+                <div class="guide-note"><strong>How Stage 4 feeds this model</strong><p>Each encoded narrative contributes six values. Exposure and credibility raise the narrative force Phi; trust alignment raises the truthful adoption flow; inoculation potential raises the movement into the inoculated compartment; barrier pressure slows adoption; social influence changes how strongly a story diffuses across the population. In plain terms: stories become parameters, and parameters change the curve.</p></div>
                 <div class="check-list">
                   ${["S Susceptible households", "M Misinformed households", "T Truth-aligned households", "I Inoculated households", "R Resistant or durable adoption belief"].map((item) => `<div class="check pass"><i>--</i><div><strong>${item}</strong><span>Tracked by the scientific model layer.</span></div></div>`).join("")}
                 </div>
@@ -6398,6 +8995,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <h3>Agent configuration</h3>
                 ${mathBlock("\\begin{aligned}P(\\operatorname{adopt}_i) &= \\sigma\\left(b_0 + trust_i + peer\\_effect\\sum_j A_{ij}adopt_j + media_i - barrier_i\\right) \\\\ degree_i &= \\sum_j A_{ij} \\\\ trust_{i,t+1} &= trust_{i,t} + outreach_i + posterior\\_update_i \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>The agent model asks whether local peer dynamics tell a different story from the population curve. If ABM adoption is lower than ODE adoption, district-level friction or network clustering may be hiding in the aggregate model.</p></div>
+                <div class="guide-note"><strong>How encoding becomes household behavior</strong><p>Trust increases the probability that a household will try or accept the intervention. Barrier pressure reduces that probability. Social influence controls how much neighbors, savings groups, leaders, and family members affect the decision. Inoculation potential makes misinformation less durable when a trusted correction is present.</p></div>
                 <div class="field-grid">
                   <div class="field"><label for="peerEffect">Peer effect</label><input id="peerEffect" type="number" min="0" max="1" step="0.01" value="0.08" /></div>
                   <div class="field"><label for="mediaEffect">Media effect</label><input id="mediaEffect" type="number" min="0" max="1" step="0.01" value="0.05" /></div>
@@ -6524,6 +9122,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 </div>
                 ${mathBlock("\\begin{aligned}error_t &= observed_t - predicted_t \\\\ \\theta_{t+1} &= \\theta_t + \\lambda error_t \\\\ trust_{t+1} &= clamp(trust_t + trust\\_shift, 0, 1) \\\\ barrier_{t+1} &= clamp(barrier_t + barrier\\_shift, 0, 1) \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>The virtual model running here is the hybrid NDIM model: a weighted blend of the compartmental S/M/T/I/R model and the agent-based proxy. Observed adoption resets the starting state; trust and barrier shifts now directly alter the twin rerun parameters.</p></div>
+                <div class="guide-note"><strong>How previous stages feed the twin</strong><p>The twin starts with the ODE and agent model outputs, then checks them against field feedback. If observed adoption is lower than predicted, the twin treats the original model as over-optimistic. If trust rises or barriers fall after an intervention, the twin reruns the forecast with those changes. This is why the digital twin is a feedback loop, not just another chart.</p></div>
                 ${renderDigitalFeedbackChain()}
                 <div class="button-row"><button class="button primary" id="runDigital" type="button">Apply feedback and rerun twin</button></div>
               </div>
@@ -6555,7 +9154,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <section class="stage-card">
             <p class="eyebrow">Stage 8</p>
             <h2>Bayesian prior to posterior update</h2>
-            <p class="copy">Priors hold what the model believed before feedback. Posterior values update those beliefs after observed adoption and trust feedback.</p>
+            <p class="copy">Priors hold what the model believed before feedback. Posterior values update those beliefs after observed adoption, narrative encoding, and digital-twin feedback.</p>
             <div class="grid-2">
               <div class="panel">
                 <h3>Prior settings</h3>
@@ -6567,6 +9166,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 </div>
                 ${mathBlock("\\begin{aligned}p &\\sim \\operatorname{Beta}(\\alpha,\\beta) \\\\ posterior &= \\operatorname{Beta}(\\alpha + successes,\\beta + failures) \\\\ \\mathbb{E}[p] &= \\frac{\\alpha}{\\alpha + \\beta} \\end{aligned}")}
                 <div class="guide-note"><strong>Guiding note</strong><p>The prior is your starting belief. The posterior is the same belief after evidence is counted. Higher trust posterior raises adoption pressure; higher barrier posterior dampens adoption pressure and makes aggressive policies riskier.</p></div>
+                <div class="guide-note"><strong>Plain-language interpretation</strong><p>A prior is the model saying, "before seeing these field stories, this is what I expected." A posterior is the model saying, "after reviewing the accepted evidence and twin feedback, I should adjust my expectation this way." A posterior is not a final truth claim. It is a transparent, uncertainty-aware update that tells policy makers whether the evidence made trust stronger, barriers weaker, or uncertainty too wide for confident action.</p></div>
                 <div class="button-row"><button class="button primary" id="runBayes" type="button">Update posterior</button></div>
               </div>
               <div class="panel">
@@ -6639,8 +9239,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         return `
           <section class="stage-card">
             <p class="eyebrow">Stage 10</p>
-            <h2>Regional analysis</h2>
-            <p class="copy">Analyse places in isolation or as a group before crafting interventions. This is where a national story becomes a district-sensitive policy plan.</p>
+            <h2>Regional analysis <span class="pill">optional</span></h2>
+            <p class="copy">Optional but recommended when evidence spans multiple places. If skipped, the policy brief will clearly state that recommendations are based on pooled evidence only.</p>
+            <div class="guide-note" style="margin-bottom: 14px;"><strong>Optional stage notice</strong><p>Run this stage when a ministry, district team, or research project needs place-specific interpretation. If the evidence is sparse or the decision is national, you can skip it and continue to synthesis; NDIM will label the final brief as pooled rather than regional.</p></div>
             <div class="grid-2">
               <div class="panel">
                 <h3>Analysis setup</h3>
@@ -6759,6 +9360,20 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
               <button class="button" id="downloadPolicyJson" type="button">Download JSON</button>
               <button class="button" id="copyPolicyBrief" type="button">Copy brief</button>
             </div>
+            ${state.policy ? `
+              <div class="panel" style="margin-bottom: 14px;">
+                <h3>Policy brief ready: save the outputs</h3>
+                <p class="copy">The human-readable brief is the primary product. Save the HTML brief, use the PDF view to print or save as PDF, and keep the JSON only as an audit payload for reviewers.</p>
+                <div class="button-row">
+                  <button class="button primary" id="downloadPolicyHtmlPrompt" type="button">Download HTML policy brief</button>
+                  <button class="button" id="printPolicyPdfPrompt" type="button">Print or save as PDF</button>
+                  <button class="button" id="downloadPolicyJsonPrompt" type="button">Download JSON audit file</button>
+                  <button class="button green" id="returnToBeginning" type="button">Return to beginning</button>
+                </div>
+              </div>
+            ` : `
+              <div class="guide-note"><strong>Export prompt</strong><p>Run the full policy pipeline first. NDIM will then prompt you to download the HTML brief, open a PDF-ready view, save the JSON audit file, or return to the beginning.</p></div>
+            `}
             <div class="metric-grid">
               <div class="metric"><span class="mini-label">Final adoption</span><strong>${fmtPct(summary.final_adoption)}</strong></div>
               <div class="metric"><span class="mini-label">Average trust</span><strong>${fmtPct(summary.average_trust)}</strong></div>
@@ -6790,7 +9405,19 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="template-row"><span data-label="Output section">Evidence ledger</span><span data-label="Format">JSON table inside payload</span><span data-label="Source">approved narrative records</span></div>
                 </div>
               </div>
-              <div class="json">${escapeHtml(JSON.stringify(policyJson(), null, 2))}</div>
+              <div class="panel">
+                <h3>Human-readable audit summary</h3>
+                <p>This screen avoids raw JSON. The audit file is still available through <b>Download JSON</b>, but reviewers first see the plain-language chain of evidence.</p>
+                <div class="template-table" style="margin-top: 12px;">
+                  <div class="template-row head"><span>Pipeline input</span><span>Human meaning</span><span>Current status</span></div>
+                  <div class="template-row"><span data-label="Pipeline input">Accepted evidence</span><span data-label="Human meaning">Narratives approved for modelling</span><span data-label="Current status">${approvedRecords().length} record(s)</span></div>
+                  <div class="template-row"><span data-label="Pipeline input">Encoder results</span><span data-label="Human meaning">Manual, AI, or hybrid scores attached to repository records</span><span data-label="Current status">${state.encoded.length} active encoded story input(s)</span></div>
+                  <div class="template-row"><span data-label="Pipeline input">Digital twin</span><span data-label="Human meaning">Feedback-adjusted scenario run</span><span data-label="Current status">${state.digital ? "included" : "not run"}</span></div>
+                  <div class="template-row"><span data-label="Pipeline input">Bayesian update</span><span data-label="Human meaning">Prior assumptions revised into posterior assumptions</span><span data-label="Current status">${state.bayes ? "included" : "not run"}</span></div>
+                  <div class="template-row"><span data-label="Pipeline input">Regional analysis</span><span data-label="Human meaning">Optional place-specific interpretation</span><span data-label="Current status">${state.regional ? "included" : "optional/not run"}</span></div>
+                  <div class="template-row"><span data-label="Pipeline input">Human review</span><span data-label="Human meaning">Required before policy use</span><span data-label="Current status">${brief.required_human_review ? "required" : "recorded"}</span></div>
+                </div>
+              </div>
             </div>
           </section>
         `;
@@ -7279,7 +9906,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const barrier = fmtPct(summary.average_barrier);
         const rl = state.rl?.bestAction ? ` The RL loop prefers ${state.rl.bestAction}.` : "";
         const feedback = state.digital ? " Digital twin feedback and posterior values were included in the interpretation." : "";
-        const regional = state.regional?.rows?.length ? ` Regional analysis produced ${state.regional.rows.length} intervention unit(s).` : "";
+        const regional = state.regional?.rows?.length
+          ? ` Regional analysis produced ${state.regional.rows.length} intervention unit(s).`
+          : " Regional analysis was not run; recommendations are based on pooled evidence only.";
         const inoculation = state.inoculation?.items?.length ? ` The inoculation lab generated ${state.inoculation.items.length} counter-narrative drafts for review.` : "";
         const threat = state.inoculationDiagnoses.length ? ` Inoculation diagnosis identifies ${aggregateInoculationSignal().top_threat.replace(/_/g, " ")} as the leading threat profile, with misinformation risk ${fmtPct(aggregateInoculationSignal().misinformation_risk)}.` : "";
         return `Preliminary signal: prioritize trust-led clean-cooking outreach in ${state.meta.district || state.meta.country}. The current run projects a ${adoption} adoption-aligned share by the final simulation horizon. This is a scenario estimate, not an observed programme result. Average encoded trust is ${trust}, and average encoded barrier pressure is ${barrier}.${threat}${rl}${feedback}${regional}${inoculation} Human review is required before export, and the brief should state assumptions, evidence grade, uncertainty, inoculation threat profile, and implementation limits.`;
@@ -7288,7 +9917,14 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function governanceJson() {
         return {
           schema: "ndim-governance-ledger-v1",
+          workspace_id: workspaceId(),
+          workspace: {
+            workspace_id: workspaceId(),
+            name: workspaceName(),
+            domain: workspaceSettings().domain || ""
+          },
           project: {
+            workspace_id: workspaceId(),
             evidence_mode: state.template.evidenceMode,
             evidence_mode_label: currentEvidenceMode().title,
             country: state.meta.country,
@@ -7460,7 +10096,7 @@ ${policyNarrative()}
 - Digital twin used in policy: ${state.digital ? "yes" : "not yet"}
 - Bayesian posterior used in policy: ${state.bayes ? "yes" : "not yet"}
 - RL optimizer used in policy: ${state.rl ? `yes, best action: ${state.rl.bestAction}` : "not yet"}
-- Regional analysis included: ${state.regional ? "yes" : "not yet"}
+- Regional analysis: ${state.regional ? "included" : "not run; recommendations use pooled evidence only"}
 - Knowledge graph included: ${state.graph ? "yes" : "not yet"}
 - Inoculation diagnosis included: ${state.inoculationDiagnoses.length ? `yes, top threat: ${aggregateInoculationSignal().top_threat}` : "not yet"}
 - Trusted messenger: ${brief.trusted_messenger}
@@ -7650,6 +10286,8 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           "observation_date",
           "contributor_type",
           "feed_sources",
+          "custom_route_name",
+          "custom_evidence_type",
           "citizen_confidence",
           "validation_status",
           "translation_notes",
@@ -7682,6 +10320,8 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           state.template.observationDate,
           state.template.contributorType,
           Array.isArray(state.template.feedSources) ? state.template.feedSources.join(";") : "",
+          state.template.customRouteName,
+          state.template.customEvidenceType,
           state.template.citizenConfidence,
           state.template.validationStatus,
           state.template.translationNotes,
@@ -7772,6 +10412,10 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         state.template.citizenConfidence = "medium";
         state.template.validationStatus = "pending";
         state.template.feedSources = [];
+        state.template.customRouteName = "";
+        state.template.customEvidenceType = "narrative";
+        state.intakeOption = "manual_entry";
+        state.intakeImportMode = "manual_entry";
         state.completed.delete("intake");
         state.completed.delete("gate");
         trace("reset", "Intake reset", "Narrative text and staged observations were cleared.");
@@ -7783,21 +10427,35 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         const opened = window.open(path, "_blank", "noopener,noreferrer");
         if (opened) {
           toast(`${label} opened`);
-          trace("support", `${label} opened`, `Opened ${path} from the Intake Option menu.`);
+          trace("support", `${label} opened`, `Opened ${path} from the Evidence input method menu.`);
         } else {
           window.location.href = path;
         }
       }
 
       async function runIntakeOption() {
-        const option = state.intakeOption || $("intakeOptionSelect")?.value || "manual";
-        if (option === "manual") {
-          openSupportPage("/manual#narrative-intake", "Intake guide");
+        const option = state.intakeOption || $("intakeOptionSelect")?.value || "manual_entry";
+        if (option === "batch" || option === "single") {
+          state.intakeImportMode = option;
+          const input = $("fileInput");
+          if (input) {
+            input.accept = option === "batch" ? ".csv,.txt,.md,.json,.xml,.sdmx" : ".txt,.md,.json,.xml,.sdmx";
+            input.value = "";
+            input.click();
+          }
+          trace("intake", option === "batch" ? "Batch import requested" : "Single story import requested", option === "batch" ? "Choose a CSV or text file. CSV rows become separate observations; text is split by paragraph after staging." : "Choose one story, interview transcript, field note, or document text file.");
           return;
         }
-        if (option === "corpus") {
-          state.intakeOption = "manual";
-          openSupportPage("/manual", "Tool manual");
+        if (option === "manual_entry") {
+          state.intakeImportMode = "manual_entry";
+          state.importedRecords = [];
+          trace("intake", "Manual entry selected", "Use the route-specific form and narrative body below. Nothing is imported until you stage and validate.");
+          toast("Manual entry ready");
+          setTimeout(() => ($("narrativeText") || $("q1"))?.focus(), 40);
+          return;
+        }
+        if (option === "guide") {
+          openSupportPage("/manual#narrative-intake", "Intake guide");
           return;
         }
         if (option === "copy") {
@@ -7860,7 +10518,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           });
           $("intakeOptionSelect").addEventListener("change", (event) => {
             state.intakeOption = event.target.value;
-            trace("intake", "Intake helper selected", `${intakeOptionActionLabel()} is ready from the Intake Option menu.`);
+            trace("intake", "Evidence input method selected", `${intakeOptionActionLabel()} is ready from the Evidence input method menu.`);
             render();
           });
           $("runIntakeOption").addEventListener("click", runIntakeOption);
@@ -7868,7 +10526,8 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
             if (await validateIntake()) goStep(1);
           });
           
-          $("loadSample").addEventListener("click", () => {
+          const loadSampleButton = $("loadSample");
+          if (loadSampleButton) loadSampleButton.addEventListener("click", () => {
             state.template.evidenceMode = "structured_interview";
             state.meta.country = "Rwanda";
             state.meta.province = "Southern Province";
@@ -7912,10 +10571,14 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
             const file = event.target.files && event.target.files[0];
             if (!file) return;
             const text = await file.text();
+            const importMode = state.intakeImportMode || state.intakeOption || "batch";
             if (file.name.toLowerCase().endsWith(".csv")) {
               const rows = parseCsv(text);
               applyImportedCsvMetadata(rows[0] || {}, file.name);
               state.importedRecords = recordsFromCsv(text, file.name);
+              if (importMode === "single" && state.importedRecords.length > 1) {
+                state.importedRecords = state.importedRecords.slice(0, 1);
+              }
               state.records = state.importedRecords;
               state.text = state.records.map((record) => record.text).join("\n\n");
               state.encoded = [];
@@ -7926,13 +10589,13 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
               $("narrativeText").value = state.text;
               $("sourceType").value = state.meta.sourceType;
               $("sourceName").value = file.name;
-              trace("csv", "CSV file imported", `${state.records.length} narrative observation(s) imported from ${file.name}. Detected route: ${currentEvidenceMode().title}. You can still edit text before staging.`);
+              trace("csv", importMode === "single" ? "Single CSV story imported" : "CSV batch imported", `${state.records.length} narrative observation(s) imported from ${file.name}. Detected route: ${currentEvidenceMode().title}. You can still edit text before staging.`);
             } else {
               state.importedRecords = [];
               state.text = text;
               state.meta.sourceName = file.name;
               $("narrativeText").value = text;
-              trace("file", "File loaded", `${file.name} loaded into the intake form.`);
+              trace("file", importMode === "single" ? "Single story file loaded" : "Text batch file loaded", `${file.name} loaded into the intake form. ${importMode === "batch" ? "Paragraphs can become separate observations after staging." : "It will be treated as one evidence item unless you split it manually."}`);
             }
             render();
             toast("File loaded");
@@ -8047,7 +10710,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           });
         }
         if (id === "encoding") {
-          $("llmProvider").value = state.llmProvider;
+          if ($("llmProvider")) $("llmProvider").value = state.llmProvider;
           ["llmModel", "llmBaseUrl", "llmApiKey"].forEach((fieldId) => {
             const el = $(fieldId);
             if (!el) return;
@@ -8060,15 +10723,15 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
               render();
             });
           });
-          $("encoderName").value = state.encoderName;
-          $("encoderName").addEventListener("change", (event) => {
+          if ($("encoderName")) $("encoderName").value = state.encoderName;
+          if ($("encoderName")) $("encoderName").addEventListener("change", (event) => {
             state.encoderName = event.target.value || "research-encoder";
             const record = currentReviewRecord();
             const card = ensureManualScorecard(record);
             if (card) card.encoder = state.encoderName;
             trace("choice", "Manual encoder set", `Manual scorecards will be signed as ${state.encoderName}.`);
           });
-          $("llmProvider").addEventListener("change", (event) => {
+          if ($("llmProvider")) $("llmProvider").addEventListener("change", (event) => {
             state.llmProvider = event.target.value;
             state.llmConfig.model = "";
             state.llmConfig.baseUrl = "";
@@ -8122,10 +10785,10 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
             state.manualIndex = Math.min(Math.max(0, reviewableCount - 1), state.manualIndex + 1);
             render();
           });
-          $("runEncoding").addEventListener("click", runEncoding);
-          $("runCurrentEncoding").addEventListener("click", runCurrentEncoding);
-          $("runAllEncodingModes").addEventListener("click", runAllEncodingModes);
-          $("resetEncoding").addEventListener("click", () => {
+          if ($("runEncoding")) $("runEncoding").addEventListener("click", runEncoding);
+          if ($("runCurrentEncoding")) $("runCurrentEncoding").addEventListener("click", runCurrentEncoding);
+          if ($("runAllEncodingModes")) $("runAllEncodingModes").addEventListener("click", runAllEncodingModes);
+          if ($("resetEncoding")) $("resetEncoding").addEventListener("click", () => {
             state.encoded = [];
             state.encodingRuns = {};
             state.inoculationDiagnoses = [];
@@ -8163,24 +10826,37 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         }
         if (id === "policy") {
           $("runPolicy").addEventListener("click", runPolicy);
-          $("downloadPolicyHtml").addEventListener("click", () => {
+          const downloadPolicyHtmlBrief = () => {
             downloadText(`ndim-policy-brief-${Date.now()}.html`, policyHtmlDocument(false), "text/html");
             trace("policy", "Policy HTML downloaded", "Downloaded a human-readable policy brief. JSON remains available for audit only.");
             toast("HTML brief downloaded");
-          });
+          };
+          const downloadPolicyJsonAudit = () => {
+            downloadText(`ndim-policy-output-${Date.now()}.json`, JSON.stringify(policyJson(), null, 2), "application/json");
+            trace("policy", "Policy JSON downloaded", "Downloaded the ndim-policy-output-v1 audit payload.");
+            toast("Policy JSON downloaded");
+          };
+          $("downloadPolicyHtml").addEventListener("click", downloadPolicyHtmlBrief);
           $("printPolicyPdf").addEventListener("click", openPrintablePolicy);
           $("copyPolicy").addEventListener("click", async () => {
             const copied = await copyText(JSON.stringify(policyJson(), null, 2), `ndim-policy-output-${Date.now()}.json`, "application/json");
             toast(copied ? "Policy JSON copied" : "Copy blocked; policy JSON downloaded");
           });
-          $("downloadPolicyJson").addEventListener("click", () => {
-            downloadText(`ndim-policy-output-${Date.now()}.json`, JSON.stringify(policyJson(), null, 2), "application/json");
-            trace("policy", "Policy JSON downloaded", "Downloaded the ndim-policy-output-v1 audit payload.");
-            toast("Policy JSON downloaded");
-          });
+          $("downloadPolicyJson").addEventListener("click", downloadPolicyJsonAudit);
           $("copyPolicyBrief").addEventListener("click", async () => {
             const copied = await copyText(policyMarkdown(), `ndim-policy-brief-${Date.now()}.md`, "text/markdown");
             toast(copied ? "Policy brief copied" : "Copy blocked; policy brief downloaded");
+          });
+          const htmlPrompt = $("downloadPolicyHtmlPrompt");
+          if (htmlPrompt) htmlPrompt.addEventListener("click", downloadPolicyHtmlBrief);
+          const pdfPrompt = $("printPolicyPdfPrompt");
+          if (pdfPrompt) pdfPrompt.addEventListener("click", openPrintablePolicy);
+          const jsonPrompt = $("downloadPolicyJsonPrompt");
+          if (jsonPrompt) jsonPrompt.addEventListener("click", downloadPolicyJsonAudit);
+          const returnButton = $("returnToBeginning");
+          if (returnButton) returnButton.addEventListener("click", () => {
+            trace("finish", "Workflow returned to beginning", "The policy brief was prepared. The user returned to intake to start another evidence route or workspace run.");
+            goStep(0);
           });
         }
       }
@@ -8319,15 +10995,8 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         const approved = await requireApprovedRecords();
         if (!approved.length) return;
         if (state.encodingMode === "manual") {
-          state.encoded = approved.map((record) => saveManualScorecard(record, true));
-          state.encodingRuns.manual = state.encoded;
-          await runInoculationDiagnosis(approved);
-          state.completed.add("encoding");
-          setStatus("complete");
-          trace("manual", "Manual batch encoding complete", `${state.encoded.length} narrative scorecard(s) saved story by story. Each score keeps encoder, timestamp, Phi, and justifications.`);
-          await evaluateEncodingCalibration();
-          toast("Manual encoding complete");
-          render();
+          trace("manual", "Manual encoder is story-by-story", "The main Run stage action now saves only the current manual story so the researcher can inspect each narrative before continuing.");
+          await runCurrentEncoding();
           return;
         }
         setStatus("running");
@@ -8890,32 +11559,34 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
         await runner();
       }
 
-      $("backButton").addEventListener("click", () => goStep(state.step - 1));
-      $("nextButton").addEventListener("click", nextStep);
-      $("resetStageButton").addEventListener("click", resetCurrentStage);
-      if ($("quickRunButton")) $("quickRunButton").addEventListener("click", runCurrentStageShortcut);
-      if ($("toggleTraceButton")) $("toggleTraceButton").addEventListener("click", () => {
-        document.querySelector(".reasoning").classList.toggle("open");
-      });
-      $("closeTraceButton").addEventListener("click", () => {
-        document.querySelector(".reasoning").classList.remove("open");
-      });
-      $("clearTrace").addEventListener("click", () => {
-        state.trace = [["idle", "Log cleared", "The workflow state is unchanged; only the visible reasoning log was cleared."]];
-        renderTrace();
-      });
       document.querySelectorAll("#themeToggle button").forEach((button) => {
         button.addEventListener("click", () => {
-          document.querySelectorAll("#themeToggle button").forEach((item) => item.classList.remove("active"));
-          button.classList.add("active");
-          document.documentElement.dataset.theme = button.dataset.theme;
+          setTheme(button.dataset.theme);
         });
       });
+      setTheme(window.localStorage?.getItem("ndim_theme") || document.documentElement.dataset.theme || "light");
       window.addEventListener("resize", syncWorkflowStagesOffset);
       window.addEventListener("load", renderMath);
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          if (state.stageWorkspace.open) {
+            state.stageWorkspace.open = false;
+            render();
+          } else if (state.workspace.managerOpen) {
+            state.workspace.managerOpen = false;
+            renderWorkspaceManager();
+          } else {
+            document.querySelector(".reasoning")?.classList.remove("open");
+            state.workspace.assistantOpen = false;
+            renderAssistant();
+          }
+        }
+      });
 
       renderTrace();
-      render();
+      loadWorkspaceState().then(() => {
+        render();
+      }).catch(() => render());
       Promise.all([refreshAnalyticsStatus(), refreshValidationStatus()]).then(() => {
         trace("system", "Scientific services checked", `${analyticsSummary()} ${calibrationSummary()}`);
         render();
@@ -9035,7 +11706,7 @@ MANUAL_HTML = r"""<!doctype html>
       <div class="callout"><p><strong>Simple reading:</strong> the tool asks, "What are people saying, how should we encode it, how does that narrative change adoption dynamics, what did the field data correct, and which policy action is most robust?"</p></div>
 
       <h2>Using the Evidence-to-Policy Workbench</h2>
-      <p>The opening screen is a workbench, not a separate demo area. Use the compact workflow buttons and the stage selector to move between Evidence, Encode, Model, Learn, Synthesize, and Export. The hero system map shows how evidence, models, the digital twin, learning loops, synthesis, and policy output connect.</p>
+      <p>The opening screen is workspace-first: choose or create the project workspace, then let the workbench and research assistant guide the evidence-to-policy run. Use the compact workflow buttons and the stage selector to move between Evidence, Encode, Model, Learn, Synthesize, and Export. The hero system map shows how evidence, models, the digital twin, learning loops, synthesis, and policy output connect.</p>
       <table>
         <thead><tr><th>Workbench element</th><th>What it does</th><th>How to use it</th></tr></thead>
         <tbody>
@@ -9043,7 +11714,7 @@ MANUAL_HTML = r"""<!doctype html>
           <tr><td>Full repository</td><td>Lists staged narrative records with route, place, review status, evidence seal, acceptance, rejection, uncommit history, and master repository readiness.</td><td>Open the Repository stage or the repository button in the system map.</td></tr>
           <tr><td>SDMX readiness panel</td><td>Checks whether route, place, source, period, and evidence body are ready.</td><td>Fix missing items before clicking Stage and validate.</td></tr>
           <tr><td>Activity log</td><td>Shows the reasoning trace and system actions in a drawer.</td><td>Open it only when auditing the workflow; keep it closed while working.</td></tr>
-          <tr><td>Run stage</td><td>Runs the main action for the active stage.</td><td>Use it as a shortcut after the required inputs are present.</td></tr>
+          <tr><td>Run current stage</td><td>Opens the focused stage task workspace, where the user can review inputs, read the research note, and run the primary action.</td><td>Use it when the landing page is too compact for the full scientific form.</td></tr>
         </tbody>
       </table>
 
@@ -9068,11 +11739,12 @@ MANUAL_HTML = r"""<!doctype html>
       </table>
 
       <h2 id="narrative-intake">1. Narrative intake</h2>
-      <p>NDIM supports a <strong>Narrative Commons</strong> intake model. Structured interviews are one route, but users can also ingest open stories, indigenous knowledge records, citizen-science reports, crowdsourced batches, and experimental social/community feeds.</p>
+      <p>NDIM supports a <strong>Narrative Commons</strong> intake model. Structured interviews are one route, but users can also ingest focus groups, open stories, indigenous knowledge records, citizen-science reports, crowdsourced batches, and experimental social/community feeds.</p>
       <table>
         <thead><tr><th>Route</th><th>Use when</th><th>Extra governance fields</th></tr></thead>
         <tbody>
           <tr><td>Structured interview</td><td>Enumerators collect Q1-Q5 clean-cooking stories.</td><td>Interview ID, respondent profile, decision-maker, current cooking methods.</td></tr>
+          <tr><td>Focus group</td><td>A facilitated community discussion captures group consensus, disagreement, and peer influence.</td><td>Focus group ID, group profile, facilitator/source, validation status, attribution, translation notes.</td></tr>
           <tr><td>Open story</td><td>A community account or oral history does not fit the Q1-Q5 protocol.</td><td>Attribution, interpretation notes, source, location, consent.</td></tr>
           <tr><td>Indigenous knowledge</td><td>Evidence comes from local practice, elder testimony, seasonal memory, or cultural explanation.</td><td>Knowledge type, knowledge holder, sensitivity, community validation, attribution.</td></tr>
           <tr><td>Citizen science</td><td>Community members submit observations for review.</td><td>Contributor type, observation date, contributor confidence, validation status.</td></tr>
@@ -9083,7 +11755,7 @@ MANUAL_HTML = r"""<!doctype html>
       <p>Select country, province or region, district, source type, source name, period, language, evidence route, consent, and community validation fields. Paste multi-paragraph narratives or upload TXT, MD, CSV, JSON, XML, or SDMX files. CSV files should contain a <code>narrative</code>, <code>text</code>, <code>quote</code>, <code>story</code>, or <code>content</code> column, and may also include <code>evidence_mode</code>, <code>knowledge_type</code>, <code>community_validation</code>, and <code>sensitivity</code>.</p>
       <pre>evidence_mode,country,district,period,source_name,knowledge_type,community_validation,narrative
 indigenous_knowledge,Rwanda,Musanze,2026,community-consultation,cooking_practice,community_validated,"Health workers are trusted, but stove cost remains high."</pre>
-      <p>For batch imports, use <strong>Encode current story</strong> to review one narrative at a time, or <strong>Run selected encoder</strong> to encode the entire batch.</p>
+      <p>For batch imports, use <strong>Save current manual score and continue</strong> when doing human review, <strong>Encode current story with AI</strong> when testing one AI pre-code, or the mode-specific full-queue button when deliberately encoding all accepted stories with AI or hybrid review.</p>
 
       <h2>2. SDMX gate</h2>
       <p>The SDMX gate treats every narrative as an observation with dimensions, attributes, and measures. This keeps qualitative evidence from entering the scientific model without provenance.</p>
@@ -9455,6 +12127,36 @@ MANUAL_HTML = r"""<!doctype html>
         padding: 10px 12px;
         margin: 14px 0;
       }
+      .callout {
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 10px;
+        padding: 12px;
+        margin: 14px 0;
+      }
+      .callout strong {
+        color: var(--ink);
+      }
+      .exercise-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin: 14px 0;
+      }
+      .exercise-card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        padding: 12px;
+      }
+      .exercise-card h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+      .exercise-card p {
+        margin: 0;
+        font-size: 14px;
+      }
       .math-display {
         border: 1px solid var(--line);
         background: white;
@@ -9524,6 +12226,7 @@ MANUAL_HTML = r"""<!doctype html>
         thead { display: none; }
         tr { border: 1px solid var(--line); margin: 10px 0; background: white; }
         td { border: 0; border-bottom: 1px solid var(--line); }
+        .exercise-grid { grid-template-columns: 1fr; }
         td::before {
           content: attr(data-label);
           display: block;
@@ -9544,9 +12247,11 @@ MANUAL_HTML = r"""<!doctype html>
         <p class="small-link-row">
           <a href="/">Back to tool</a>
           <a href="#installation">Installation</a>
+          <a href="#workspaces">Workspaces</a>
           <a href="#workflow">Workflow</a>
           <a href="#equations">Equations</a>
           <a href="#repository">Repository</a>
+          <a href="#climatetales">ClimateTales tutorial</a>
           <a href="#multimodal">Multimodal roadmap</a>
         </p>
       </header>
@@ -9562,10 +12267,42 @@ MANUAL_HTML = r"""<!doctype html>
             <li>Click <strong>Open NDIM Engine</strong> to begin.</li>
             <li>If the backend fails, click <strong>Export support bundle</strong> and share the ZIP with the maintainer.</li>
           </ol>
+          <p>For alpha testing, the Windows portable ZIP or setup executable can be used by invited testers. A ministry-ready public release still needs fresh-machine acceptance testing, Windows signing, and macOS packaging on macOS. The core workflow itself is local-first: ingestion, deterministic encoding fallback, governance, modelling, repository browsing, backup, restore, and exports can run without internet.</p>
+          <table>
+            <thead><tr><th>Capability</th><th>Current alpha status</th><th>Policy deployment caution</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Capability">Install locally</td><td data-label="Current alpha status">Windows alpha package exists; clean-machine proof is still required.</td><td data-label="Policy deployment caution">Do not call it institutional-ready until non-technical testers install successfully.</td></tr>
+              <tr><td data-label="Capability">Work offline</td><td data-label="Current alpha status">Core workflow and smoke tests pass offline.</td><td data-label="Policy deployment caution">Remote LLMs remain optional and require user permission.</td></tr>
+              <tr><td data-label="Capability">Backup and restore</td><td data-label="Current alpha status">Backups include manifest hashes and restore validation.</td><td data-label="Policy deployment caution">Treat full backups as sensitive research data.</td></tr>
+              <tr><td data-label="Capability">No terminal for users</td><td data-label="Current alpha status">The launcher is designed for no-terminal use.</td><td data-label="Policy deployment caution">Release artifacts must be tested outside the development machine.</td></tr>
+            </tbody>
+          </table>
           <p class="note">Local-first means evidence stays on the local machine unless the user deliberately exports or syncs it. Consent, visibility, reviewer approval, and repository settings still matter.</p>
         </div>
       </details>
 
+      <details id="workspaces" open>
+        <summary>Workspaces and Research Assistant</summary>
+        <div class="section-body">
+          <p>The opening screen is now workspace-first. A workspace is the project container that tells NDIM which country settings, evidence routes, field templates, encoding rubrics, model defaults, digital-twin assumptions, repository paths, validation files, stress-test corpus, assistant guidance, and export formats to use.</p>
+          <p>The Research Assistant behaves like a state-aware progress guide: it reads the active workspace, evidence counts, governance state, model progress, and policy readiness, then explains what is complete, what is waiting, and what the next best action should be.</p>
+          <p>The launchpad has three parts: a compact route strip showing which evidence routes are enabled, a <strong>Workspace controls</strong> block with Start, Workspace manager, New workspace, and Guide actions, and the floating Research Assistant button. Duplicate actions live beside each existing workspace inside the manager so users copy the exact project they intend to reuse.</p>
+          <table>
+            <thead><tr><th>Action</th><th>What it means</th><th>When to use it</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Action">Start workspace</td><td data-label="What it means">Opens the workspace start menu.</td><td data-label="When to use it">Begin with an existing workspace, create a new one, duplicate a template, or import a package.</td></tr>
+              <tr><td data-label="Action">Manager</td><td data-label="What it means">Shows available local workspaces.</td><td data-label="When to use it">Switch between NDIM Core, ClimateTales Rwanda, or another local project.</td></tr>
+              <tr><td data-label="Action">Duplicate</td><td data-label="What it means">Copies settings, templates, validation material, and stress-test material into a new workspace.</td><td data-label="When to use it">Adapt ClimateTales Rwanda to another country or clean-tech domain without changing the original.</td></tr>
+              <tr><td data-label="Action">Guide</td><td data-label="What it means">Opens this manual at the workspace section.</td><td data-label="When to use it">Train a new researcher or field analyst.</td></tr>
+              <tr><td data-label="Action">Floating assistant</td><td data-label="What it means">Opens the agent-like progress guide.</td><td data-label="When to use it">Ask what is complete, what is missing, and what to run next.</td></tr>
+            </tbody>
+          </table>
+          <p>The default presets are <strong>NDIM Core</strong> and <strong>ClimateTales Rwanda</strong>. ClimateTales Rwanda adapts the same workflow toward social insight mining, digital listening, behavioural design labs, story activation pilots, influencer training, gamified influence simulation, and AIMS/Imperial report outputs.</p>
+          <p>The <strong>Research Assistant</strong> panel is a collapsible guide. It does not invent science. It reads the current workflow state and tells the user what has been completed, what is missing, what the next action should be, and when policy caution is required.</p>
+        </div>
+      </details>
+
+      <span id="narrative-intake"></span>
       <details id="workflow" open>
         <summary>Workflow from evidence to policy</summary>
         <div class="section-body">
@@ -9575,16 +12312,17 @@ MANUAL_HTML = r"""<!doctype html>
             <li><strong>SDMX gate:</strong> check that the record has enough structure to become a governed observation.</li>
             <li><strong>Repository:</strong> approve or reject records, commit reviewed records, and inspect accepted/rejected evidence in the standalone repository tab.</li>
             <li><strong>Encoding:</strong> score narratives manually, with an LLM, or through hybrid review.</li>
-            <li><strong>Inoculation diagnosis:</strong> diagnose threat type, misinformation mechanism, weak-dose claim, refutational preemption, reactance risk, trusted messenger fit, booster need, and narrative resilience.</li>
-            <li><strong>Compartmental model:</strong> run the population-level S/M/T/I/R diffusion model or labelled fallback curve using adoption encoding plus inoculation-risk parameters.</li>
+            <li><strong>Compartmental model:</strong> run the population-level S/M/T/I/R diffusion model or labelled fallback curve using encoded evidence.</li>
             <li><strong>Agent-based model:</strong> test household heterogeneity, peer influence, trust, and local barriers.</li>
             <li><strong>Digital twin:</strong> feed observed field information back into the virtual model and rerun scenarios.</li>
             <li><strong>Bayesian update:</strong> move from priors to posteriors for trust and barrier assumptions.</li>
             <li><strong>RL optimizer:</strong> compare candidate intervention packages by reward, cost, and risk.</li>
-            <li><strong>Regional analysis and knowledge graph:</strong> identify place-specific patterns and repeated themes.</li>
-            <li><strong>Inoculation lab:</strong> generate and test counter-narratives as narrative vaccines, then inject them into the digital twin.</li>
-            <li><strong>Policy output:</strong> export a human-readable brief with assumptions, limitations, uncertainty, and required review.</li>
+            <li><strong>Regional analysis:</strong> optionally isolate or group places when policy recommendations need local targeting.</li>
+            <li><strong>Knowledge graph:</strong> connect stories, themes, places, messengers, barriers, and intervention concepts.</li>
+            <li><strong>Inoculation lab:</strong> diagnose threat type, misinformation mechanism, weak-dose claim, refutational preemption, reactance risk, trusted messenger fit, booster need, and narrative resilience; then test counter-narratives as narrative vaccines.</li>
+            <li><strong>Policy output:</strong> export a human-readable brief with assumptions, limitations, uncertainty, required review, and HTML/PDF-friendly outputs.</li>
           </ol>
+          <p class="note">Regional analysis is optional. If skipped, the final policy brief should say that recommendations use pooled evidence rather than place-specific analysis.</p>
         </div>
       </details>
 
@@ -9662,30 +12400,104 @@ posterior &= Beta(\alpha + successes,\beta + failures)
         </div>
       </details>
 
-      <details id="stress-test-corpus">
-        <summary>Stress-test corpus and exercises</summary>
+      <span id="climatetales"></span>
+      <details id="stress-test-corpus" open>
+        <summary>ClimateTales stress-test tutorial and exercises</summary>
         <div class="section-body">
-          <p>The stress-test corpus is bundled in <code>stress_test_corpus/</code>. It is not loaded by default. Use the intake file picker when you want to test the tool with synthetic Rwanda clean-cooking narratives.</p>
+          <p>The ClimateTales Rwanda corpus is bundled in <code>stress_test_corpus/</code>. It is synthetic, realistic test data for the Rwanda clean-cooking and climate-technology adoption context. It is not loaded by default. A tester must deliberately choose a file during intake.</p>
+          <p>The goal is not to prove a policy result. The goal is to stress-test the tool: route-specific intake, SDMX fields, approval and rejection, repository behavior, manual and LLM-style encoding, model response, digital-twin feedback, uncertainty, inoculation messages, and final policy export.</p>
+          <div class="exercise-grid">
+            <div class="exercise-card"><h3>Minimum test</h3><p>Use one route-specific CSV, approve several records, encode, run models, and export a brief.</p></div>
+            <div class="exercise-card"><h3>Full route test</h3><p>Repeat the workflow for each route-specific CSV to check that every evidence path works.</p></div>
+            <div class="exercise-card"><h3>Stress test</h3><p>Use the master CSV to test a mixed repository, filtering, batch encoding, and policy synthesis.</p></div>
+          </div>
           <table>
             <thead><tr><th>Route</th><th>File</th><th>Use</th></tr></thead>
             <tbody>
-              <tr><td data-label="Route">Structured interview</td><td data-label="File"><code>ndim_stress_structured_interview_rwanda.csv</code></td><td data-label="Use">Tests Q1-Q5 interview ingestion.</td></tr>
-              <tr><td data-label="Route">Open story</td><td data-label="File"><code>ndim_stress_open_story_rwanda.csv</code></td><td data-label="Use">Tests paragraph narrative ingestion.</td></tr>
-              <tr><td data-label="Route">Indigenous knowledge</td><td data-label="File"><code>ndim_stress_indigenous_knowledge_rwanda.csv</code></td><td data-label="Use">Tests cultural sensitivity, attribution, and validation fields.</td></tr>
-              <tr><td data-label="Route">Citizen science</td><td data-label="File"><code>ndim_stress_citizen_science_rwanda.csv</code></td><td data-label="Use">Tests contributor confidence and observation metadata.</td></tr>
-              <tr><td data-label="Route">Crowdsourced batch</td><td data-label="File"><code>ndim_stress_crowdsourced_batch_rwanda.csv</code></td><td data-label="Use">Tests queue, approval, rejection, commit, and repository filtering.</td></tr>
-              <tr><td data-label="Route">Social media feed</td><td data-label="File"><code>ndim_stress_experimental_feed_rwanda.csv</code></td><td data-label="Use">Tests experimental feed route and platform selection.</td></tr>
-              <tr><td data-label="Route">Bonus single story</td><td data-label="File"><code>ndim_stress_bonus_open_story_kamegeri.txt</code></td><td data-label="Use">Tests one-story manual loading.</td></tr>
+              <tr><td data-label="Route">Structured interview</td><td data-label="File"><code>climatetales_structured_interview_synthetic.csv</code></td><td data-label="Use">Tests Q1-Q5 field protocol, respondent profile, cooking role, current stove/fuel, and post-interview coding.</td></tr>
+              <tr><td data-label="Route">Open story</td><td data-label="File"><code>climatetales_open_story_synthetic.csv</code></td><td data-label="Use">Tests free multi-paragraph narratives, oral history, meeting notes, and lived-experience stories.</td></tr>
+              <tr><td data-label="Route">Indigenous knowledge</td><td data-label="File"><code>climatetales_indigenous_knowledge_synthetic.csv</code></td><td data-label="Use">Tests attribution, cultural sensitivity, community validation, contested meanings, and local ecological knowledge.</td></tr>
+              <tr><td data-label="Route">Citizen science report</td><td data-label="File"><code>climatetales_citizen_science_synthetic.csv</code></td><td data-label="Use">Tests community observations, confidence, validation status, location precision, and contributor type.</td></tr>
+              <tr><td data-label="Route">Crowdsourced batch</td><td data-label="File"><code>climatetales_crowdsourced_batch_synthetic.csv</code></td><td data-label="Use">Tests moderation, deduplication, approval, rejection, commit, and repository filtering.</td></tr>
+              <tr><td data-label="Route">Social media feed</td><td data-label="File"><code>climatetales_social_media_feeds_synthetic.csv</code></td><td data-label="Use">Tests experimental feed handling, platform/source checkboxes, rumor monitoring, and digital listening notes.</td></tr>
+              <tr><td data-label="Route">Mixed master corpus</td><td data-label="File"><code>climatetales_ndim_synthetic_narratives_master.csv</code></td><td data-label="Use">Tests all routes together as a larger evidence repository.</td></tr>
+              <tr><td data-label="Route">Bonus single story</td><td data-label="File"><code>climatetales_bonus_manual_story.txt</code></td><td data-label="Use">Tests single-story import and manual intake practice.</td></tr>
+              <tr><td data-label="Route">Desk review report</td><td data-label="File"><code>climatetales_ndim_desk_review_report.pdf</code> and <code>.docx</code></td><td data-label="Use">Read before interpreting the corpus; it gives the research context and should not be treated as raw narrative evidence unless deliberately imported.</td></tr>
             </tbody>
           </table>
+          <h3>Exercise A: prepare the workspace</h3>
           <ol>
-            <li>Choose the matching evidence route in Stage 01.</li>
-            <li>Use <strong>Open text or CSV file</strong> and select the matching file from <code>stress_test_corpus/</code>.</li>
-            <li>Check country, administrative unit, source, language, period, consent, and visibility.</li>
-            <li>Read SDMX readiness, then stage and validate.</li>
-            <li>Approve or reject records, commit reviewed records, and open the standalone repository tab.</li>
-            <li>Encode, model, update the twin, run Bayesian/RL stages, test inoculation, and export the policy brief.</li>
+            <li>Open NDIM Engine locally.</li>
+            <li>In <strong>Workspace controls</strong>, click <strong>Start workspace</strong>.</li>
+            <li>Choose <strong>Open existing workspace</strong> and select <strong>ClimateTales Rwanda</strong>. If you want to experiment without changing the original, choose <strong>Duplicate</strong> first and work on the copy.</li>
+            <li>Open the floating Research Assistant. It should explain that the workspace is active and that Stage 01 is the next task.</li>
           </ol>
+          <div class="callout"><strong>Expected result:</strong> the workbench should show the active ClimateTales workspace, evidence routes, repository status, and current stage. If the workspace cannot be opened, test workspace storage before testing the science workflow.</div>
+
+          <h3>Exercise B: import a route-specific CSV</h3>
+          <ol>
+            <li>Open Stage 01, <strong>Narrative intake</strong>.</li>
+            <li>Under <strong>Evidence input method</strong>, choose <strong>Batch import: CSV or text</strong>.</li>
+            <li>Under <strong>Evidence route</strong>, choose the route matching the file, for example <strong>Structured interview</strong> for <code>climatetales_structured_interview_synthetic.csv</code>.</li>
+            <li>Click the import button and select the file from <code>stress_test_corpus/</code>.</li>
+            <li>Check that country, province, district, sector, language, source type, source name, period, consent, visibility, and route-specific fields are populated or editable.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> each CSV row should become a separate candidate narrative record. The app should not collapse the batch into one story. Route-specific fields should make sense for the selected route.</div>
+
+          <h3>Exercise C: test single story and manual entry</h3>
+          <ol>
+            <li>Choose <strong>Single story import</strong> and load <code>climatetales_bonus_manual_story.txt</code>.</li>
+            <li>Confirm that the text appears as one evidence item, not as a paragraph-split batch.</li>
+            <li>Choose <strong>Manual entry</strong> and paste or type a short invented field note. This should keep the user in the form and should not open a file picker.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> batch import, single import, and manual entry should behave differently. This is important because field teams may use all three modes.</div>
+
+          <h3>Exercise D: SDMX readiness and repository governance</h3>
+          <ol>
+            <li>Review <strong>SDMX readiness and record preview</strong>. Required fields should be marked ready or missing in plain language.</li>
+            <li>Click <strong>Stage and validate</strong>.</li>
+            <li>Move to the repository/SDMX gate review. Approve some records and reject at least one record.</li>
+            <li>Click <strong>Commit reviewed records</strong>. Approved records should move to the Accepted repository; rejected records should move to the Rejected repository; the active queue should shrink.</li>
+            <li>Open the full repository in its separate HTML tab. Filter or inspect accepted and rejected records. Use <strong>Uncommit</strong> on one record to verify that it returns to the active approval queue.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> the repository should read like human governance, not code. Accepted evidence is eligible for encoding and modelling; rejected evidence remains visible for audit but should not drive the model.</div>
+
+          <h3>Exercise E: encode story by story</h3>
+          <ol>
+            <li>Move to <strong>Encoding</strong>.</li>
+            <li>Select <strong>Manual / rule-based</strong>. For each story, enter numeric scores for the variables and write short justifications. Use <strong>Encode current story</strong> to move through the queue.</li>
+            <li>Run <strong>AI</strong> or <strong>Hybrid</strong> if a user-owned LLM key is available. If no key is available, the deterministic heuristic fallback should be clearly labelled.</li>
+            <li>Use comparison blocks to check whether different narratives receive different scores. Stories about cost fear, safety rumors, trusted health workers, peer influence, or time savings should not all score the same.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> manual, heuristic, and hybrid outputs should vary by narrative content. A flat score across all stories is a bug or a calibration warning.</div>
+
+          <h3>Exercise F: model, learn, and test inoculation</h3>
+          <ol>
+            <li>Run <strong>Compartmental model</strong>. Read the S/M/T/I/R curves and axis labels. A final percentage is the simulated adoption-aligned share at the final time horizon, not a measured real-world adoption rate.</li>
+            <li>Run <strong>Agent-based model</strong>. Compare whether household-level peer effects change the result relative to the population curve.</li>
+            <li>Run <strong>Digital twin</strong>. Enter or inspect feedback values and check whether the feedback-adjusted run differs from baseline.</li>
+            <li>Run <strong>Bayesian update</strong>. Check whether posterior intervals widen when evidence is thin and narrow when evidence is stronger.</li>
+            <li>Run <strong>RL optimizer</strong>. Treat the reward as a shortlist signal, not an automatic decision.</li>
+            <li>Run <strong>Knowledge graph</strong> to inspect repeated places, themes, messenger types, and barrier clusters.</li>
+            <li>Run <strong>Inoculation lab</strong>. The lab should generate a weak-dose claim, refutational response, trusted messenger recommendation, booster strategy, and intervention strength. Inject the inoculation narrative into the twin and compare before, during, and after projections.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> model stages should explain what changed and why. If an inoculation message changes predictions, the app should show whether it modified trust, resistance, misinformation decay, adoption transition, or agent-level behavior.</div>
+
+          <h3>Exercise G: optional regional analysis</h3>
+          <ol>
+            <li>Run regional analysis when the test dataset includes enough place variation.</li>
+            <li>Compare one district against another, or group districts with similar narrative patterns.</li>
+            <li>If skipped, continue to policy output. The policy brief should clearly state that recommendations use pooled evidence only.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> regional analysis should help decide whether Rwanda-wide messaging is appropriate or whether districts need different messengers, demonstrations, or financing supports.</div>
+
+          <h3>Exercise H: export and interpret the policy brief</h3>
+          <ol>
+            <li>Run <strong>Policy output</strong>.</li>
+            <li>Download the HTML policy brief, use print-to-PDF for a PDF-friendly copy, and keep JSON only as an audit export.</li>
+            <li>Check that the brief includes evidence grade, confidence, assumptions, limitations, uncertainty, human-review requirement, accepted narrative IDs, and whether ClimateTales stress-test data was synthetic.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> the policy brief should be readable by a ministry analyst. It should not look like raw JSON, and it should not overclaim synthetic stress-test results as real field evidence.</div>
         </div>
       </details>
 
@@ -9916,6 +12728,7 @@ LEGACY_MANUAL_HTML_BUSY = r"""<!doctype html>
         <p>NDIM is a local-first research and policy workbench for turning governed narrative evidence into transparent encoding, model simulations, uncertainty updates, intervention tests, and a human-reviewed policy brief.</p>
         <div class="top-links">
           <a class="button primary" href="/">Back to tool</a>
+          <a class="button" href="#workspaces">Workspaces</a>
           <a class="button" href="#installation">Installation</a>
           <a class="button" href="#stage-tutorial">Workflow tutorial</a>
           <a class="button" href="#stress-test-corpus">Stress-test corpus</a>
@@ -9925,6 +12738,7 @@ LEGACY_MANUAL_HTML_BUSY = r"""<!doctype html>
 
       <nav class="toc" aria-label="Manual sections">
         <a href="#installation">Install and open the local app</a>
+        <a href="#workspaces">Workspaces and assistant</a>
         <a href="#tool-map">What the tool does</a>
         <a href="#equations">Scientific equations</a>
         <a href="#stage-tutorial">Stage-by-stage tutorial</a>
@@ -9952,8 +12766,25 @@ LEGACY_MANUAL_HTML_BUSY = r"""<!doctype html>
         </div>
       </details>
 
+      <details id="workspaces" open>
+        <summary><span class="num">02</span>Workspaces and the research assistant</summary>
+        <div class="section-body">
+          <p>The opening screen is workspace-first. A workspace is the project container that carries the country context, evidence routes, field templates, encoding assumptions, model defaults, repository behavior, stress-test material, and export rules for a study.</p>
+          <ol class="step-list">
+            <li>Use the workspace launchpad at the top of the tool to see which project is active.</li>
+            <li>Choose an existing workspace, create a new one, duplicate a previous project, or import a workspace package from another computer.</li>
+            <li>Use template-only export when sharing a project structure without sensitive narratives. Use full backup only when the recipient is authorized to see the evidence.</li>
+            <li>Open the Research Assistant when a user needs plain-language guidance. It reads the current workflow state, shows completed and waiting tasks, and recommends the next action.</li>
+          </ol>
+          <div class="callout">
+            <strong>What the assistant is and is not.</strong>
+            <p>The assistant is a state-aware workflow guide. It does not replace a scientist, reviewer, or policy decision maker. It explains progress, cautions the user when evidence is thin, and helps non-specialists understand what to do next.</p>
+          </div>
+        </div>
+      </details>
+
       <details id="tool-map" open>
-        <summary><span class="num">02</span>What NDIM does</summary>
+        <summary><span class="num">03</span>What NDIM does</summary>
         <div class="section-body">
           <div class="grid">
             <div class="card"><h3>For researchers</h3><p>NDIM preserves provenance, supports manual and LLM-assisted encoding, displays equations, tracks uncertainty, and keeps an audit trail from raw narrative to policy brief.</p></div>
@@ -9966,7 +12797,7 @@ LEGACY_MANUAL_HTML_BUSY = r"""<!doctype html>
       </details>
 
       <details id="equations">
-        <summary><span class="num">03</span>Scientific equations used by the tool</summary>
+        <summary><span class="num">04</span>Scientific equations used by the tool</summary>
         <div class="section-body">
           <h3>Encoding score</h3>
           <p>Manual and heuristic encoding convert narrative features into a model-ready signal. In production, LLM-assisted scores should be calibrated against double-coded human validation data.</p>

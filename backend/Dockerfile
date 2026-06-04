@@ -1,10 +1,19 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    NDIM_DEPLOYMENT_MODE=cloud \
+    NDIM_MAX_UPLOAD_MB=20
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.lock.txt ./requirements.lock.txt
+RUN pip install --no-cache-dir -r requirements.lock.txt
 
-COPY app ./app
+COPY backend/app ./app
+COPY docs ./docs
+COPY stress_test_corpus ./stress_test_corpus
+COPY VERSION ./VERSION
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8080
+
+CMD exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8080}"

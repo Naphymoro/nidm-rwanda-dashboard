@@ -8,6 +8,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$BackendRequirements = Join-Path $ProjectRoot "backend\requirements.lock.txt"
+if (!(Test-Path $BackendRequirements)) {
+  $BackendRequirements = Join-Path $ProjectRoot "backend\requirements.txt"
+}
 $Venv = Join-Path $ProjectRoot ".venv-desktop"
 $Python = Join-Path $Venv "Scripts\python.exe"
 $PyInstaller = Join-Path $Venv "Scripts\pyinstaller.exe"
@@ -39,15 +43,17 @@ if ($Clean -and $UseVenv -and (Test-Path $Venv)) {
 
 if ($UseVenv) {
   if (!(Test-Path $Python)) {
-    & $PythonExe -m venv --system-site-packages $Venv
+    & $PythonExe -m venv $Venv
   }
   & $Python -m pip install --upgrade pip
+  & $Python -m pip install -r $BackendRequirements
   & $Python -m pip install -r (Join-Path $ProjectRoot "desktop\requirements-desktop.txt")
   & $PyInstaller --clean --noconfirm (Join-Path $ProjectRoot "desktop\ndim_desktop.spec")
   if ($Installer) {
     & $PyInstaller --clean --noconfirm (Join-Path $ProjectRoot "desktop\ndim_installer.spec")
   }
 } else {
+  & $PythonExe -m pip install -r $BackendRequirements
   & $PythonExe -m pip install -r (Join-Path $ProjectRoot "desktop\requirements-desktop.txt")
   & $PythonExe -m PyInstaller --clean --noconfirm (Join-Path $ProjectRoot "desktop\ndim_desktop.spec")
   if ($Installer) {
