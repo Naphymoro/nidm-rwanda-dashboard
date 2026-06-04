@@ -78,6 +78,14 @@ Configure GitHub Workload Identity Federation for that service account. Store th
 | `GCP_PROJECT_ID` | variable | Google Cloud project ID. |
 | `GCP_REGION` | variable | Cloud Run region, e.g. `us-central1`. |
 
+For a faster first deployment, you may use a service-account JSON key instead of Workload Identity Federation:
+
+| GitHub name | Type | Meaning |
+| --- | --- | --- |
+| `GCP_SERVICE_ACCOUNT_KEY` | secret | Full JSON key for a tightly scoped deployment service account. |
+
+Use Workload Identity Federation for production if possible. Use `GCP_SERVICE_ACCOUNT_KEY` only as a controlled bootstrap route, rotate it if it is exposed, and delete it when you move to Workload Identity.
+
 Optional GitHub repository variables:
 
 | Variable | Default |
