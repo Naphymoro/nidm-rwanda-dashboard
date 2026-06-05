@@ -3490,6 +3490,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         <div class="sidebar-footer">
           <p class="eyebrow">0.9.0-alpha.8</p>
           <a class="button" href="/academy" target="_blank" rel="noreferrer">NDIM Academy</a>
+          <a class="button" href="/publication" target="_blank" rel="noreferrer">Scientific Publication</a>
           <a class="button" href="/manual" target="_blank" rel="noreferrer">Tool manual</a>
           <a class="button" href="/manual#source-access" target="_blank" rel="noreferrer">Source access</a>
         </div>
@@ -11797,7 +11798,7 @@ MANUAL_HTML = r"""<!doctype html>
   <body>
     <main>
       <h1>NDIM Engine Manual</h1>
-      <p><a href="/">Back to tool</a> | <a href="/academy">Open NDIM Academy</a> | <a href="/academy#modules">Academy modules</a> | <a href="/academy#practice">Practice exercises</a></p>
+      <p><a href="/">Back to tool</a> | <a href="/academy">Open NDIM Academy</a> | <a href="/publication">Scientific Publication</a> | <a href="/academy#modules">Academy modules</a> | <a href="/academy#practice">Practice exercises</a></p>
       <p><strong>NDIM</strong> means <strong>Narrative Diffusion and Inoculation Model</strong>. The engine turns field narratives into traceable model inputs, runs population and household simulations, updates beliefs with evidence, and produces a policy recommendation with an audit trail.</p>
       <div class="callout"><p><strong>Simple reading:</strong> the tool asks, "What are people saying, how should we encode it, how does that narrative change adoption dynamics, what did the field data correct, and which policy action is most robust?"</p></div>
 
@@ -11807,6 +11808,7 @@ MANUAL_HTML = r"""<!doctype html>
         <thead><tr><th>Need</th><th>Use</th><th>Where to go</th></tr></thead>
         <tbody>
           <tr><td>Learn NDIM from scratch</td><td>Academy story, innovation case, glossary, equations, and learning modules.</td><td><a href="/academy#modules">Academy modules</a></td></tr>
+          <tr><td>Frame NDIM for journal publication</td><td>Publication positioning, abstract, equations, validation roadmap, ethics, and article-type fit.</td><td><a href="/publication">Scientific Publication</a></td></tr>
           <tr><td>Practise with ClimateTales Rwanda</td><td>Academy practice workflow and manual stress-test steps.</td><td><a href="/academy#module-climatetales">ClimateTales module</a></td></tr>
           <tr><td>Run the tool correctly</td><td>Manual stage-by-stage operating guide.</td><td><a href="#stage-tutorial">Workflow tutorial</a></td></tr>
           <tr><td>Explain equations to a non-technical reader</td><td>Academy equation map and plain-language interpretation.</td><td><a href="/academy#equations">Academy equations</a></td></tr>
@@ -12355,6 +12357,7 @@ MANUAL_HTML = r"""<!doctype html>
         <p class="small-link-row">
           <a href="/">Back to tool</a>
           <a href="/academy">NDIM Academy</a>
+          <a href="/publication">Scientific Publication</a>
           <a href="/academy#modules">Academy modules</a>
           <a href="/academy#practice">Academy exercises</a>
           <a href="#installation">Installation</a>
@@ -13097,6 +13100,7 @@ ACADEMY_HTML = r"""<!doctype html>
         <p class="small-link-row">
           <a href="/">Back to tool</a>
           <a href="/manual">Tool manual</a>
+          <a href="/publication">Scientific Publication</a>
           <a href="#difference">What makes NDIM different</a>
           <a href="#cloud-repository">Cloud repository</a>
           <a href="#glossary">Glossary</a>
