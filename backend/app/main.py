@@ -32,7 +32,7 @@ from .workspaces import (
     set_active_workspace,
     update_workspace,
 )
-from .workflow_ui import MANUAL_HTML, WORKFLOW_UI_HTML
+from .workflow_ui import ACADEMY_HTML, MANUAL_HTML, WORKFLOW_UI_HTML
 
 if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
     ensure_app_dirs()
@@ -214,6 +214,16 @@ def desktop_full_backup():
 def manual():
     return HTMLResponse(
         MANUAL_HTML,
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
+
+@app.get("/academy", response_class=HTMLResponse)
+def academy():
+    return HTMLResponse(
+        ACADEMY_HTML,
         headers={
             "Cache-Control": "no-store, max-age=0",
             "Pragma": "no-cache",
