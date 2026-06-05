@@ -10,7 +10,8 @@ GitHub repository
   -> Artifact Registry container image
   -> Google Cloud Run FastAPI service
   -> PostgreSQL database
-  -> optional Google Sheets / Apps Script master repository sync
+  -> optional Google Drive + Google Sheets research repository
+  -> optional Apps Script master repository sync
 ```
 
 ## Why this path
@@ -36,7 +37,7 @@ Cloud Run should run:
 
 Cloud Run should not be treated as durable local storage. Its filesystem can be replaced at any time. For hosted users, set `DATABASE_URL` and use PostgreSQL.
 
-Apps Script and Google Sheets should only be used for optional master repository sync, approval summaries, or institutional reporting. They should not run the modelling engine.
+Google Drive, Google Sheets, and Apps Script should only be used for master repository storage, approval summaries, sync handoff, or institutional reporting. They should not run the modelling engine.
 
 ## Low-cost research settings
 
@@ -106,6 +107,46 @@ For a Google-only institutional setup, use Cloud SQL for PostgreSQL.
 For a lower-cost pilot, you may use any managed PostgreSQL provider and put its URL in `DATABASE_URL`. The app normalizes common `postgres://` and `postgresql://` URLs to the `psycopg` driver.
 
 Do not use local SQLite for the hosted web app. SQLite remains for desktop/local mode.
+
+## Google Drive + Sheets research repository
+
+For the current research phase, the simplest shared repository can be Google-based:
+
+```text
+NDIM Web on Cloud Run
+  -> Google Drive folder for files and generated outputs
+  -> Google Sheets ledger for structured evidence records and review state
+```
+
+Use this when you want normal users to open one web app while the project owner keeps the shared research repository in a Google account.
+
+Recommended repository structure:
+
+| Layer | Google tool | Purpose |
+| --- | --- | --- |
+| Workspace files | Drive folder | Uploads, accepted/rejected narrative exports, SDMX packages, policy briefs, backup bundles, desk reviews, and reports. |
+| Evidence ledger | Google Sheet | Narrative IDs, route, place, consent, visibility, reviewer decision, hashes, encoding scores, model run IDs, policy-output links, and audit notes. |
+| Optional automation | Apps Script | Controlled sync endpoint after approval. Keep it off until permissions and audit rules are agreed. |
+
+Configure these environment variables in Cloud Run, GitHub Actions, or the runtime environment:
+
+| Variable | Meaning |
+| --- | --- |
+| `NDIM_GOOGLE_DRIVE_FOLDER_ID` | The shared Drive folder ID for the NDIM master repository. |
+| `NDIM_GOOGLE_SHEETS_LEDGER_ID` | The Google Sheet ID for the evidence ledger. |
+| `NDIM_GOOGLE_REPOSITORY_ROOT_NAME` | Human-readable repository name shown in the app. |
+| `NDIM_GOOGLE_REPOSITORY_OWNER` | Project owner or institution responsible for the repository. |
+| `NDIM_GOOGLE_REPOSITORY_MODE` | Use `manual_package` while sync is manual, or `google_drive_sheets` once configured. |
+| `NDIM_GOOGLE_APPS_SCRIPT_SYNC_URL` | Optional controlled sync endpoint. Leave blank until the approval layer is ready. |
+
+The app endpoint `GET /repository/google/status` reports whether Drive and Sheets are configured. The UI then shows links to the Drive repository and Sheets ledger only when real IDs are present. If they are blank, NDIM falls back to downloadable SDMX JSON, observation CSV, and DSD JSON packages.
+
+Important limits:
+
+- Google Drive is file storage, not a relational database.
+- Google Sheets is acceptable as a controlled early ledger, but not as a high-scale production database.
+- Sensitive narratives should not be uploaded until consent, visibility, reviewer approval, and project data-governance rules are clear.
+- For institutional scale, keep PostgreSQL or another governed database as the database of record.
 
 ## Deploy
 

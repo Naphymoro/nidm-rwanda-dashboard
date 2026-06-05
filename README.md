@@ -21,6 +21,7 @@ For real users, the recommended default path is NDIM Web:
 
 ```text
 GitHub -> GitHub Actions -> Google Artifact Registry -> Google Cloud Run -> PostgreSQL
+                                                     -> optional Google Drive + Sheets repository layer
 ```
 
 Use the desktop package only for offline/sensitive fieldwork. Use Colab only for advanced reproducibility notebooks.
@@ -33,6 +34,28 @@ The Cloud Run deployment assets are:
 - `docs/CLOUD_RUN_RESEARCH_DEPLOYMENT.md`
 
 The hosted app requires `DATABASE_URL`; do not rely on local SQLite on Cloud Run.
+
+### Research-phase Google repository
+
+During the early hosted phase, NDIM can use Google Drive and Google Sheets as a lightweight shared research repository:
+
+- Google Drive stores workspace files, uploads, approved/rejected narrative exports, SDMX packages, reports, backups, and audit bundles.
+- Google Sheets stores the structured evidence ledger: workspace IDs, narrative IDs, review decisions, consent, visibility, hashes, encoding scores, model runs, and policy-output references.
+- The NDIM app still runs on Cloud Run or locally. Drive is file storage, and Sheets is a governed ledger. They are not a substitute for a high-scale production database.
+- If Drive/Sheets IDs are not configured, the safe default remains manual export of SDMX JSON, observation CSV, DSD JSON, and policy briefs.
+
+Optional configuration is shown in `.env.example`:
+
+```env
+NDIM_GOOGLE_REPOSITORY_MODE=manual_package
+NDIM_GOOGLE_REPOSITORY_ROOT_NAME=NDIM Master Repository
+NDIM_GOOGLE_REPOSITORY_OWNER=
+NDIM_GOOGLE_DRIVE_FOLDER_ID=
+NDIM_GOOGLE_SHEETS_LEDGER_ID=
+NDIM_GOOGLE_APPS_SCRIPT_SYNC_URL=
+```
+
+The app exposes `GET /repository/google/status` so the UI can show whether the Google-backed repository is configured and can open the Drive folder or Sheets ledger without guessing.
 
 ## Core modules
 
@@ -252,7 +275,7 @@ When running locally, these backend endpoints are available:
 - `GET /desktop/support-bundle`
 - `GET /desktop/full-backup`
 
-The master repository workflow remains optional. The app prepares SDMX/DSD packages and tamper-evident hashes locally; it does not upload sensitive narratives unless a user explicitly exports or syncs through a future connector.
+The master repository workflow remains optional. The app prepares SDMX/DSD packages and tamper-evident hashes locally; it does not upload sensitive narratives unless a user explicitly exports or syncs through a configured connector. In the research-phase Google setup, Drive and Sheets can hold the master repository materials after reviewer approval, but the app still preserves consent, visibility, and audit metadata in the export package.
 
 ## Recommended deployment
 

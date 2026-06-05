@@ -18,6 +18,7 @@ from .pipeline import run_experiment_pipeline
 from .security import LOCAL_ORIGIN_REGEX, validate_upload_file
 from .storage import app_paths, diagnostics, ensure_app_dirs, make_full_backup, make_support_bundle, resource_path
 from .validation import VALIDATION_DATASET, evaluate_encoder_against_validation, validation_status
+from .cloud_repository import google_repository_status
 from .workspaces import (
     WorkspaceCreateRequest,
     WorkspaceUpdateRequest,
@@ -128,8 +129,13 @@ def offline_status():
             "policy_export",
             "stress_test_corpus",
         ],
-        "optional_online_functions": ["user-selected remote LLM providers", "future master repository sync"],
+        "optional_online_functions": ["user-selected remote LLM providers", "configured Google Drive/Sheets repository links", "future master repository sync"],
     }
+
+
+@app.get("/repository/google/status")
+def repository_google_status():
+    return google_repository_status()
 
 
 @app.get("/workspaces")

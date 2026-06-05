@@ -3491,7 +3491,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <p class="eyebrow">0.9.0-alpha.8</p>
           <a class="button" href="/academy" target="_blank" rel="noreferrer">NDIM Academy</a>
           <a class="button" href="/manual" target="_blank" rel="noreferrer">Tool manual</a>
-          <a class="button" href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub source</a>
+          <a class="button" href="/manual#source-access" target="_blank" rel="noreferrer">Source access</a>
         </div>
       </aside>
 
@@ -3872,6 +3872,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         analyticsStatus: null,
         validation: null,
         ledgerSync: null,
+        googleRepository: null,
         repositoryFilters: {
           status: "all",
           route: "all",
@@ -3891,7 +3892,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         masterRepository: {
           status: "not_prepared",
           syncStatus: "local_only",
-          target: "master repository export",
+          target: "Google Drive + Sheets research repository",
           backend: "not_connected",
           reviewer: "master-reviewer",
           role: "institutional reviewer",
@@ -4146,6 +4147,33 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           trace("validation", "Calibration check failed", state.validation.warning);
         }
         return state.validation;
+      }
+
+      async function refreshGoogleRepositoryStatus() {
+        try {
+          state.googleRepository = await apiJson("/repository/google/status");
+          state.masterRepository.backend = state.googleRepository.configured ? "google_drive_sheets_phase" : "manual_package_export";
+          if (state.googleRepository.configured) {
+            state.masterRepository.target = state.googleRepository.root_name || state.masterRepository.target;
+            if (state.masterRepository.syncStatus === "local_only") {
+              state.masterRepository.syncStatus = "google_repository_configured";
+            }
+          }
+        } catch (error) {
+          state.googleRepository = {
+            configured: false,
+            sync_status: "unavailable",
+            user_message: error.message || "Google repository status endpoint is unavailable.",
+            storage_model: {
+              files: "not checked",
+              ledger: "not checked",
+              database_warning: "Repository status could not be checked."
+            },
+            drive_url: "",
+            sheet_url: ""
+          };
+        }
+        return state.googleRepository;
       }
 
       async function syncLedgerToBackend(reason = "workflow sync") {
@@ -6289,28 +6317,37 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function renderMasterRepositoryPanel() {
         const eligible = masterEligibleRecords();
         const pkg = state.masterRepository.package;
+        const googleRepo = state.googleRepository || {};
         const statusLabel = String(state.masterRepository.status || "not_prepared").replace(/_/g, " ");
         const syncLabel = String(state.masterRepository.syncStatus || "local_only").replace(/_/g, " ");
+        const googleLabel = googleRepo.configured ? "configured" : String(googleRepo.sync_status || "not checked").replace(/_/g, " ");
+        const driveLink = googleRepo.drive_url ? `<a class="button" href="${escapeHtml(googleRepo.drive_url)}" target="_blank" rel="noreferrer">Open Drive repository</a>` : "";
+        const sheetLink = googleRepo.sheet_url ? `<a class="button" href="${escapeHtml(googleRepo.sheet_url)}" target="_blank" rel="noreferrer">Open Sheets ledger</a>` : "";
         return `
           <div class="master-repo-panel">
             <div>
-              <p class="eyebrow">Federated master repository</p>
-              <h3>Prepare accepted local evidence for a governed master repository</h3>
-              <p>This keeps NDIM local-first: records are reviewed and committed on this machine first. When a team is ready, accepted records can be packaged as an SDMX-style push bundle for a master repository such as Google Sheets, Google Drive, GitHub, Airtable, Supabase, or an institutional database. No online upload happens from this prototype.</p>
+              <p class="eyebrow">Google-backed research repository</p>
+              <h3>Prepare accepted evidence for the master research repository</h3>
+              <p>For this deployment phase, NDIM can use Google Drive as the file store and Google Sheets as the lightweight evidence ledger. Drive keeps uploads, reports, SDMX exports, and backups. Sheets keeps the structured review ledger. This is a controlled research-phase repository, not a high-scale production database.</p>
+              <p>${escapeHtml(googleRepo.user_message || "Repository status has not been checked yet.")}</p>
             </div>
             <div class="metric-grid">
               <div class="metric"><span class="mini-label">Eligible accepted records</span><strong>${eligible.length}</strong></div>
               <div class="metric"><span class="mini-label">Master status</span><strong>${escapeHtml(statusLabel)}</strong></div>
               <div class="metric"><span class="mini-label">Sync state</span><strong>${escapeHtml(syncLabel)}</strong></div>
+              <div class="metric"><span class="mini-label">Google repo</span><strong>${escapeHtml(googleLabel)}</strong></div>
               <div class="metric"><span class="mini-label">Anchor hash</span><strong>${escapeHtml(shortHash(state.masterRepository.anchorHash))}</strong></div>
             </div>
             <div class="field-grid" style="margin-top: 12px;">
-              <div class="field"><label for="masterRepositoryTarget">Master repository target</label><input id="masterRepositoryTarget" value="${escapeHtml(state.masterRepository.target)}" placeholder="Google Sheet, Drive folder, GitHub repo, institutional DB..." /></div>
+              <div class="field"><label for="masterRepositoryTarget">Master repository target</label><input id="masterRepositoryTarget" value="${escapeHtml(state.masterRepository.target)}" placeholder="Google Drive folder + Sheets ledger, institutional DB..." /></div>
               <div class="field"><label for="masterReviewer">Master reviewer</label><input id="masterReviewer" value="${escapeHtml(state.masterRepository.reviewer)}" /></div>
               <div class="field"><label for="masterReviewerRole">Reviewer role</label><input id="masterReviewerRole" value="${escapeHtml(state.masterRepository.role)}" /></div>
               <div class="field"><label for="masterApprovalNote">Master approval note</label><input id="masterApprovalNote" value="${escapeHtml(state.masterRepository.note)}" placeholder="Why this package should or should not update the master repository" /></div>
             </div>
             <div class="button-row">
+              <button class="button" id="checkGoogleRepository" type="button">Check Google repository</button>
+              ${driveLink}
+              ${sheetLink}
               <button class="button primary" id="prepareMasterPush" type="button">Prepare SDMX master push</button>
               <button class="button green" id="approveMasterPush" type="button">Approve master push</button>
               <button class="button" id="rejectMasterPush" type="button">Reject master push</button>
@@ -6319,7 +6356,8 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
               <button class="button" id="exportMasterCsv" type="button">Download observation CSV</button>
               <button class="button" id="exportMasterDsd" type="button">Download DSD JSON</button>
             </div>
-            <p style="margin-top: 10px;"><strong>Blockchain-ready seal:</strong> NDIM creates a chained hash for the master push package and the master approval decision. Later, that anchor hash can be published to a blockchain or institutional timestamp service without exposing restricted narrative text.</p>
+            <p style="margin-top: 10px;"><strong>Safe phase behavior:</strong> if the Google repository is not configured, NDIM still creates downloadable SDMX JSON, observation CSV, and DSD JSON packages. If it is configured, the links open the Drive folder and Sheets ledger for the governed workspace. Sensitive narrative text remains controlled by consent and visibility settings.</p>
+            <p><strong>Blockchain-ready seal:</strong> NDIM creates a chained hash for the master push package and the master approval decision. Later, that anchor hash can be published to a blockchain or institutional timestamp service without exposing restricted narrative text.</p>
             ${pkg ? `<p><strong>Last package:</strong> ${escapeHtml(pkg.sdmx?.observations?.length || 0)} observation(s), status ${escapeHtml(pkg.master_review_status || "-")}, generated ${escapeHtml(pkg.generated_at || "-")}.</p>` : ""}
           </div>
         `;
@@ -6364,6 +6402,29 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         `;
       }
 
+      function renderGoogleRepositoryCheckpoint() {
+        const googleRepo = state.googleRepository || {};
+        const googleLabel = googleRepo.configured ? "configured" : String(googleRepo.sync_status || "not checked").replace(/_/g, " ");
+        const driveLink = googleRepo.drive_url ? `<a class="button" href="${escapeHtml(googleRepo.drive_url)}" target="_blank" rel="noreferrer">Open Drive repository</a>` : "";
+        const sheetLink = googleRepo.sheet_url ? `<a class="button" href="${escapeHtml(googleRepo.sheet_url)}" target="_blank" rel="noreferrer">Open Sheets ledger</a>` : "";
+        return `
+          <div class="panel" style="margin-top: 14px;">
+            <h3>Google-backed research repository</h3>
+            <p>For this research phase, Drive can store files and Sheets can store the governed evidence ledger. If the Google repository is not configured, NDIM still prepares downloadable SDMX JSON, observation CSV, and DSD JSON packages for manual upload.</p>
+            <div class="metric-grid">
+              <div class="metric"><span class="mini-label">Google repo</span><strong>${escapeHtml(googleLabel)}</strong></div>
+              <div class="metric"><span class="mini-label">Safe default</span><strong>SDMX package</strong></div>
+            </div>
+            <p>${escapeHtml(googleRepo.user_message || "Repository status has not been checked yet.")}</p>
+            <div class="button-row">
+              <button class="button" id="checkGoogleRepository" type="button">Check Google repository</button>
+              ${driveLink}
+              ${sheetLink}
+            </div>
+          </div>
+        `;
+      }
+
       function renderRepositoryStage() {
         const stats = governanceStats();
         return `
@@ -6387,8 +6448,24 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <button class="button" data-flow-step="${stepIndexById("gate")}" type="button">Back to SDMX gate</button>
               </div>
             </div>
+            ${renderGoogleRepositoryCheckpoint()}
             ${renderContextualNext("Open the full repository when you need detailed review; otherwise continue to encoding.")}
           </section>
+        `;
+      }
+
+      function renderContextualNext(noteText = "") {
+        const next = steps[state.step + 1];
+        const isLast = state.step === steps.length - 1;
+        const label = isLast ? "Finish and return to intake" : `Continue to ${next.num} ${workspaceStageLabel(next)}`;
+        const note = noteText || (isLast
+          ? "Complete the workflow, then return to the beginning for another route or workspace."
+          : `Continue when this stage is ready. The workflow will move to ${workspaceStageLabel(next)}.`);
+        return `
+          <div class="context-stage-nav" aria-label="Contextual next action">
+            <span class="nav-note">${escapeHtml(note)}</span>
+            <button class="button primary" data-context-next type="button">${escapeHtml(label)}</button>
+          </div>
         `;
       }
 
@@ -6737,6 +6814,12 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           requestAnimationFrame(() => $("fullRepositoryView")?.scrollIntoView({ behavior: "smooth", block: "start" }));
         });
         const masterButtons = [
+          ["checkGoogleRepository", async () => {
+            await refreshGoogleRepositoryStatus();
+            trace("master repository", "Google repository checked", state.googleRepository?.user_message || "Repository status refreshed.");
+            toast(state.googleRepository?.configured ? "Google repository configured" : "Google repository not configured");
+            render();
+          }],
           ["prepareMasterPush", prepareMasterRepositoryPush],
           ["approveMasterPush", () => decideMasterRepositoryPush("approved")],
           ["rejectMasterPush", () => decideMasterRepositoryPush("rejected")],
@@ -8194,10 +8277,11 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         const records = masterEligibleRecords();
         return {
           schema: "ndim-master-repository-sdmx-push-v1",
-          note: "Local-first export package for updating a master narrative repository such as Google Sheets, Google Drive, GitHub, Airtable, Supabase, or an institutional database. No upload occurs without a configured backend.",
+          note: "Research-phase package for updating a governed master narrative repository. Google Drive is the file store and Google Sheets is the lightweight ledger when configured. No upload occurs without a configured backend or user-controlled sync step.",
           generated_at: new Date().toISOString(),
           target: state.masterRepository.target,
           backend: state.masterRepository.backend,
+          google_repository: state.googleRepository || null,
           master_review_status: status,
           local_repository: {
             accepted_records: acceptedRepositoryRecords().length,
@@ -10710,6 +10794,17 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
             });
           });
         }
+        if (id === "repository") {
+          const check = $("checkGoogleRepository");
+          if (check) {
+            check.addEventListener("click", async () => {
+              await refreshGoogleRepositoryStatus();
+              trace("master repository", "Google repository checked", state.googleRepository?.user_message || "Repository status refreshed.");
+              toast(state.googleRepository?.configured ? "Google repository configured" : "Google repository not configured");
+              render();
+            });
+          }
+        }
         if (id === "encoding") {
           if ($("llmProvider")) $("llmProvider").value = state.llmProvider;
           ["llmModel", "llmBaseUrl", "llmApiKey"].forEach((fieldId) => {
@@ -11588,8 +11683,8 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
       loadWorkspaceState().then(() => {
         render();
       }).catch(() => render());
-      Promise.all([refreshAnalyticsStatus(), refreshValidationStatus()]).then(() => {
-        trace("system", "Scientific services checked", `${analyticsSummary()} ${calibrationSummary()}`);
+      Promise.all([refreshAnalyticsStatus(), refreshValidationStatus(), refreshGoogleRepositoryStatus()]).then(() => {
+        trace("system", "Scientific services checked", `${analyticsSummary()} ${calibrationSummary()} Google repository: ${state.googleRepository?.sync_status || "not checked"}.`);
         render();
       });
     </script>
@@ -12263,10 +12358,12 @@ MANUAL_HTML = r"""<!doctype html>
           <a href="/academy#modules">Academy modules</a>
           <a href="/academy#practice">Academy exercises</a>
           <a href="#installation">Installation</a>
+          <a href="#source-access">Source access</a>
           <a href="#workspaces">Workspaces</a>
           <a href="#workflow">Workflow</a>
           <a href="#equations">Equations</a>
           <a href="#repository">Repository</a>
+          <a href="#cloud-repository">Google repository</a>
           <a href="#climatetales">ClimateTales tutorial</a>
           <a href="#multimodal">Multimodal roadmap</a>
         </p>
@@ -12310,6 +12407,22 @@ MANUAL_HTML = r"""<!doctype html>
             </tbody>
           </table>
           <p class="note">Local-first means evidence stays on the local machine unless the user deliberately exports or syncs it. Consent, visibility, reviewer approval, and repository settings still matter.</p>
+        </div>
+      </details>
+
+      <details id="source-access">
+        <summary>Source access and GitHub</summary>
+        <div class="section-body">
+          <p>The NDIM source repository is managed on GitHub. If the repository is private, people who are not listed as collaborators may see a GitHub <strong>404</strong> page even when the link is correct. That is GitHub's normal privacy behavior.</p>
+          <p>For testers or institutional reviewers, the maintainer should either add them as GitHub collaborators or publish a release package that does not require source-code access.</p>
+          <table>
+            <thead><tr><th>User type</th><th>Best access route</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td data-label="User type">Ordinary app user</td><td data-label="Best access route">NDIM Web link or installer/release package</td><td data-label="Why">They should not need GitHub or a terminal.</td></tr>
+              <tr><td data-label="User type">Alpha tester</td><td data-label="Best access route">GitHub Release files plus manual and demo video</td><td data-label="Why">They test the app behavior, not the codebase.</td></tr>
+              <tr><td data-label="User type">Developer or auditor</td><td data-label="Best access route">GitHub collaborator access to <code>https://github.com/Naphymoro/nidm-rwanda-dashboard</code></td><td data-label="Why">They may need commits, workflows, source files, and audit history.</td></tr>
+            </tbody>
+          </table>
         </div>
       </details>
 
@@ -12437,6 +12550,23 @@ posterior &= Beta(\alpha + successes,\beta + failures)
             </tbody>
           </table>
           <p>The full repository opens in a separate HTML tab from the main workflow. This keeps the workflow readable while still allowing detailed filtering by country, administrative unit, route, theme, consent, visibility, status, reviewer, and evidence seal.</p>
+        </div>
+      </details>
+
+      <details id="cloud-repository">
+        <summary>Google Drive and Sheets research repository</summary>
+        <div class="section-body">
+          <p>For the hosted research phase, NDIM can run as a web app while the shared project repository lives in a Google account. This keeps the user experience simple: researchers open the web app, and the project owner manages the shared Drive folder and Sheets ledger.</p>
+          <table>
+            <thead><tr><th>Part</th><th>What it stores</th><th>Plain explanation</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Part">Google Drive</td><td data-label="What it stores">Uploads, SDMX exports, accepted/rejected narrative packages, reports, backups, and policy briefs.</td><td data-label="Plain explanation">Drive is the project filing cabinet.</td></tr>
+              <tr><td data-label="Part">Google Sheets</td><td data-label="What it stores">Narrative IDs, routes, places, consent, visibility, reviewer decisions, hashes, encoding scores, model runs, and export links.</td><td data-label="Plain explanation">Sheets is the evidence ledger.</td></tr>
+              <tr><td data-label="Part">NDIM Web</td><td data-label="What it stores">The app logic, modelling workflow, manual, Academy, and export tools.</td><td data-label="Plain explanation">The app is the workbench; Drive and Sheets are storage and governance layers.</td></tr>
+            </tbody>
+          </table>
+          <p>The repository stage has a <strong>Check Google repository</strong> button. It asks the backend whether the Drive folder ID and Sheet ID are configured. When they are configured, the app shows buttons to open the Drive repository and Sheets ledger. When they are not configured, the app keeps the safer behavior: prepare downloadable SDMX JSON, observation CSV, and DSD JSON packages for manual upload.</p>
+          <p class="note">Drive and Sheets are useful for a controlled research pilot. They are not a full production database. For a large institutional deployment, keep PostgreSQL or another governed database as the system of record and use Drive/Sheets for documents, reports, and controlled repository views.</p>
         </div>
       </details>
 
@@ -12968,6 +13098,7 @@ ACADEMY_HTML = r"""<!doctype html>
           <a href="/">Back to tool</a>
           <a href="/manual">Tool manual</a>
           <a href="#difference">What makes NDIM different</a>
+          <a href="#cloud-repository">Cloud repository</a>
           <a href="#glossary">Glossary</a>
           <a href="#equations">Equations and model map</a>
           <a href="#modules">Learning modules</a>
@@ -13029,8 +13160,27 @@ ACADEMY_HTML = r"""<!doctype html>
         </div>
       </details>
 
+      <details id="cloud-repository" open>
+        <summary>03. How the shared Google repository works</summary>
+        <div class="section-body">
+          <p>NDIM can be used in two main ways during this phase. One way is local: the user runs NDIM on their own computer and keeps the evidence on that machine. The other way is hosted: users open NDIM Web in a browser, and the project keeps shared records in a controlled Google repository.</p>
+          <p>Think of the hosted setup as three pieces:</p>
+          <table>
+            <thead><tr><th>Piece</th><th>Simple meaning</th><th>Why it matters</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Piece">NDIM Web</td><td data-label="Simple meaning">The place where the user does the work.</td><td data-label="Why it matters">It runs the workflow: intake, review, encoding, modelling, inoculation testing, and policy export.</td></tr>
+              <tr><td data-label="Piece">Google Drive</td><td data-label="Simple meaning">The filing cabinet.</td><td data-label="Why it matters">It stores files such as uploaded evidence packages, reports, exports, backups, and policy briefs.</td></tr>
+              <tr><td data-label="Piece">Google Sheets</td><td data-label="Simple meaning">The evidence ledger.</td><td data-label="Why it matters">It records what was submitted, reviewed, accepted, rejected, encoded, modelled, and exported.</td></tr>
+            </tbody>
+          </table>
+          <p>This design is useful for a research pilot because many teams already understand Google Drive and Sheets. It also avoids asking every user to install a desktop app.</p>
+          <p>There is one important caution: Drive and Sheets should not be treated as the scientific engine. The model still runs in NDIM. Drive stores files. Sheets records decisions. For large or sensitive deployments, a governed database such as PostgreSQL should remain the main database.</p>
+          <p>In the repository stage, <strong>Check Google repository</strong> tells the user whether the Drive and Sheets links are configured. If they are not configured, NDIM still produces a structured export package so the project can upload or archive the evidence manually.</p>
+        </div>
+      </details>
+
       <details id="levels" open>
-        <summary>03. How to read NDIM at three depths</summary>
+        <summary>04. How to read NDIM at three depths</summary>
         <div class="section-body">
           <p>Different users need different levels of detail. A field officer may need the next safe action. A policy analyst may need confidence and limits. A modeller may need equations and assumptions. NDIM Academy keeps those levels separate so the main app does not become crowded.</p>
           <div class="level-tabs">
@@ -13043,7 +13193,7 @@ ACADEMY_HTML = r"""<!doctype html>
       </details>
 
       <details id="glossary">
-        <summary>04. Glossary for everyday use</summary>
+        <summary>05. Glossary for everyday use</summary>
         <div class="section-body">
           <table>
             <thead><tr><th>Term</th><th>Plain meaning</th><th>Scientific meaning</th><th>Policy example</th></tr></thead>
@@ -13066,7 +13216,7 @@ ACADEMY_HTML = r"""<!doctype html>
       </details>
 
       <details id="equations" open>
-        <summary>05. Equations and systems map</summary>
+        <summary>06. Equations and systems map</summary>
         <div class="section-body">
           <h3>Narrative strength</h3>
           <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
@@ -13126,7 +13276,7 @@ ACADEMY_HTML = r"""<!doctype html>
       </details>
 
       <details id="modules">
-        <summary>06. Learning modules</summary>
+        <summary>07. Learning modules</summary>
         <div class="section-body">
           <p>Use these modules as a self-paced course. Each one explains the idea, gives a small worked example, and asks the learner to do something inside the NDIM tool. The goal is not memorisation. The goal is to help a user explain the final policy brief without saying, "the computer told me."</p>
 
@@ -13341,7 +13491,7 @@ ACADEMY_HTML = r"""<!doctype html>
       </details>
 
       <details id="practice" open>
-        <summary>07. Practice content that works with NDIM</summary>
+        <summary>08. Practice content that works with NDIM</summary>
         <div class="section-body">
           <p>NDIM is easiest to learn with practice evidence. The practice content should look like real field material, but it should be clearly marked as synthetic unless it comes from an approved study.</p>
           <p>A good practice pack should contain several kinds of stories. Some should be hopeful. Some should be cautious. Some should contain rumours. Some should contain practical barriers. Some should show trust, peer influence, gendered decision-making, repair concerns, fuel access, time savings, health concerns, or cultural meanings.</p>
@@ -13362,7 +13512,7 @@ ACADEMY_HTML = r"""<!doctype html>
       </details>
 
       <details id="references">
-        <summary>08. Scholarly positioning and references</summary>
+        <summary>09. Scholarly positioning and references</summary>
         <div class="section-body">
           <p>NDIM is related to epidemic misinformation diffusion models, rumour-spreading models, social-contagion models, information-cascade studies, inoculation-theory studies, agent-based adoption models, and digital-twin policy simulation. Its claimed differentiation should be stated carefully: integration of these pieces into a governed, explainable, evidence-to-policy workflow.</p>
           <ul>
