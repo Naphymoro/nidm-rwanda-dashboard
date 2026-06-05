@@ -12345,7 +12345,7 @@ MANUAL_HTML = r"""<!doctype html>
           </table>
 
           <h3>Compartmental NDIM</h3>
-          <p>The documented model uses susceptible, misinformation-exposed, truth-aligned, inoculated, and resistant/adoption-aligned compartments.</p>
+          <p>The documented model uses susceptible, misinformation-exposed, truth-aligned, inoculated, and resistant/adoption-aligned compartments. In the basic teaching setup, these compartments conserve the population: people move between states, but the total population share remains one.</p>
           <div class="math-display">\begin{aligned}
 \frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
 \frac{dM}{dt} &= \beta_mSM - \rho M - \mu M \\
@@ -12353,10 +12353,17 @@ MANUAL_HTML = r"""<!doctype html>
 \frac{dI}{dt} &= \iota S + \eta T - \gamma I \\
 \frac{dR}{dt} &= \gamma I + \mu M
 \end{aligned}</div>
+          <p>Read each derivative as a rate of change. For example, if misinformation contact is high, the M compartment grows. If trusted correction and inoculation are strong, the model moves people toward T, I, and R.</p>
+
+          <h3>Agent-based model</h3>
+          <p>The agent-based model is the household-level companion to the population equation. It represents each household as a decision maker with its own trust, barrier level, peer influence, message exposure, and adoption probability.</p>
+          <div class="math-display">P(adopt_i) = logistic(trust_i + peer_i + evidence_i - barrier_i - misinformation_i)</div>
+          <p>This helps test whether the smooth population curve hides local friction. If the agent model is lower than the compartmental model, local peer networks, trust gaps, or access barriers may be slowing adoption.</p>
 
           <h3>Digital twin feedback</h3>
           <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
-          <p>The current twin is a prototype feedback loop. It reruns the hybrid model after approved evidence, encoded narratives, and field observations adjust trust, barriers, and intervention parameters.</p>
+          <p>The current twin is a prototype feedback loop. It receives the compartmental model, the agent-based model, approved evidence, encoded narratives, and field feedback. It then reruns the scenario after trust, barriers, or intervention strength change.</p>
+          <p>Example: if the population curve predicts strong adoption but field evidence shows safety fear remains high, the twin adjusts the assumptions and reruns the forecast. The new curve is not a final truth; it is a better scenario because it listened to the field signal.</p>
 
           <h3>Inoculation diagnosis</h3>
           <p>The upgrade adds a separate diagnosis layer after adoption encoding. The diagnosis estimates misinformation risk, reactance risk, messenger fit, and intervention strength before the inoculation lab drafts any counter-narrative.</p>
@@ -12378,10 +12385,11 @@ MANUAL_HTML = r"""<!doctype html>
 prior &= Beta(\alpha,\beta) \\
 posterior &= Beta(\alpha + successes,\beta + failures)
 \end{aligned}</div>
+          <p>The prior is what the model believed before new evidence. The posterior is what the model believes after approved evidence is added. This matters because a policy recommendation should show uncertainty, not only a single confident-looking number.</p>
 
           <h3>RL optimizer</h3>
           <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
-          <p>The reward ranks candidate interventions. It supports human review; it does not automatically decide policy.</p>
+          <p>The optimizer ranks candidate interventions by expected reward. Reward balances adoption gain, cost, risk, and uncertainty. It supports human review; it does not automatically decide policy.</p>
         </div>
       </details>
 
@@ -12771,6 +12779,49 @@ ACADEMY_HTML = r"""<!doctype html>
         gap: 10px;
         margin: 12px 0;
       }
+      .system-map {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(110px, 1fr));
+        gap: 10px;
+        align-items: center;
+        margin: 16px 0;
+      }
+      .map-node {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--white);
+        padding: 12px;
+        min-height: 96px;
+        position: relative;
+      }
+      .map-node h3 {
+        margin: 0 0 6px;
+        font-size: 17px;
+      }
+      .map-node p {
+        margin: 0;
+        font-size: 14px;
+      }
+      .map-node::after {
+        content: "->";
+        position: absolute;
+        right: -20px;
+        top: 40%;
+        color: var(--muted);
+        font: 800 18px "Cascadia Mono", Consolas, monospace;
+      }
+      .map-node:last-child::after {
+        content: "";
+      }
+      .map-node.truth { border-left: 5px solid #315da8; }
+      .map-node.risk { border-left: 5px solid #a04d37; }
+      .map-node.inoculation { border-left: 5px solid #708461; }
+      .conservation-note {
+        border: 1px dashed var(--muted);
+        border-radius: 12px;
+        padding: 12px;
+        background: rgba(255,255,255,.55);
+      }
       .back-top {
         position: fixed;
         right: 18px;
@@ -12786,7 +12837,15 @@ ACADEMY_HTML = r"""<!doctype html>
         main { width: min(100% - 22px, 1080px); padding-top: 18px; }
         summary { font-size: 19px; }
         .section-body { padding-left: 0; }
-        .grid, .level-tabs { grid-template-columns: 1fr; }
+        .grid, .level-tabs, .system-map { grid-template-columns: 1fr; }
+        .map-node::after {
+          content: "down";
+          right: 14px;
+          top: auto;
+          bottom: -24px;
+          font-size: 12px;
+        }
+        .map-node:last-child::after { content: ""; }
         table, thead, tbody, th, td, tr { display: block; }
         thead { display: none; }
         tr { border: 1px solid var(--line); margin: 10px 0; background: var(--white); }
@@ -12806,15 +12865,16 @@ ACADEMY_HTML = r"""<!doctype html>
     <main>
       <header>
         <p class="mono">NDIM ACADEMY</p>
-        <h1>Learn the Narrative Diffusion and Inoculation Model without fearing the math.</h1>
-        <p class="lede">NDIM is a learning and policy workbench for a simple but difficult problem: people rarely adopt new technologies because a spreadsheet says they should. They decide through stories, trust, fear, memory, social pressure, local proof, and repeated claims. NDIM keeps that story chain visible from field evidence to policy output.</p>
+        <h1>Learn the Narrative Diffusion and Inoculation Model.</h1>
+        <p class="lede">NDIM is built for a practical question: why do people accept, delay, resist, or abandon a useful intervention? The answer is rarely only price or access. It is also trust, fear, local proof, repeated claims, social pressure, memory, and the messenger. NDIM helps a researcher follow those forces from field stories to a policy brief.</p>
         <p class="small-link-row">
           <a href="/">Back to tool</a>
           <a href="/manual">Tool manual</a>
           <a href="#difference">What makes NDIM different</a>
           <a href="#glossary">Glossary</a>
-          <a href="#equations">Equations explained</a>
+          <a href="#equations">Equations and model map</a>
           <a href="#modules">Learning modules</a>
+          <a href="#practice">Practice with NDIM</a>
           <a href="#references">References</a>
         </p>
       </header>
@@ -12822,8 +12882,10 @@ ACADEMY_HTML = r"""<!doctype html>
       <details id="why" open>
         <summary>01. Why NDIM is needed</summary>
         <div class="section-body">
-          <p>Clean-cooking adoption is not only a technical problem. A household may understand fuel savings but still hesitate because of fear of pressure, habit, repair concerns, gendered decision power, cost, rumours, local experience, or whether a trusted person has used the device safely.</p>
-          <p>Conventional surveys can count opinions, but they often flatten the story behind the number. Ordinary AI tools can summarize stories, but they do not automatically govern evidence, validate provenance, encode variables, simulate diffusion, test counter-narratives, update uncertainty, and write a reviewable policy brief. NDIM is designed to connect those steps.</p>
+          <p>Clean-cooking adoption is not only a technology problem. A pressure cooker can save time and fuel, but a household may still hesitate.</p>
+          <p>The hesitation may come from a rumour about explosions. It may come from repair worries. It may come from cost, fuel supply, gendered decision power, habit, or a bad experience from a neighbour. It may also come from a simple question: "Has someone I trust used this safely?"</p>
+          <p>A survey can count how many people agree or disagree. That is useful. But a survey can miss the story that explains the answer. NDIM is built to keep the story, the place, the source, the evidence quality, the model assumptions, and the policy recommendation in one visible chain.</p>
+          <p>That is the central idea: do not jump from raw stories to policy. First govern the evidence. Then encode it. Then model it. Then update uncertainty. Then test interventions. Then write a decision brief that a human can review.</p>
           <div class="note">
             <strong>Careful innovation language:</strong>
             <p>NDIM represents a distinctive research and software innovation whose methods, terminology, and workflow should be documented carefully for authorship, reproducibility, and future intellectual-property review.</p>
@@ -12834,8 +12896,11 @@ ACADEMY_HTML = r"""<!doctype html>
       <details id="difference" open>
         <summary>02. How NDIM differs from epidemiological misinformation models</summary>
         <div class="section-body">
-          <p>Many previous studies adapt epidemic models such as SI, SIS, SIR, SEIR, Daley-Kendall, Maki-Thompson, information-cascade, or network contagion models to represent how rumours and misinformation spread. Those models are useful because they show how a claim can spread, persist, decay, or be corrected across a population.</p>
-          <p>NDIM does not discard that logic. It extends it. Instead of starting from abstract infected and recovered states alone, NDIM starts from governed narratives, encodes their meaning, links them to place and consent, tests inoculation strategies, feeds results into a digital twin, updates uncertainty, and produces a human-reviewed policy brief.</p>
+          <p>Researchers have already used epidemic-style models to study rumours and misinformation. The idea is understandable: a claim can move through a community in a way that looks a little like contagion. One person hears it. Another repeats it. Some people resist it. Some people later accept a correction.</p>
+          <p>Those models are useful. They help us think about spread, correction, recovery, and network effects. But they often begin after the evidence has already been simplified into states such as "exposed", "infected", or "recovered".</p>
+          <p>NDIM begins earlier. It starts with the actual story someone tells. Who said it? Where was it heard? What was the person worried about? Was consent given? Is the story approved evidence, or should it stay in the audit trail only?</p>
+          <p>After that, NDIM translates the story into model inputs. It does not throw away the story. It keeps the trace. The user can still see the route, location, reviewer decision, encoding score, uncertainty, and policy implication.</p>
+          <p>NDIM also brings inoculation theory into the workflow. That means it does not only ask, "How does misinformation spread?" It also asks, "How can a trusted message prepare people to resist a harmful claim before it shapes behaviour?"</p>
           <table>
             <thead><tr><th>Dimension</th><th>Typical epidemiological misinformation model</th><th>NDIM Engine</th><th>Why it matters for policy</th></tr></thead>
             <tbody>
@@ -12848,13 +12913,15 @@ ACADEMY_HTML = r"""<!doctype html>
               <tr><td data-label="Dimension">Policy output</td><td data-label="Typical model">May estimate spread or intervention impact.</td><td data-label="NDIM Engine">Produces decision briefs with confidence, evidence grade, assumptions, limitations, and required human review.</td><td data-label="Policy value">The final product is usable by ministries and research teams, not only model specialists.</td></tr>
             </tbody>
           </table>
-          <p><strong>Bottom line:</strong> NDIM's differentiating factor is the integration of governed narrative evidence, inoculation-aware encoding, coupled simulation, uncertainty learning, and policy-output synthesis within one workflow.</p>
+          <p><strong>Bottom line:</strong> NDIM is different because it joins the whole chain. It begins with governed community evidence. It turns that evidence into transparent scores. It tests both population-level and household-level dynamics. It updates uncertainty when new evidence arrives. It tests inoculation messages as interventions. It ends with a policy brief that still shows where the evidence came from.</p>
+          <p>In short, NDIM is not just a model of misinformation spread. It is a workbench for moving from stories to decisions without losing the story trail.</p>
         </div>
       </details>
 
       <details id="levels" open>
-        <summary>03. Three explanation levels</summary>
+        <summary>03. How to read NDIM at three depths</summary>
         <div class="section-body">
+          <p>Different users need different levels of detail. A field officer may need the next safe action. A policy analyst may need confidence and limits. A modeller may need equations and assumptions. NDIM Academy keeps those levels separate so the main app does not become crowded.</p>
           <div class="level-tabs">
             <div class="card"><h3>Novice</h3><p>Start with the story. What did people say, what are they worried about, who do they trust, and what is the next safe action?</p></div>
             <div class="card"><h3>Policy maker</h3><p>Focus on interpretation: evidence grade, confidence, risks, regional differences, feasibility, and what should be reviewed before action.</p></div>
@@ -12865,7 +12932,7 @@ ACADEMY_HTML = r"""<!doctype html>
       </details>
 
       <details id="glossary">
-        <summary>04. Plain-language glossary</summary>
+        <summary>04. Glossary for everyday use</summary>
         <div class="section-body">
           <table>
             <thead><tr><th>Term</th><th>Plain meaning</th><th>Scientific meaning</th><th>Policy example</th></tr></thead>
@@ -12888,14 +12955,26 @@ ACADEMY_HTML = r"""<!doctype html>
       </details>
 
       <details id="equations" open>
-        <summary>05. Equations explained without intimidation</summary>
+        <summary>05. Equations and systems map</summary>
         <div class="section-body">
           <h3>Narrative strength</h3>
           <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
-          <p><strong>Plain meaning:</strong> a story becomes more influential when it is emotionally salient, locally credible, trust-supporting, and useful for inoculation.</p>
+          <p><strong>What this means:</strong> a story becomes more influential when it is emotionally strong, locally believable, connected to trust, and useful for preparing people against harmful claims.</p>
           <p><strong>Policy implication:</strong> a high value does not automatically mean the story is true. It means the story has enough force to matter for diffusion, intervention design, or risk management.</p>
 
           <h3>Compartmental model</h3>
+          <p>The compartmental model is the population-level view. It divides a community into groups. Each group represents a narrative state. The equations then estimate how people move between those states over time.</p>
+          <div class="system-map" aria-label="NDIM compartmental systems map">
+            <div class="map-node"><h3>S: susceptible</h3><p>People who have not yet been strongly shaped by either the misleading claim or the trusted correction.</p></div>
+            <div class="map-node risk"><h3>M: misinformation exposed</h3><p>People influenced by fear, rumour, or a misleading story about the intervention.</p></div>
+            <div class="map-node truth"><h3>T: truth aligned</h3><p>People reached by trusted evidence, demonstrations, or credible local explanation.</p></div>
+            <div class="map-node inoculation"><h3>I: inoculated</h3><p>People prepared to recognize and resist the misleading claim before it spreads further.</p></div>
+            <div class="map-node"><h3>R: resistant or adoption aligned</h3><p>People whose position is now more stable: either resistant to misinformation or aligned with adoption.</p></div>
+          </div>
+          <div class="conservation-note">
+            <strong>Is the population conserved?</strong>
+            <p>In the teaching version, yes: the five groups are meant to add up to the same population share. People move between groups; they do not disappear from the system. If a future version adds birth, migration, dropout, or survey loss, the manual should say so clearly because the total population would no longer be conserved in the same simple way.</p>
+          </div>
           <div class="math-display">\begin{aligned}
 \frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
 \frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
@@ -12903,23 +12982,35 @@ ACADEMY_HTML = r"""<!doctype html>
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
 \frac{dR}{dt} &= \gamma I + \eta T
 \end{aligned}</div>
-          <p><strong>Plain meaning:</strong> the derivatives show how quickly groups change over time. If misinformation contact is strong, people move into M. If trusted truth narratives and inoculation are strong, people move toward T, I, and R.</p>
+          <p><strong>What the derivative means:</strong> each line asks, "How fast is this group changing?" If misinformation contact is strong, more people move into M. If trusted truth narratives and inoculation are strong, more people move toward T, I, and R.</p>
           <p><strong>Policy implication:</strong> if misinformation pressure is high, only distributing devices may fail. The intervention may need trusted messengers, demonstrations, and prebunking before adoption can accelerate.</p>
+
+          <h3>Agent-based model</h3>
+          <p>The agent-based model is the household-level view. Instead of treating the district as one smooth curve, it creates many simulated households. Each household can have different trust, barriers, peer influence, and exposure to messages.</p>
+          <div class="math-display">P(adopt_i) = logistic(trust_i + peer_i + evidence_i - barrier_i - misinformation_i)</div>
+          <p><strong>What this means:</strong> household i is more likely to adopt when trust, peer support, and evidence are strong. It is less likely to adopt when barriers and misinformation are strong.</p>
+          <p><strong>Why this matters:</strong> the population curve may look optimistic while the household model reveals a bottleneck. For example, a district may have strong radio messaging but weak neighbour-to-neighbour proof. In that case, the agent model can show slower adoption than the compartmental model.</p>
 
           <h3>Digital twin feedback</h3>
           <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
-          <p><strong>Plain meaning:</strong> when field observation disagrees with the model, the twin adjusts the model parameters instead of pretending the first prediction was final.</p>
+          <p><strong>What the digital twin is:</strong> it is a virtual copy of the adoption system that can be updated when field evidence comes in. It is not just a chart. It is a feedback loop.</p>
+          <p><strong>How the models feed it:</strong> the compartmental model gives the broad population pathway. The agent-based model gives the household and peer-effect pathway. The twin compares those model outputs with field feedback: observed adoption, trust change, barrier change, and inoculation effects.</p>
+          <p><strong>Example:</strong> suppose the model predicts fast adoption, but field officers report that many households still fear pressure-cooker safety. The twin treats the earlier prediction as too optimistic. It lowers the trust pathway, raises the barrier pressure, and reruns the forecast.</p>
           <p><strong>Policy implication:</strong> the twin is useful for scenario learning. It is not a national truth machine unless the observations are repeated, validated, and representative.</p>
 
           <h3>Bayesian update</h3>
           <div class="math-display">posterior = Beta(\alpha + successes,\beta + failures)</div>
-          <p><strong>Plain meaning:</strong> a prior is the starting belief; a posterior is the updated belief after evidence. The update also shows uncertainty, not only a single number.</p>
+          <p><strong>What a prior is:</strong> it is the model's starting belief before the new evidence is added. A prior is not a guess pulled from nowhere. It should come from earlier studies, expert judgment, pilot data, or an explicit assumption.</p>
+          <p><strong>What a posterior is:</strong> it is the updated belief after the evidence is added. The posterior should not only give one number. It should also show how uncertain the model remains.</p>
+          <p><strong>Example:</strong> before fieldwork, NDIM may assume medium trust in demonstrations. After twenty approved stories from Musanze, the model may learn that trust is higher among households who saw a neighbour use the cooker, but lower where safety rumours are repeated. The posterior captures that update.</p>
           <p><strong>Policy implication:</strong> wide uncertainty means more evidence is needed. It should produce caution, not overconfidence.</p>
 
           <h3>Policy optimizer</h3>
           <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
-          <p><strong>Plain meaning:</strong> the optimizer compares actions by reward. Reward balances adoption gain against cost and risk.</p>
-          <p><strong>Policy implication:</strong> the best reward is a shortlist for human review, not an automatic ministry decision.</p>
+          <p><strong>What it does:</strong> the optimizer compares possible actions. It asks which action is likely to improve adoption while keeping cost, risk, and uncertainty under control.</p>
+          <p><strong>Example actions:</strong> a peer demonstration, a health-worker message, a radio correction, a repair-support package, a subsidy, or an inoculation message that prebunks a safety rumour.</p>
+          <p><strong>What reward means:</strong> reward is a score for usefulness. It is not a moral judgment and it is not a final decision. It is a way to rank options for review.</p>
+          <p><strong>Policy implication:</strong> the best reward is a shortlist for human review, not an automatic ministry decision. A low-cost action with strong trust gains may beat a costly action that looks impressive but does not address the local narrative barrier.</p>
         </div>
       </details>
 
@@ -12928,12 +13019,12 @@ ACADEMY_HTML = r"""<!doctype html>
         <div class="section-body">
           <div class="grid">
             <div class="card"><h3>Module 1. Why narrative evidence matters</h3><p>Stories explain the social logic behind adoption and resistance.</p></div>
-            <div class="card"><h3>Module 2. How NDIM differs from prior models</h3><p>NDIM adds governance, encoding, inoculation, twin feedback, uncertainty, and policy synthesis.</p></div>
+            <div class="card"><h3>Module 2. How NDIM differs from prior models</h3><p>NDIM keeps the story trail visible while still using diffusion models, uncertainty updates, and policy simulation.</p></div>
             <div class="card"><h3>Module 3. From story to governed evidence</h3><p>Evidence routes, SDMX metadata, consent, visibility, and review protect the chain of custody.</p></div>
             <div class="card"><h3>Module 4. Encoding without losing meaning</h3><p>Human and LLM-assisted scores should be justified and compared.</p></div>
-            <div class="card"><h3>Module 5. Understanding the equations</h3><p>Derivatives mean rates of change; parameters mean forces that move people between states.</p></div>
-            <div class="card"><h3>Module 6. Population and agent models</h3><p>ODEs show aggregate flow; agents show local heterogeneity and peer effects.</p></div>
-            <div class="card"><h3>Module 7. Digital twin feedback</h3><p>The twin reruns scenarios after field observations adjust assumptions.</p></div>
+            <div class="card"><h3>Module 5. Understanding the system map</h3><p>The compartments show where people are in the narrative journey and how they can move over time.</p></div>
+            <div class="card"><h3>Module 6. Population and household models</h3><p>The ODE model shows aggregate flow. The agent model checks household variation and peer effects.</p></div>
+            <div class="card"><h3>Module 7. Digital twin feedback</h3><p>The twin reruns scenarios after field observations challenge or support the model prediction.</p></div>
             <div class="card"><h3>Module 8. Priors, posteriors, and uncertainty</h3><p>Evidence updates beliefs, but uncertainty decides how much caution is needed.</p></div>
             <div class="card"><h3>Module 9. RL policy testing</h3><p>Candidate interventions can be compared by reward, cost, and risk.</p></div>
             <div class="card"><h3>Module 10. Narrative vaccines</h3><p>Weak-dose claims plus refutation can reduce susceptibility to misinformation.</p></div>
@@ -12943,8 +13034,29 @@ ACADEMY_HTML = r"""<!doctype html>
         </div>
       </details>
 
+      <details id="practice" open>
+        <summary>07. Practice content that works with NDIM</summary>
+        <div class="section-body">
+          <p>NDIM is easiest to learn with practice evidence. The practice content should look like real field material, but it should be clearly marked as synthetic unless it comes from an approved study.</p>
+          <p>A good practice pack should contain several kinds of stories. Some should be hopeful. Some should be cautious. Some should contain rumours. Some should contain practical barriers. Some should show trust, peer influence, gendered decision-making, repair concerns, fuel access, time savings, health concerns, or cultural meanings.</p>
+          <table>
+            <thead><tr><th>Practice item</th><th>Why it matters</th><th>What the learner should observe</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Practice item">Structured interview</td><td data-label="Why it matters">Teaches the Q1-Q5 field protocol.</td><td data-label="Observe">How answers become separate evidence records with respondent context.</td></tr>
+              <tr><td data-label="Practice item">Open story</td><td data-label="Why it matters">Teaches how to handle long lived-experience narratives.</td><td data-label="Observe">How the same story can carry trust, fear, barrier, and social influence.</td></tr>
+              <tr><td data-label="Practice item">Indigenous knowledge note</td><td data-label="Why it matters">Teaches attribution, cultural sensitivity, and community validation.</td><td data-label="Observe">Why local knowledge should not be stripped from its context.</td></tr>
+              <tr><td data-label="Practice item">Citizen science report</td><td data-label="Why it matters">Teaches confidence, location precision, and contributor validation.</td><td data-label="Observe">Why an observation can be useful but still limited.</td></tr>
+              <tr><td data-label="Practice item">Crowdsourced batch</td><td data-label="Why it matters">Teaches moderation, deduplication, approval, and rejection.</td><td data-label="Observe">How the repository protects the model from unreviewed evidence.</td></tr>
+              <tr><td data-label="Practice item">Social media feed</td><td data-label="Why it matters">Teaches experimental digital listening without treating it as core field evidence too early.</td><td data-label="Observe">How rumour signals can be flagged for validation before policy use.</td></tr>
+            </tbody>
+          </table>
+          <p><strong>Recommended exercise:</strong> load ten synthetic narratives from one route. Approve seven, reject three, commit the reviewed records, then encode the accepted records one by one. Run the compartmental model, agent model, digital twin, Bayesian update, optimizer, inoculation lab, and policy export. Ask at each stage: "What changed, why did it change, and what evidence supports the change?"</p>
+          <p><strong>What success looks like:</strong> the learner can explain the final policy brief without saying "the computer told me." They should be able to point to the stories, the governance decision, the encoding scores, the model assumptions, the uncertainty, and the human review requirement.</p>
+        </div>
+      </details>
+
       <details id="references">
-        <summary>07. Scholarly positioning and references</summary>
+        <summary>08. Scholarly positioning and references</summary>
         <div class="section-body">
           <p>NDIM is related to epidemic misinformation diffusion models, rumour-spreading models, social-contagion models, information-cascade studies, inoculation-theory studies, agent-based adoption models, and digital-twin policy simulation. Its claimed differentiation should be stated carefully: integration of these pieces into a governed, explainable, evidence-to-policy workflow.</p>
           <ul>
