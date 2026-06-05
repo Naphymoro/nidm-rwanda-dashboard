@@ -12717,6 +12717,21 @@ ACADEMY_HTML = r"""<!doctype html>
         padding: 12px 14px;
         margin: 16px 0;
       }
+      .story-panel {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--white);
+        padding: clamp(20px, 3vw, 34px);
+        margin: 18px 0 22px;
+      }
+      .story-panel h2 {
+        margin: 4px 0 12px;
+        font-size: clamp(30px, 4vw, 56px);
+        letter-spacing: -.02em;
+      }
+      .story-panel p:last-child {
+        margin-bottom: 0;
+      }
       .grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -12734,6 +12749,10 @@ ACADEMY_HTML = r"""<!doctype html>
       }
       .card p {
         margin: 0;
+      }
+      .card ul {
+        margin: 10px 0 0 18px;
+        padding: 0;
       }
       table {
         width: 100%;
@@ -12866,7 +12885,7 @@ ACADEMY_HTML = r"""<!doctype html>
       <header>
         <p class="mono">NDIM ACADEMY</p>
         <h1>Learn the Narrative Diffusion and Inoculation Model.</h1>
-        <p class="lede">NDIM is built for a practical question: why do people accept, delay, resist, or abandon a useful intervention? The answer is rarely only price or access. It is also trust, fear, local proof, repeated claims, social pressure, memory, and the messenger. NDIM helps a researcher follow those forces from field stories to a policy brief.</p>
+        <p class="lede">NDIM is a learning and research space for understanding how stories shape decisions. It helps a researcher move carefully from lived experience to evidence, from evidence to models, and from models to a policy brief that still shows its source trail.</p>
         <p class="small-link-row">
           <a href="/">Back to tool</a>
           <a href="/manual">Tool manual</a>
@@ -12879,16 +12898,27 @@ ACADEMY_HTML = r"""<!doctype html>
         </p>
       </header>
 
+      <section class="story-panel" aria-label="Opening story">
+        <p class="mono">A FIELD STORY</p>
+        <h2>One rumour can bend the path of a useful technology.</h2>
+        <p>Imagine a field officer in Musanze hearing three stories in the same week. One mother says an electric pressure cooker helps her cook beans quickly before the children return from school. A market vendor says the device is too expensive to risk. A neighbour repeats that pressure cookers explode.</p>
+        <p>None of these statements is only a "data point". Each one carries trust, fear, social proof, memory, and a possible intervention. NDIM asks a practical question: which stories are shaping adoption, which stories are creating risk, and what trusted message could help people judge the technology more fairly?</p>
+      </section>
+
       <details id="why" open>
         <summary>01. Why NDIM is needed</summary>
         <div class="section-body">
           <p>Clean-cooking adoption is not only a technology problem. A pressure cooker can save time and fuel, but a household may still hesitate.</p>
           <p>The hesitation may come from a rumour about explosions. It may come from repair worries. It may come from cost, fuel supply, gendered decision power, habit, or a bad experience from a neighbour. It may also come from a simple question: "Has someone I trust used this safely?"</p>
-          <p>A survey can count how many people agree or disagree. That is useful. But a survey can miss the story that explains the answer. NDIM is built to keep the story, the place, the source, the evidence quality, the model assumptions, and the policy recommendation in one visible chain.</p>
-          <p>That is the central idea: do not jump from raw stories to policy. First govern the evidence. Then encode it. Then model it. Then update uncertainty. Then test interventions. Then write a decision brief that a human can review.</p>
+          <p>A survey can count how many people agree or disagree. That is useful. But a survey can miss the story that explains the answer. NDIM keeps the story, the place, the source, the evidence quality, the model assumption, and the policy recommendation in one visible chain.</p>
+          <p>Inoculation theory is central to that chain. In simple terms, it means helping people prepare before a harmful claim takes hold. A good inoculation message warns people that a misleading claim may appear, shows a weak version of the claim, and gives a respectful correction that people can remember.</p>
+          <p>For NDIM, that means the tool is not only asking whether misinformation exists. It is asking what kind of misinformation is present, why it feels persuasive, who is likely to repeat it, who can correct it, and how the correction may change adoption over time.</p>
+          <p>That is the central workflow: do not jump from raw stories to policy. First govern the evidence. Then encode it. Then model it. Then update uncertainty. Then test interventions. Then write a decision brief that a human can review.</p>
           <div class="note">
-            <strong>Careful innovation language:</strong>
-            <p>NDIM represents a distinctive research and software innovation whose methods, terminology, and workflow should be documented carefully for authorship, reproducibility, and future intellectual-property review.</p>
+            <strong>Why NDIM is the innovation</strong>
+            <p>Many tools can collect survey data. Some tools can summarize text. Other models can simulate how a rumour spreads. NDIM brings these pieces together in one governed evidence-to-policy workflow.</p>
+            <p>The innovation is the chain: community narrative -> governed evidence -> inoculation-aware encoding -> population and household simulation -> digital-twin feedback -> uncertainty update -> policy brief.</p>
+            <p>That chain should be documented carefully because it is part of the intellectual contribution: the terminology, the workflow, the modelling choices, the validation evidence, and the final policy interpretation all need to be reproducible and attributable.</p>
           </div>
         </div>
       </details>
@@ -12897,10 +12927,12 @@ ACADEMY_HTML = r"""<!doctype html>
         <summary>02. How NDIM differs from epidemiological misinformation models</summary>
         <div class="section-body">
           <p>Researchers have already used epidemic-style models to study rumours and misinformation. The idea is understandable: a claim can move through a community in a way that looks a little like contagion. One person hears it. Another repeats it. Some people resist it. Some people later accept a correction.</p>
-          <p>Those models are useful. They help us think about spread, correction, recovery, and network effects. But they often begin after the evidence has already been simplified into states such as "exposed", "infected", or "recovered".</p>
-          <p>NDIM begins earlier. It starts with the actual story someone tells. Who said it? Where was it heard? What was the person worried about? Was consent given? Is the story approved evidence, or should it stay in the audit trail only?</p>
-          <p>After that, NDIM translates the story into model inputs. It does not throw away the story. It keeps the trace. The user can still see the route, location, reviewer decision, encoding score, uncertainty, and policy implication.</p>
-          <p>NDIM also brings inoculation theory into the workflow. That means it does not only ask, "How does misinformation spread?" It also asks, "How can a trusted message prepare people to resist a harmful claim before it shapes behaviour?"</p>
+          <p>Those models are useful. They help us think about spread, correction, recovery, and network effects.</p>
+          <p><strong>But many of them begin after the evidence has already been simplified into states such as "exposed", "infected", or "recovered".</strong></p>
+          <p>NDIM begins earlier. It starts with the actual story someone tells. Who said it? Where was it heard? What was the person worried about? Who repeated it? Who could correct it?</p>
+          <p>That matters because the response depends on the story. A cost worry needs one kind of support. A safety rumour needs another. A trust problem may need a different messenger. NDIM is built to keep those differences visible.</p>
+          <p>Inoculation theory gives NDIM its intervention logic. The simple idea is this: prepare people before the stronger misleading claim reaches them. A trusted message can warn them, show the weak version of the misleading claim, and explain how to refute it.</p>
+          <p>NDIM turns that idea into usable model signals: threat recognition, misinformation risk, refutability, reactance risk, trusted messenger fit, and booster need. These signals help the tool test whether a "narrative vaccine" could shift the adoption pathway.</p>
           <table>
             <thead><tr><th>Dimension</th><th>Typical epidemiological misinformation model</th><th>NDIM Engine</th><th>Why it matters for policy</th></tr></thead>
             <tbody>
@@ -12913,8 +12945,9 @@ ACADEMY_HTML = r"""<!doctype html>
               <tr><td data-label="Dimension">Policy output</td><td data-label="Typical model">May estimate spread or intervention impact.</td><td data-label="NDIM Engine">Produces decision briefs with confidence, evidence grade, assumptions, limitations, and required human review.</td><td data-label="Policy value">The final product is usable by ministries and research teams, not only model specialists.</td></tr>
             </tbody>
           </table>
-          <p><strong>Bottom line:</strong> NDIM is different because it joins the whole chain. It begins with governed community evidence. It turns that evidence into transparent scores. It tests both population-level and household-level dynamics. It updates uncertainty when new evidence arrives. It tests inoculation messages as interventions. It ends with a policy brief that still shows where the evidence came from.</p>
-          <p>In short, NDIM is not just a model of misinformation spread. It is a workbench for moving from stories to decisions without losing the story trail.</p>
+          <p><strong>Bottom line:</strong> NDIM is not just a model of misinformation spread.</p>
+          <p>It is a workbench for moving from stories to decisions without losing the story trail. It begins with community evidence. It records where that evidence came from. It turns the evidence into transparent scores. It tests both population-level and household-level dynamics. It updates uncertainty when new evidence arrives. It tests inoculation messages as interventions. It ends with a policy brief that still shows what the decision is based on.</p>
+          <p>That is the difference a policy team should feel: the tool does not only say "a rumour may spread". It helps answer, "What did people say, why does it matter, what should we test, what is uncertain, and what can we responsibly recommend?"</p>
         </div>
       </details>
 
@@ -13017,19 +13050,101 @@ ACADEMY_HTML = r"""<!doctype html>
       <details id="modules">
         <summary>06. Learning modules</summary>
         <div class="section-body">
+          <p>Use these modules as short lessons while working through the tool. They are written for mixed teams: field researchers, policy analysts, students, and model specialists can read the same module at different depths.</p>
           <div class="grid">
-            <div class="card"><h3>Module 1. Why narrative evidence matters</h3><p>Stories explain the social logic behind adoption and resistance.</p></div>
-            <div class="card"><h3>Module 2. How NDIM differs from prior models</h3><p>NDIM keeps the story trail visible while still using diffusion models, uncertainty updates, and policy simulation.</p></div>
-            <div class="card"><h3>Module 3. From story to governed evidence</h3><p>Evidence routes, SDMX metadata, consent, visibility, and review protect the chain of custody.</p></div>
-            <div class="card"><h3>Module 4. Encoding without losing meaning</h3><p>Human and LLM-assisted scores should be justified and compared.</p></div>
-            <div class="card"><h3>Module 5. Understanding the system map</h3><p>The compartments show where people are in the narrative journey and how they can move over time.</p></div>
-            <div class="card"><h3>Module 6. Population and household models</h3><p>The ODE model shows aggregate flow. The agent model checks household variation and peer effects.</p></div>
-            <div class="card"><h3>Module 7. Digital twin feedback</h3><p>The twin reruns scenarios after field observations challenge or support the model prediction.</p></div>
-            <div class="card"><h3>Module 8. Priors, posteriors, and uncertainty</h3><p>Evidence updates beliefs, but uncertainty decides how much caution is needed.</p></div>
-            <div class="card"><h3>Module 9. RL policy testing</h3><p>Candidate interventions can be compared by reward, cost, and risk.</p></div>
-            <div class="card"><h3>Module 10. Narrative vaccines</h3><p>Weak-dose claims plus refutation can reduce susceptibility to misinformation.</p></div>
-            <div class="card"><h3>Module 11. Reading policy outputs</h3><p>Decision briefs should include assumptions, limitations, confidence, and required review.</p></div>
-            <div class="card"><h3>Module 12. ClimateTales Rwanda walkthrough</h3><p>Use the bundled synthetic corpus to practise intake, encoding, modelling, and policy export.</p></div>
+            <div class="card">
+              <h3>Module 1. Read a story as evidence</h3>
+              <p>A narrative is not only a quote. It is evidence about a person, a place, a concern, a social setting, and a possible decision pathway.</p>
+              <ul>
+                <li>Look for the practical issue: cost, time, fuel, safety, repair, access, or habit.</li>
+                <li>Look for the social issue: trust, neighbour influence, gendered decision power, or local proof.</li>
+                <li>Ask what the story would change if a ministry acted on it.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 2. Understand inoculation theory</h3>
+              <p>Inoculation theory is the idea of preparing people before a misleading claim becomes powerful.</p>
+              <ul>
+                <li>Warning: tell people a misleading claim may appear.</li>
+                <li>Weak dose: show the weaker version of the claim.</li>
+                <li>Refutation: explain clearly why the claim is misleading.</li>
+                <li>Booster: repeat the correction through a trusted channel if the claim keeps spreading.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 3. Govern evidence before modelling</h3>
+              <p>Models should not receive raw stories without context. Governance tells the tool what can be used, what needs review, and what should remain separate.</p>
+              <ul>
+                <li>Record place, source, language, period, and evidence route.</li>
+                <li>Approve or reject evidence before it enters the main repository.</li>
+                <li>Keep rejected or uncertain material visible as audit context, not hidden.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 4. Encode without flattening meaning</h3>
+              <p>Encoding turns a story into model signals. The danger is making every story look the same. NDIM reduces that risk by comparing human, AI, and hybrid scoring.</p>
+              <ul>
+                <li>Trust asks whether the story points to confidence in people, institutions, or technology.</li>
+                <li>Barrier asks how strongly the story blocks adoption.</li>
+                <li>Phi asks how strong the narrative pressure is on movement between compartments.</li>
+                <li>Inoculation opportunity asks whether a respectful prebunk could help.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 5. Read the compartmental model</h3>
+              <p>The compartmental model shows population movement. It asks how many people are unaware, misinformed, trusting, adopting, or resistant at each point in time.</p>
+              <ul>
+                <li>If misinformation pressure rises, more people can move toward delay or resistance.</li>
+                <li>If trust and refutation rise, more people can move toward adoption.</li>
+                <li>The chart is a disciplined story about possible movement, not a prediction to accept blindly.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 6. Compare population and household views</h3>
+              <p>The ODE model shows the big pattern. The agent-based model checks whether household-level differences could change that pattern.</p>
+              <ul>
+                <li>Population model: useful for broad adoption curves.</li>
+                <li>Agent model: useful for peer effects, household trust, local variation, and social network influence.</li>
+                <li>If the two disagree, treat that as a learning signal, not a failure.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 7. Use the digital twin carefully</h3>
+              <p>The digital twin is a living simulation of the policy situation. It reruns scenarios when evidence, encoding, or intervention assumptions change.</p>
+              <ul>
+                <li>Approved evidence updates the twin's context.</li>
+                <li>Encoded stories update model parameters.</li>
+                <li>Inoculation messages can be injected as interventions and compared before, during, and after.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 8. Learn what uncertainty means</h3>
+              <p>Uncertainty is not a weakness. It is the tool being honest about what the evidence can and cannot support.</p>
+              <ul>
+                <li>A prior is the starting belief before new evidence is added.</li>
+                <li>A posterior is the updated belief after the evidence is added.</li>
+                <li>Wide intervals mean the policy brief should be cautious and ask for more evidence.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 9. Interpret the policy optimizer</h3>
+              <p>The optimizer compares possible interventions. It does not replace judgment. It helps the policy team see tradeoffs.</p>
+              <ul>
+                <li>A high reward means an option looks promising under the current assumptions.</li>
+                <li>Cost, equity, risk, feasibility, and evidence grade still matter.</li>
+                <li>The final recommendation must be reviewed by humans.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Module 10. Practise with ClimateTales Rwanda</h3>
+              <p>Use the synthetic ClimateTales corpus to practise the full NDIM workflow without risking real respondent data.</p>
+              <ul>
+                <li>Load a route-specific file.</li>
+                <li>Stage and review records.</li>
+                <li>Encode stories one by one.</li>
+                <li>Run models, inspect uncertainty, test an inoculation message, and export a policy brief.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </details>
