@@ -33,7 +33,7 @@ from .workspaces import (
     set_active_workspace,
     update_workspace,
 )
-from .publication_ui import PUBLICATION_HTML
+from .publication_ui import get_publication_html
 from .workflow_ui import ACADEMY_HTML, MANUAL_HTML, WORKFLOW_UI_HTML
 
 if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
@@ -240,7 +240,7 @@ def academy():
 @app.get("/publication", response_class=HTMLResponse)
 def publication():
     return HTMLResponse(
-        PUBLICATION_HTML,
+        get_publication_html(),
         headers={
             "Cache-Control": "no-store, max-age=0",
             "Pragma": "no-cache",

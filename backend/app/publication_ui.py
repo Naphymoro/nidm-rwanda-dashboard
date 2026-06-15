@@ -18,4 +18,5 @@ def _publication_html() -> str:
 </html>"""
 
 
-PUBLICATION_HTML = _publication_html()
+def get_publication_html() -> str:
+    return _publication_html()

@@ -97,7 +97,7 @@
       }
       .workspace {
         display: grid;
-        grid-template-columns: 260px minmax(420px, 1fr) minmax(380px, .92fr);
+        grid-template-columns: minmax(420px, 1fr) minmax(380px, .92fr);
         height: calc(100vh - 58px);
         min-height: 680px;
       }
@@ -106,9 +106,58 @@
         overflow: auto;
       }
       .side {
-        border-right: 1px solid var(--line);
-        background: rgba(255, 253, 249, .62);
+        position: fixed;
+        top: 74px;
+        right: 18px;
+        bottom: 18px;
+        z-index: 70;
+        width: min(410px, calc(100vw - 28px));
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: rgba(255, 253, 249, .96);
         padding: 16px;
+        box-shadow: 0 28px 90px rgba(70, 55, 30, .22);
+        transform: translateX(calc(100% + 28px));
+        opacity: 0;
+        pointer-events: none;
+        transition: transform .22s ease, opacity .18s ease;
+      }
+      .side.drawer-open {
+        transform: translateX(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        background: rgba(18, 16, 13, .24);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .18s ease;
+      }
+      .drawer-backdrop.drawer-open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .drawer-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .drawer-head h2 {
+        margin: 6px 0 0;
+        font-size: 28px;
+      }
+      .drawer-close {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        padding: 0;
+        font-size: 22px;
+        line-height: 1;
       }
       .editor-pane {
         border-right: 1px solid var(--line);
@@ -324,7 +373,7 @@
       .hidden { display: none !important; }
       @media (max-width: 1180px) {
         .workspace {
-          grid-template-columns: 220px minmax(360px, 1fr) minmax(320px, .85fr);
+          grid-template-columns: minmax(360px, 1fr) minmax(320px, .85fr);
         }
       }
       @media (max-width: 960px) {
@@ -336,12 +385,19 @@
           height: auto;
           min-height: 0;
         }
-        .side, .editor-pane, .preview-pane {
+        .editor-pane, .preview-pane {
           display: none;
           border-right: 0;
           min-height: calc(100vh - 140px);
         }
-        .side.mobile-active, .editor-pane.mobile-active, .preview-pane.mobile-active {
+        .side {
+          top: 68px;
+          right: 10px;
+          bottom: 10px;
+          width: min(380px, calc(100vw - 20px));
+          display: block;
+        }
+        .editor-pane.mobile-active, .preview-pane.mobile-active {
           display: block;
         }
         .publication-page {
@@ -379,6 +435,7 @@
       <div class="toolbar">
         <button class="primary" id="saveDraft" type="button">Save draft</button>
         <button id="compilePreview" type="button">Compile preview</button>
+        <button id="toggleOutline" type="button">Manuscript outline</button>
         <button id="loadNdim" type="button">Load NDIM results</button>
         <button id="exportTex" type="button">Export .tex</button>
         <button id="exportBib" type="button">Export .bib</button>
@@ -395,11 +452,19 @@
       <button class="tab" data-mobile="side">Outline</button>
     </nav>
 
+    <div class="drawer-backdrop" id="outlineBackdrop" aria-hidden="true"></div>
+
     <main class="workspace">
-      <aside class="side" id="sidePane">
+      <aside class="side" id="sidePane" aria-label="Manuscript outline drawer" aria-hidden="true">
+        <div class="drawer-head">
+          <div>
+            <div class="mono">Manuscript navigator</div>
+            <h2>Outline</h2>
+          </div>
+          <button class="drawer-close" id="closeOutline" type="button" aria-label="Close manuscript outline">&times;</button>
+        </div>
         <div class="panel pad" style="margin-bottom:12px">
-          <div class="mono">Manuscript navigator</div>
-          <h2 style="margin:6px 0 10px">Outline</h2>
+          <div class="mono">Manuscript sections</div>
           <div class="section-list" id="sectionList"></div>
         </div>
         <div class="panel pad" style="margin-bottom:12px">
@@ -771,6 +836,7 @@ To be completed by the author team.
         $("sectionList").innerHTML = sections.map(([id, title, sub]) =>
           `<a class="section-link" href="#${id}" data-section="${id}"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(sub)}</span></a>`
         ).join("");
+        $$(".section-link").forEach((link) => link.addEventListener("click", closeOutlineDrawer));
       }
 
       function renderSavedSources() {
@@ -1144,6 +1210,18 @@ ${$("sourceEditor").value.slice(0, 9000)}
         renderPreview();
       }
 
+      function openOutlineDrawer() {
+        $("sidePane").classList.add("drawer-open");
+        $("outlineBackdrop").classList.add("drawer-open");
+        $("sidePane").setAttribute("aria-hidden", "false");
+      }
+
+      function closeOutlineDrawer() {
+        $("sidePane").classList.remove("drawer-open");
+        $("outlineBackdrop").classList.remove("drawer-open");
+        $("sidePane").setAttribute("aria-hidden", "true");
+      }
+
       function wireTabs() {
         $$("[data-pane]").forEach((button) => {
           button.addEventListener("click", () => {
@@ -1155,10 +1233,13 @@ ${$("sourceEditor").value.slice(0, 9000)}
         });
         $$("[data-mobile]").forEach((button) => {
           button.addEventListener("click", () => {
+            if (button.dataset.mobile === "side") {
+              openOutlineDrawer();
+              return;
+            }
             $$("[data-mobile]").forEach((item) => item.classList.remove("active"));
             button.classList.add("active");
-            ["sidePane", "editorPane", "previewPane"].forEach((id) => $(id).classList.remove("mobile-active"));
-            if (button.dataset.mobile === "side") $("sidePane").classList.add("mobile-active");
+            ["editorPane", "previewPane"].forEach((id) => $(id).classList.remove("mobile-active"));
             if (button.dataset.mobile === "editor") $("editorPane").classList.add("mobile-active");
             if (button.dataset.mobile === "preview") $("previewPane").classList.add("mobile-active");
           });
@@ -1180,6 +1261,12 @@ ${$("sourceEditor").value.slice(0, 9000)}
         });
         $("saveDraft").addEventListener("click", persist);
         $("compilePreview").addEventListener("click", renderPreview);
+        $("toggleOutline").addEventListener("click", openOutlineDrawer);
+        $("closeOutline").addEventListener("click", closeOutlineDrawer);
+        $("outlineBackdrop").addEventListener("click", closeOutlineDrawer);
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeOutlineDrawer();
+        });
         $("loadNdim").addEventListener("click", loadNdimResults);
         $("exportTex").addEventListener("click", () => downloadBlob(fileSlug("tex"), buildTex(), "application/x-tex"));
         $("exportBib").addEventListener("click", () => downloadBlob("ndim-sources.bib", buildBib(), "application/x-bibtex"));
