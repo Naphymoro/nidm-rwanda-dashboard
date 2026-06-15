@@ -12,10 +12,28 @@
 /manual.html
   Cache-Control: no-store, must-revalidate
 
+/manual
+  Cache-Control: no-store, must-revalidate
+
+/manual/*
+  Cache-Control: no-store, must-revalidate
+
 /academy.html
   Cache-Control: no-store, must-revalidate
 
+/academy
+  Cache-Control: no-store, must-revalidate
+
+/academy/*
+  Cache-Control: no-store, must-revalidate
+
 /publication.html
+  Cache-Control: no-store, must-revalidate
+
+/publication
+  Cache-Control: no-store, must-revalidate
+
+/publication/*
   Cache-Control: no-store, must-revalidate
 
 /backend-check.html
