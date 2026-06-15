@@ -8,6 +8,10 @@ stack remains available through the local app, Cloud Run, or Colab for advanced 
 
 ## Cloudflare Pages settings
 
+Use the Git-connected Pages flow. Do not use Direct Upload or ZIP upload for
+normal updates. Once this folder is connected to GitHub, every push to `main`
+can produce a new Pages deployment without manually uploading files.
+
 Use these settings in Cloudflare Pages:
 
 ```text
@@ -19,11 +23,49 @@ Build output directory: cloudflare/public
 Root directory: leave blank
 ```
 
+If Cloudflare asks for a root directory and does not allow it to be blank, use
+the repository root. Do not set the root directory to `cloudflare/public` unless
+you also change the output directory to `.`.
+
 After deployment, Cloudflare will provide a URL like:
 
 ```text
 https://ndim-engine.pages.dev
 ```
+
+## How to confirm the latest Git deployment is live
+
+Open the deployed site and look at the bottom of the left sidebar. The current
+Git-connected build marker should read:
+
+```text
+0.9.0-alpha.6
+Cloudflare Git build: 2026-06-15
+```
+
+You can also open:
+
+```text
+https://YOUR-PAGES-URL/deploy.json
+```
+
+If the marker is missing, Cloudflare is probably serving one of these:
+
+- an older Direct Upload deployment,
+- a Pages project connected to the wrong repository,
+- a Pages project using the wrong output directory,
+- a cached browser tab.
+
+Fix by checking Cloudflare Pages > Settings > Builds and deployments:
+
+```text
+Repository: Naphymoro/nidm-rwanda-dashboard
+Production branch: main
+Build command: empty
+Build output directory: cloudflare/public
+```
+
+Then redeploy the latest production deployment from the Deployments tab.
 
 ## What this first Cloudflare edition does
 
@@ -31,6 +73,7 @@ https://ndim-engine.pages.dev
 - Explains NDIM, the workflow, and the current alpha deployment modes.
 - Links to manual, academy, publication, and deployment guidance pages.
 - Avoids requiring users to install the desktop package before they understand the tool.
+- Supports clean routes such as `/manual`, `/academy`, `/publication`, and `/backend-check`.
 
 ## What it does not do yet
 

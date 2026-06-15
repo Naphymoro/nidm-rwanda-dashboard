@@ -1,0 +1,8 @@
+{
+  "app": "NDIM Engine",
+  "version": "0.9.0-alpha.6",
+  "channel": "cloudflare-pages-git",
+  "updated": "2026-06-15",
+  "source": "GitHub main branch, cloudflare/public output directory",
+  "notes": "Use this file and the visible sidebar marker to confirm Cloudflare is serving the current Git deployment."
+}
