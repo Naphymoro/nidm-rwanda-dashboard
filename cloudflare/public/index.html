@@ -426,30 +426,35 @@
         position: relative;
         height: auto;
         min-height: 0;
-        display: grid;
-        grid-template-columns: minmax(220px, auto) minmax(0, 1fr) minmax(260px, auto);
+        display: flex;
+        flex-direction: row;
         align-items: center;
+        justify-content: space-between;
         gap: 14px;
-        padding: 10px 18px;
+        padding: 9px 18px;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
       .app.workspace-start-mode .brand {
+        flex: 0 1 auto;
         min-height: 0;
         height: auto;
         border-bottom: 0;
         padding: 0;
       }
       .app.workspace-start-mode .stepper {
-        display: none;
+        display: none !important;
       }
       .app.workspace-start-mode .sidebar-footer {
+        flex: 0 1 740px;
         margin-top: 0;
+        margin-left: auto;
         padding: 0;
         border-top: 0;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        display: flex;
+        flex-direction: row;
         align-items: center;
+        justify-content: flex-end;
         gap: 10px;
       }
       .app.workspace-start-mode .sidebar-footer > .eyebrow {
@@ -457,7 +462,9 @@
         white-space: nowrap;
       }
       .app.workspace-start-mode .resource-table {
-        min-width: 230px;
+        flex: 0 0 230px;
+        width: 230px;
+        min-width: 0;
       }
       .app.workspace-start-mode .resource-table caption {
         display: none;
@@ -467,6 +474,7 @@
         padding: 7px 9px;
       }
       .app.workspace-start-mode .sidebar-footer > .button {
+        flex: 0 1 260px;
         min-height: 38px;
         padding: 8px 12px;
         white-space: nowrap;
@@ -475,7 +483,8 @@
         min-height: auto;
       }
       .app.workspace-start-mode .topbar {
-        padding: 16px 18px;
+        min-height: 108px;
+        padding: 14px 18px;
         background:
           radial-gradient(circle at 12% 8%, rgba(183, 145, 88, .12), transparent 30%),
           var(--panel);
@@ -2855,14 +2864,19 @@
           align-items: center;
         }
         .app.workspace-start-mode .sidebar {
-          grid-template-columns: minmax(0, 1fr);
+          flex-direction: column;
           align-items: stretch;
         }
         .app.workspace-start-mode .sidebar-footer {
-          grid-template-columns: minmax(0, 1fr) auto;
+          flex: 1 1 auto;
+          margin-left: 0;
+          width: 100%;
+          flex-wrap: wrap;
+          justify-content: stretch;
         }
         .app.workspace-start-mode .resource-table {
           min-width: 0;
+          flex: 1 1 240px;
         }
         .reasoning { top: 12px; right: 12px; bottom: 12px; }
         .command-metrics {
@@ -2882,11 +2896,13 @@
           padding: 12px;
         }
         .app.workspace-start-mode .sidebar-footer {
-          grid-template-columns: 1fr;
+          flex-direction: column;
+          align-items: stretch;
         }
         .app.workspace-start-mode .resource-table,
         .app.workspace-start-mode .sidebar-footer > .button {
           width: 100%;
+          flex-basis: auto;
         }
         .app.workspace-start-mode .topbar {
           padding: 14px;
@@ -3062,7 +3078,7 @@
     </style>
   </head>
   <body>
-    <div class="app" id="appShell">
+    <div class="app workspace-start-mode" id="appShell">
       <aside class="sidebar">
         <div class="brand">
           <div class="mark">ND</div>
@@ -3071,7 +3087,7 @@
             <span>Narrative Diffusion and Inoculation Model</span>
           </div>
         </div>
-        <div class="stepper" style="padding-top: 1210px;">
+        <div class="stepper">
           <p class="section-label">Workflow stages</p>
           <p class="stage-scroll-hint">Click a stage to open its focused task workspace, or use Jump to stage in the top bar.</p>
           <div class="step-list" id="stepList">
