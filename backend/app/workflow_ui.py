@@ -13145,7 +13145,6 @@ ACADEMY_HTML = r"""<!doctype html>
           <a href="#glossary">Glossary</a>
           <a href="#equations">Equations and model map</a>
           <a href="#modules">Learning modules</a>
-          <a href="#module-malaria">Malaria Narratives</a>
           <a href="#practice">Practice with NDIM</a>
           <a href="#references">References</a>
         </p>
@@ -13156,6 +13155,8 @@ ACADEMY_HTML = r"""<!doctype html>
         <h2>One rumour can bend the path of a useful technology.</h2>
         <p>Imagine a field officer in Musanze hearing three stories in the same week. One mother says an electric pressure cooker helps her cook beans quickly before the children return from school. A market vendor says the device is too expensive to risk. A neighbour repeats that pressure cookers explode.</p>
         <p>None of these statements is only a "data point". Each one carries trust, fear, social proof, memory, and a possible intervention. NDIM asks a practical question: which stories are shaping adoption, which stories are creating risk, and what trusted message could help people judge the technology more fairly?</p>
+        <p>Now imagine a malaria field officer hearing three different stories in the same week. One caregiver says a bed net protects the children, but they sometimes push it away because the room feels too hot. Another caregiver waits before testing a fever because the family first tries what has worked before. A third person worries about the safety of a malaria vaccine or medicine because of something repeated in the community.</p>
+        <p>These are also narrative signals, not just isolated comments. They point to comfort, treatment timing, trust, fear, local memory, and the messenger people believe. NDIM uses this kind of story trail to ask what may affect prevention, treatment-seeking, vaccine confidence, and the design of a careful public-health response.</p>
       </section>
 
       <details id="why" open>
@@ -13552,32 +13553,6 @@ ACADEMY_HTML = r"""<!doctype html>
             </div>
           </details>
 
-          <details class="lesson" id="module-malaria">
-            <summary>Module 14. Malaria narratives: bed nets, testing, treatment, and vaccines</summary>
-            <div class="lesson-body">
-              <p><strong>Learning objective:</strong> practise NDIM beyond clean cooking by analysing health narratives about malaria prevention, treatment-seeking, and vaccine confidence. The goal is to see how the same evidence-to-policy method can travel to another public-health challenge without pretending that every challenge is identical.</p>
-              <div class="lesson-grid">
-                <div class="lesson-box"><h4>Key terms</h4><p>Insecticide-treated net, long-lasting insecticidal net, testing, treatment-seeking, vaccine confidence, trusted health worker, rumour, booster message.</p></div>
-                <div class="lesson-box"><h4>Worked story</h4><p>In Nyagatare, a caregiver says the bed net protects children at night, but a neighbour says the children feel too hot under it and sometimes sleep outside the net. At the health post, a community health worker explains how to hang the net better and reminds parents to test quickly when a child has fever.</p></div>
-              </div>
-              <p><strong>Why this matters:</strong> malaria programmes are not only about distributing commodities. A net, test, treatment, or vaccine can be available, but the household decision still depends on comfort, trust, local experience, fear, access, and who is believed.</p>
-              <table>
-                <thead><tr><th>Narrative evidence</th><th>NDIM signal</th><th>Model implication</th><th>Field action</th></tr></thead>
-                <tbody>
-                  <tr><td data-label="Narrative evidence">A parent says the net is too hot, so children push it away at night.</td><td data-label="NDIM signal">Barrier strength and habit pressure.</td><td data-label="Model implication">Prevention adoption may look high on paper but weaken in daily use.</td><td data-label="Field action">Test comfort-focused demonstrations and household follow-up.</td></tr>
-                  <tr><td data-label="Narrative evidence">A community health worker is trusted because she helped a child get tested quickly.</td><td data-label="NDIM signal">Trusted messenger fit and credibility.</td><td data-label="Model implication">Truth-aligned and inoculated states may grow faster when messages use that messenger.</td><td data-label="Field action">Use health workers and local caregivers as explainers, not only posters.</td></tr>
-                  <tr><td data-label="Narrative evidence">A rumour says a malaria vaccine or medicine may cause harm, so some caregivers wait.</td><td data-label="NDIM signal">Misinformation risk, fear trigger, and refutability.</td><td data-label="Model implication">Delay can increase the misinformation-exposed group unless corrected early.</td><td data-label="Field action">Prepare respectful prebunking messages that explain what is known, what is monitored, and where to ask questions.</td></tr>
-                  <tr><td data-label="Narrative evidence">A caregiver first tries herbs and delays testing until fever worsens.</td><td data-label="NDIM signal">Treatment-seeking delay and local knowledge context.</td><td data-label="Model implication">The agent model may show a bottleneck between symptom recognition and formal care.</td><td data-label="Field action">Work with trusted community figures to connect local practice with early testing.</td></tr>
-                  <tr><td data-label="Narrative evidence">A grandmother says she trusts nets because she remembers fewer mosquito bites after using them.</td><td data-label="NDIM signal">Local proof, memory, and family influence.</td><td data-label="Model implication">Household adoption may improve when older decision-makers are included.</td><td data-label="Field action">Include family decision-makers in demonstrations and follow-up messaging.</td></tr>
-                </tbody>
-              </table>
-              <p><strong>Exercise:</strong> create one malaria practice story. Identify the barrier, trust signal, misinformation risk, emotional trigger, adoption stance, possible inoculation message, and trusted messenger. Then ask whether the response should target the whole district, one risk group, or a specific household decision-maker.</p>
-              <p><strong>How NDIM handles it:</strong> the story enters through evidence intake, receives SDMX context, passes review, becomes an encoded signal, feeds the population and agent models, updates the digital twin, and finally supports a cautious policy brief.</p>
-              <p><strong>What to observe:</strong> net-use stories may affect prevention behaviour. Testing and treatment stories may affect speed of care. Vaccine stories may affect trust, fear, and misinformation risk. NDIM should keep those pathways separate enough that the intervention is not generic.</p>
-              <p><strong>Common mistake:</strong> treating net discomfort, delayed testing, and vaccine concern as one single "awareness problem". They may require different messengers, different timing, and different model assumptions.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="#equations">Review model map</a><a href="#practice">Go to practice section</a></div>
-            </div>
-          </details>
         </div>
       </details>
 
@@ -13595,7 +13570,6 @@ ACADEMY_HTML = r"""<!doctype html>
               <tr><td data-label="Practice item">Citizen science report</td><td data-label="Why it matters">Teaches confidence, location precision, and contributor validation.</td><td data-label="Observe">Why an observation can be useful but still limited.</td></tr>
               <tr><td data-label="Practice item">Crowdsourced batch</td><td data-label="Why it matters">Teaches moderation, deduplication, approval, and rejection.</td><td data-label="Observe">How the repository protects the model from unreviewed evidence.</td></tr>
               <tr><td data-label="Practice item">Social media feed</td><td data-label="Why it matters">Teaches experimental digital listening without treating it as core field evidence too early.</td><td data-label="Observe">How rumour signals can be flagged for validation before policy use.</td></tr>
-              <tr><td data-label="Practice item">Malaria narratives</td><td data-label="Why it matters">Shows that NDIM can be practised on another public-health challenge without flattening all concerns into one awareness score.</td><td data-label="Observe">How bed net comfort, testing delay, treatment trust, vaccine confidence, and local messenger fit create different intervention paths.</td></tr>
             </tbody>
           </table>
           <p><strong>Recommended exercise:</strong> load ten synthetic narratives from one route. Approve seven, reject three, commit the reviewed records, then encode the accepted records one by one. Run the compartmental model, agent model, digital twin, Bayesian update, optimizer, inoculation lab, and policy export. Ask at each stage: "What changed, why did it change, and what evidence supports the change?"</p>
