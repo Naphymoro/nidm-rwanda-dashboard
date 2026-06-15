@@ -281,8 +281,6 @@ The master repository workflow remains optional. The app prepares SDMX/DSD packa
 
 Active hosted path: GitHub Actions deploys the lean FastAPI web build to Google Cloud Run.
 
-Render deployment is no longer the recommended path for this repository. The previous Render blueprint has been removed so the repo does not advertise or trigger Render Blueprint deployment from source.
-
 For cloud users, use the Cloud Run workflow in `.github/workflows/cloud-run-deploy.yml`. For local research users, prefer the desktop package because it keeps sensitive research data on the user's machine.
 
 For non-technical field testing, prefer GitHub Releases with platform installers rather than a hosted web link. The desktop package keeps sensitive research data on the user's machine.
