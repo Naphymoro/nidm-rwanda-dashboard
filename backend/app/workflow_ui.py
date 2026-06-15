@@ -11852,7 +11852,7 @@ MANUAL_HTML = r"""<!doctype html>
         <thead><tr><th>Need</th><th>Use</th><th>Where to go</th></tr></thead>
         <tbody>
           <tr><td>Learn NDIM from scratch</td><td>Academy story, innovation case, glossary, equations, and learning modules.</td><td><a href="/academy#modules">Academy modules</a></td></tr>
-          <tr><td>Frame NDIM for journal publication</td><td>Publication positioning, abstract, equations, validation roadmap, ethics, and article-type fit.</td><td><a href="/publication">Scientific Publication</a></td></tr>
+          <tr><td>Frame NDIM for journal publication</td><td>Use the Overleaf-style publication workspace for manuscript editing, live preview, LaTeX/BibTeX export, legal literature search, optional OpenAI writing support, validation roadmap, ethics, and article-type fit.</td><td><a href="/publication">Scientific Publication</a></td></tr>
           <tr><td>Practise with ClimateTales Rwanda</td><td>Academy practice workflow and manual stress-test steps.</td><td><a href="/academy#module-climatetales">ClimateTales module</a></td></tr>
           <tr><td>Run the tool correctly</td><td>Manual stage-by-stage operating guide.</td><td><a href="#stage-tutorial">Workflow tutorial</a></td></tr>
           <tr><td>Explain equations to a non-technical reader</td><td>Academy equation map and plain-language interpretation.</td><td><a href="/academy#equations">Academy equations</a></td></tr>
@@ -12425,6 +12425,7 @@ MANUAL_HTML = r"""<!doctype html>
             <tbody>
               <tr><td data-label="User need">Learn NDIM from scratch</td><td data-label="Best place"><a href="/academy#modules">Academy modules</a></td><td data-label="What the user gets">Full lessons with objectives, key terms, examples, exercises, observations, interpretations, and common mistakes.</td></tr>
               <tr><td data-label="User need">Practise with ClimateTales Rwanda</td><td data-label="Best place"><a href="/academy#module-climatetales">ClimateTales module</a></td><td data-label="What the user gets">A route-by-route synthetic evidence exercise from intake to policy brief.</td></tr>
+              <tr><td data-label="User need">Prepare a scientific manuscript</td><td data-label="Best place"><a href="/publication">Scientific Publication workspace</a></td><td data-label="What the user gets">An Overleaf-style editor with live preview, LaTeX/BibTeX export, legal literature search, and optional OpenAI writing support.</td></tr>
               <tr><td data-label="User need">Operate the tool quickly</td><td data-label="Best place"><a href="#workflow">Manual workflow section</a></td><td data-label="What the user gets">Concise stage instructions and output expectations.</td></tr>
               <tr><td data-label="User need">Explain equations simply</td><td data-label="Best place"><a href="/academy#equations">Academy equations</a></td><td data-label="What the user gets">Plain-language explanation of the compartmental model, agent model, digital twin, Bayesian update, and optimizer.</td></tr>
             </tbody>
@@ -13148,6 +13149,7 @@ ACADEMY_HTML = r"""<!doctype html>
           <a href="#practice">Practice with NDIM</a>
           <a href="#references">References</a>
         </p>
+        <p class="lede">When a team is ready to turn NDIM work into a paper, the <a href="/publication">Scientific Publication workspace</a> provides a split editor and preview, legal literature search, BibTeX export, and optional OpenAI writing support.</p>
       </header>
 
       <section class="story-panel" aria-label="Opening story">
