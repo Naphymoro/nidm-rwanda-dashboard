@@ -381,6 +381,43 @@
         display: grid;
         gap: 8px;
       }
+      .resource-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel-2);
+      }
+      .resource-table caption {
+        padding: 8px 10px;
+        color: var(--soft);
+        text-align: left;
+        font: 800 10px var(--font-data);
+        text-transform: uppercase;
+        letter-spacing: .14em;
+      }
+      .resource-table th,
+      .resource-table td {
+        padding: 8px 10px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        text-align: left;
+      }
+      .resource-table th {
+        color: var(--text);
+        font-weight: 800;
+      }
+      .resource-table td {
+        text-align: right;
+      }
+      .resource-table a {
+        color: var(--text);
+        font-weight: 800;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
       .app.workspace-start-mode .stepper {
         flex: 0 0 auto;
       }
@@ -2965,7 +3002,19 @@
         </div>
         <div class="sidebar-footer">
           <p class="eyebrow">0.9.0-alpha.5</p>
-          <a class="button" href="http://127.0.0.1:8010/manual" target="_blank" rel="noreferrer">Tool manual</a>
+          <table class="resource-table" aria-label="Learning resources">
+            <caption>Learning resources</caption>
+            <tbody>
+              <tr>
+                <th scope="row">Manual</th>
+                <td><a href="./manual.html" target="_blank" rel="noreferrer">Open</a></td>
+              </tr>
+              <tr>
+                <th scope="row">Academy</th>
+                <td><a href="./academy.html" target="_blank" rel="noreferrer">Open</a></td>
+              </tr>
+            </tbody>
+          </table>
           <a class="button" href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub source</a>
         </div>
       </aside>
@@ -3042,7 +3091,7 @@ Indigenous knowledge, Citizen science report.</p>
                 <button class="button" data-open-workspace-manager="" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M3 7V6a2 2 0 0 1 2-2h4l2 3"></path></svg> Workspace manager</button>
                 <button class="button" data-open-assistant-panel="" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v3a4 4 0 0 0 4 4h1l2 3 2-3h1a4 4 0 0 0 4-4v-3a7 7 0 0 0-7-7z"></path><path d="M9 10h.01"></path><path d="M15 10h.01"></path><path d="M9.5 13a4 4 0 0 0 5 0"></path></svg> Research assistant</button>
                 <button class="button" data-duplicate-active-workspace="" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg> Duplicate workspace</button>
-                <a class="button" href="http://127.0.0.1:8010/manual#workspaces" target="_blank" rel="noreferrer">Workspace guide</a>
+                <a class="button" href="./manual.html#workspaces" target="_blank" rel="noreferrer">Workspace guide</a>
               </div>
             </section>
             <section class="workspace-switcher">
@@ -3183,7 +3232,8 @@ workbench then shows the evidence ledger, governance status, model
 readiness, assistant guidance, and next action needed before a policy 
 output can be trusted.</p>
                 <div class="reference-links" aria-label="Tool references">
-                  <a class="button" href="http://127.0.0.1:8010/manual" target="_blank" rel="noreferrer">Open tool manual</a>
+                  <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Open tool manual</a>
+                  <a class="button" href="./academy.html" target="_blank" rel="noreferrer">Open NDIM Academy</a>
                   <a class="button" href="#narrativeRepository" data-jump-repository="">Open narrative repository</a>
                   <button class="button" data-open-full-repository="" type="button">Open full repository</button>
                 </div>
