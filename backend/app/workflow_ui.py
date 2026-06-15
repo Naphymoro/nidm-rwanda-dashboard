@@ -11847,7 +11847,7 @@ MANUAL_HTML = r"""<!doctype html>
       <div class="callout"><p><strong>Simple reading:</strong> the tool asks, "What are people saying, how should we encode it, how does that narrative change adoption dynamics, what did the field data correct, and which policy action is most robust?"</p></div>
 
       <h2 id="academy-learning-path">Academy learning path</h2>
-      <p>The manual is the reference guide. <a href="/academy">NDIM Academy</a> is the guided learning path. Use Academy when a novice user needs a full lesson, worked example, and exercise. Use this manual when the user already knows the workflow and needs exact operating instructions.</p>
+      <p>The manual is the reference guide. <a href="/academy">NDIM Academy</a> is the guided learning path. Use Academy when a research team needs a full lesson, worked example, and exercise. Use this manual when the user already knows the workflow and needs exact operating instructions.</p>
       <table>
         <thead><tr><th>Need</th><th>Use</th><th>Where to go</th></tr></thead>
         <tbody>
@@ -12139,7 +12139,7 @@ knowledge graph -> repeated story structures
 inoculation lab -> counter-narrative drafts
 all outputs -> policy brief</pre>
       <p><strong>Output formats:</strong> the screen shows an HTML policy brief, the Copy brief button produces Markdown, and the Copy/Download JSON buttons export the <code>ndim-policy-output-v1</code> audit payload with governance hashes, model summaries, posterior values, RL policy, regional analysis, graph, inoculation drafts, and recommendation text.</p>
-      <p>For novice users, follow the buttons stage by stage and read the implication notes. For expert users, inspect equations, priors, graph structure, and reward curves. For policy makers, focus on the recommendation, evidence trail, uncertainty, feasibility, and whether the recommended intervention matches the target region.</p>
+      <p>For guided use, follow the buttons stage by stage and read the implication notes. For advanced users, inspect equations, priors, graph structure, and reward curves. For policy users, focus on the recommendation, evidence trail, uncertainty, feasibility, and whether the recommended intervention matches the target region.</p>
       <p class="small">Version note: the current backend exposes a labelled NDIM compartment model with S/M/T/I/R compartments, uncertainty bands, persistent evidence ledger sync, validation checks, and deterministic Bayesian/RL fallbacks when advanced Torch/Pyro services are unavailable.</p>
     </main>
     <script>
@@ -12419,7 +12419,7 @@ MANUAL_HTML = r"""<!doctype html>
       <details id="academy-learning-path" open>
         <summary>Academy learning path</summary>
         <div class="section-body">
-          <p>The manual is the operating reference. <a href="/academy">NDIM Academy</a> is the guided course. Use Academy when a novice user needs plain-language lessons, worked examples, exercises, and interpretation support.</p>
+          <p>The manual is the operating reference. <a href="/academy">NDIM Academy</a> is the guided course. Use Academy when a research team needs plain-language lessons, worked examples, exercises, and interpretation support. Use this manual when a user needs exact operating instructions.</p>
           <table>
             <thead><tr><th>User need</th><th>Best place</th><th>What the user gets</th></tr></thead>
             <tbody>
@@ -12433,43 +12433,38 @@ MANUAL_HTML = r"""<!doctype html>
       </details>
 
       <details id="installation" open>
-        <summary>Installation and local use</summary>
+        <summary>Accessing NDIM Engine: web, local, and advanced use</summary>
         <div class="section-body">
-          <p>NDIM is intended to run on the user machine. The desktop launcher starts a local backend and opens the browser interface at a localhost address such as <code>http://127.0.0.1:8010/</code>.</p>
-          <ol>
-            <li>Install NDIM Engine using the platform installer or bundle.</li>
-            <li>Open NDIM Engine from the desktop shortcut or application menu.</li>
-            <li>Wait for the local status page to show the backend URL.</li>
-            <li>Click <strong>Open NDIM Engine</strong> to begin.</li>
-            <li>If the backend fails, click <strong>Export support bundle</strong> and share the ZIP with the maintainer.</li>
-          </ol>
-          <p>For alpha testing, the Windows portable ZIP or setup executable can be used by invited testers. A ministry-ready public release still needs fresh-machine acceptance testing, Windows signing, and macOS packaging on macOS. The core workflow itself is local-first: ingestion, deterministic encoding fallback, governance, modelling, repository browsing, backup, restore, and exports can run without internet.</p>
+          <p>NDIM can be reached in three complementary ways. The hosted web version is the default route for most research and policy users. Local desktop use remains important for offline work, sensitive evidence, field settings, and institutional testing. Advanced users can inspect, modify, or redeploy the source from GitHub.</p>
           <table>
-            <thead><tr><th>Capability</th><th>Current alpha status</th><th>Policy deployment caution</th></tr></thead>
+            <thead><tr><th>Access route</th><th>Best for</th><th>What to expect</th></tr></thead>
             <tbody>
-              <tr><td data-label="Capability">Install locally</td><td data-label="Current alpha status">Windows alpha package exists; clean-machine proof is still required.</td><td data-label="Policy deployment caution">Do not call it institutional-ready until non-technical testers install successfully.</td></tr>
-              <tr><td data-label="Capability">Work offline</td><td data-label="Current alpha status">Core workflow and smoke tests pass offline.</td><td data-label="Policy deployment caution">Remote LLMs remain optional and require user permission.</td></tr>
-              <tr><td data-label="Capability">Backup and restore</td><td data-label="Current alpha status">Backups include manifest hashes and restore validation.</td><td data-label="Policy deployment caution">Treat full backups as sensitive research data.</td></tr>
-              <tr><td data-label="Capability">No terminal for users</td><td data-label="Current alpha status">The launcher is designed for no-terminal use.</td><td data-label="Policy deployment caution">Release artifacts must be tested outside the development machine.</td></tr>
+              <tr><td data-label="Access route">Hosted web app</td><td data-label="Best for">Research teams, policy users, field coordinators, and training sessions</td><td data-label="What to expect">Open the Cloudflare Pages link and use the workflow without installing developer tools.</td></tr>
+              <tr><td data-label="Access route">Local desktop app</td><td data-label="Best for">Offline work, sensitive data, field locations with unreliable internet, and institutional pilots</td><td data-label="What to expect">Install or open the packaged app. Evidence, hashes, approvals, repositories, backups, and exports remain on the local machine unless deliberately synced or exported.</td></tr>
+              <tr><td data-label="Access route">Advanced source setup</td><td data-label="Best for">Technical users, auditors, contributors, and deployment teams</td><td data-label="What to expect">Clone the GitHub repository to inspect code, run tests, adapt deployment settings, or operate a separate instance.</td></tr>
             </tbody>
           </table>
-          <p class="note">Local-first means evidence stays on the local machine unless the user deliberately exports or syncs it. Consent, visibility, reviewer approval, and repository settings still matter.</p>
+          <p>Internet access is optional for the core workflow. Narrative intake, deterministic encoding fallback, governance, repository review, modelling, backup, restore, and exports can run without external services. Cloud LLMs, Google Drive or Sheets sync, and hosted deployment are optional extensions that require user permission and configuration.</p>
+          <p class="note">Local-first means evidence stays under the user or institution's control unless a user deliberately exports, syncs, or shares it. Consent, visibility, reviewer approval, and repository settings should be reviewed before any evidence leaves the workspace.</p>
         </div>
       </details>
 
       <details id="source-access">
         <summary>Source access and GitHub</summary>
         <div class="section-body">
-          <p>The NDIM source repository is managed on GitHub. If the repository is private, people who are not listed as collaborators may see a GitHub <strong>404</strong> page even when the link is correct. That is GitHub's normal privacy behavior.</p>
-          <p>For testers or institutional reviewers, the maintainer should either add them as GitHub collaborators or publish a release package that does not require source-code access.</p>
+          <p>The NDIM Engine source is managed on GitHub at <code>https://github.com/Naphymoro/nidm-rwanda-dashboard</code>. GitHub is used for version control, alpha release tracking, deployment updates, issue review, and technical audit history.</p>
+          <p>The repository currently contains the NDIM workflow UI, FastAPI backend, Cloudflare Pages deployment files, manual, NDIM Academy, Scientific Publication workspace, stress-test corpus, local and desktop packaging material, backend models, SDMX-style export logic, and deployment documentation.</p>
+          <p>The hosted web version is served through Cloudflare Pages. Most users should open the hosted NDIM link. Advanced users can use GitHub when they need to fork, audit, customize, deploy, or contribute to the tool.</p>
           <table>
             <thead><tr><th>User type</th><th>Best access route</th><th>Why</th></tr></thead>
             <tbody>
-              <tr><td data-label="User type">Ordinary app user</td><td data-label="Best access route">NDIM Web link or installer/release package</td><td data-label="Why">They should not need GitHub or a terminal.</td></tr>
-              <tr><td data-label="User type">Alpha tester</td><td data-label="Best access route">GitHub Release files plus manual and demo video</td><td data-label="Why">They test the app behavior, not the codebase.</td></tr>
-              <tr><td data-label="User type">Developer or auditor</td><td data-label="Best access route">GitHub collaborator access to <code>https://github.com/Naphymoro/nidm-rwanda-dashboard</code></td><td data-label="Why">They may need commits, workflows, source files, and audit history.</td></tr>
+              <tr><td data-label="User type">General research or policy user</td><td data-label="Best access route">Hosted NDIM web link</td><td data-label="Why">Uses the tool without GitHub, terminals, or code setup.</td></tr>
+              <tr><td data-label="User type">Field team or sensitive-data project</td><td data-label="Best access route">Local desktop package or approved institutional deployment</td><td data-label="Why">Keeps evidence local unless the project deliberately exports or syncs it.</td></tr>
+              <tr><td data-label="User type">Advanced user, technical reviewer, or contributor</td><td data-label="Best access route">GitHub repository access</td><td data-label="Why">Inspects source files, deployment history, backend code, Cloudflare files, and release changes.</td></tr>
+              <tr><td data-label="User type">Project maintainer</td><td data-label="Best access route">GitHub plus Cloudflare dashboard</td><td data-label="Why">Publishes updates, reviews issues, and manages deployment settings.</td></tr>
             </tbody>
           </table>
+          <p class="note">If the repository is private, non-collaborators may see a GitHub 404 page even when the link is correct. The maintainer can either add collaborators or provide release files and documentation that do not require source-code access.</p>
         </div>
       </details>
 
@@ -12621,7 +12616,7 @@ posterior &= Beta(\alpha + successes,\beta + failures)
       <details id="stress-test-corpus" open>
         <summary>ClimateTales stress-test tutorial and exercises</summary>
         <div class="section-body">
-          <p>The ClimateTales Rwanda corpus is bundled in <code>stress_test_corpus/</code>. It is synthetic, realistic test data for the Rwanda clean-cooking and climate-technology adoption context. It is not loaded by default. A tester must deliberately choose a file during intake.</p>
+          <p>The ClimateTales Rwanda corpus is bundled in <code>stress_test_corpus/</code>. It is synthetic, realistic test data for the Rwanda clean-cooking and climate-technology adoption context. It is not loaded by default. A user must deliberately choose a file during intake.</p>
           <p>The goal is not to prove a policy result. The goal is to stress-test the tool: route-specific intake, SDMX fields, approval and rejection, repository behavior, manual and LLM-style encoding, model response, digital-twin feedback, uncertainty, inoculation messages, and final policy export.</p>
           <div class="exercise-grid">
             <div class="exercise-card"><h3>Minimum test</h3><p>Use one route-specific CSV, approve several records, encode, run models, and export a brief.</p></div>
@@ -13779,7 +13774,7 @@ LEGACY_MANUAL_HTML_BUSY = r"""<!doctype html>
       </nav>
 
       <details id="installation" open>
-        <summary><span class="num">01</span>Installation and local use</summary>
+        <summary><span class="num">01</span>Accessing NDIM Engine</summary>
         <div class="section-body">
           <p>The packaged desktop app is intended to run locally on Windows, Linux, and macOS. The user opens NDIM Engine, the local backend starts on a localhost port, and the browser UI opens without sending private evidence to a public server by default.</p>
           <ol class="step-list">
@@ -13819,7 +13814,7 @@ LEGACY_MANUAL_HTML_BUSY = r"""<!doctype html>
           <div class="grid">
             <div class="card"><h3>For researchers</h3><p>NDIM preserves provenance, supports manual and LLM-assisted encoding, displays equations, tracks uncertainty, and keeps an audit trail from raw narrative to policy brief.</p></div>
             <div class="card"><h3>For policy makers</h3><p>NDIM summarizes evidence quality, risks, intervention options, model confidence, regional differences, and required human review in plain language.</p></div>
-            <div class="card"><h3>For novice users</h3><p>Follow the stages from top to bottom. Each stage explains what it needs, what it creates, and why the next stage depends on it.</p></div>
+            <div class="card"><h3>For guided users</h3><p>Follow the stages from top to bottom. Each stage explains what it needs, what it creates, and why the next stage depends on it.</p></div>
             <div class="card"><h3>For advanced users</h3><p>Inspect SDMX metadata, hashes, encoder agreement, priors and posteriors, scenario bands, RL rewards, and exportable audit payloads.</p></div>
           </div>
           <p>The core story is: collect evidence -> validate evidence -> commit to repository -> encode narratives -> simulate diffusion -> test local agents -> update the digital twin -> update uncertainty -> optimize interventions -> test inoculation narratives -> export a decision brief.</p>

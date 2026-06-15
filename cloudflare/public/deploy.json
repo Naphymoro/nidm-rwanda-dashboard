@@ -4,7 +4,7 @@
   "source": "backend.app.workflow_ui original UI constants",
   "generated_at_utc": "2026-06-15T09:55:00+00:00",
   "routing": "Cloudflare clean URLs used for manual, academy, publication; self-redirect loop removed",
-  "manual": "synced-from-backend",
+  "manual": "synced-from-backend; access guidance updated for hosted web, local desktop, GitHub, and advanced deployment use",
   "academy": "synced-from-backend",
   "publication": "synced-from-backend"
 }
