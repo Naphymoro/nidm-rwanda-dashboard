@@ -134,9 +134,12 @@
       }
       .toolbar-menu summary::-webkit-details-marker { display: none; }
       .toolbar-menu summary::after {
-        content: "v";
-        color: var(--soft);
-        font: 850 10px var(--font-data);
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-right: 2px solid var(--soft);
+        border-bottom: 2px solid var(--soft);
+        transform: rotate(45deg) translateY(-2px);
       }
       .menu-panel {
         position: absolute;
@@ -264,8 +267,6 @@
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--line);
       }
       .tab {
         padding: 8px 11px;
@@ -279,6 +280,46 @@
         background: var(--accent);
         border-color: var(--accent);
         color: white;
+      }
+      .workspace-nav {
+        display: grid;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 253, 249, .48);
+      }
+      .workspace-nav-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .workspace-nav-title {
+        display: grid;
+        gap: 1px;
+      }
+      .workspace-nav-title strong {
+        font-size: 16px;
+      }
+      .ai-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 253, 249, .9);
+        padding: 8px 11px;
+        font-weight: 850;
+        color: var(--muted);
+      }
+      .ai-switch input {
+        width: auto;
+        accent-color: var(--accent);
+      }
+      .ai-switch.on {
+        border-color: rgba(117, 139, 96, .55);
+        color: #526a3d;
+        background: rgba(117, 139, 96, .12);
       }
       .section-list, .source-list, .status-list {
         display: grid;
@@ -442,6 +483,12 @@
       .source-card h3 { margin: 0 0 6px; font-size: 16px; }
       .source-card p { margin: 4px 0; color: var(--muted); }
       .source-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+      .source-library-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-bottom: 10px;
+      }
       .notice {
         border-left: 4px solid var(--amber);
         border-radius: 12px;
@@ -568,6 +615,8 @@
         .toolbar-menu { width: calc(50% - 4px); }
         .toolbar-menu summary { width: 100%; justify-content: space-between; }
         .menu-panel { left: 0; right: auto; width: min(280px, 90vw); }
+        .workspace-nav-head { align-items: stretch; flex-direction: column; }
+        .ai-switch { justify-content: space-between; }
         .mobile-tabs { display: flex; flex-wrap: wrap; }
         .workspace {
           display: block;
@@ -679,16 +728,33 @@
         <div class="panel pad">
           <div class="mono">Source library</div>
           <p class="small">Saved sources become BibTeX entries. Paywalled records are metadata only.</p>
+          <div class="source-library-actions">
+            <button id="insertSavedReferences" type="button">Insert references</button>
+            <button id="generateAnnotatedBibliography" type="button">Annotated bibliography</button>
+            <button id="buildSynthesisPrompt" type="button">Synthesis prompt</button>
+          </div>
           <div class="source-list" id="savedSources"></div>
         </div>
       </aside>
 
       <section class="editor-pane mobile-active" id="editorPane">
-        <div class="tabs">
-          <button class="tab active" data-pane="manuscript">Manuscript</button>
-          <button class="tab" data-pane="literature">Literature search</button>
-          <button class="tab" data-pane="assistant">OpenAI writing assistant</button>
-          <button class="tab" data-pane="exports">Export notes</button>
+        <div class="workspace-nav">
+          <div class="workspace-nav-head">
+            <div class="workspace-nav-title">
+              <div class="mono">AI writing assistant workspace</div>
+              <strong>Write, search, cite, preview, and export from one bench</strong>
+            </div>
+            <label class="ai-switch" id="aiSwitchLabel">
+              <input id="aiAssistanceEnabled" type="checkbox" />
+              <span id="aiSwitchText">AI assistance off</span>
+            </label>
+          </div>
+          <div class="tabs" aria-label="Publication workspace sections">
+            <button class="tab active" data-pane="manuscript">Manuscript</button>
+            <button class="tab" data-pane="literature">Literature</button>
+            <button class="tab" data-pane="assistant">AI Assistant</button>
+            <button class="tab" data-pane="exports">Exports</button>
+          </div>
         </div>
 
         <div class="editor-pane-mode active" id="pane-manuscript">
@@ -789,17 +855,17 @@
         <div class="editor-pane-mode assistant-pane" id="pane-assistant">
           <div class="editor-header">
             <div>
-              <div class="mono">Optional OpenAI assistant</div>
-              <h1>Draft with caution</h1>
+              <div class="mono">AI writing assistant</div>
+              <h1>Draft with evidence discipline</h1>
             </div>
-            <span class="pill">BYOK privacy gate</span>
+            <span class="pill" id="aiModePill">AI off</span>
           </div>
           <div class="editor-grid">
             <div class="assistant-callout">
               <strong>Use AI as a drafting assistant, not as the author.</strong>
-              <span class="small">Load your own key only when you have permission to send manuscript text to OpenAI. The assistant should use saved sources first, avoid invented citations, and label everything as a draft for author review.</span>
+              <span class="small" id="aiModeNote">AI is off. You can still build and copy prompts, search literature, save sources, preview the manuscript, and export. Nothing will be sent to an external model.</span>
             </div>
-            <div class="panel pad key-manager">
+            <div class="panel pad key-manager hidden" id="openaiKeyPanel">
               <div class="key-head">
                 <div>
                   <div class="mono">OpenAI key manager</div>
@@ -920,6 +986,7 @@
       const SPLIT_KEY = "ndim-publication-editor-width";
       const OPENAI_KEY_LOCAL = "ndim-publication-openai-key";
       const OPENAI_KEY_SESSION = "ndim-publication-openai-key-session";
+      const AI_MODE_KEY = "ndim-publication-ai-enabled";
 
       const seed = {
         title: "The Narrative Diffusion and Inoculation Model: A Governed Evidence-to-Policy Engine for Public-Interest Technology Narratives",
@@ -1498,6 +1565,33 @@ ER  -`).join("\n\n");
         return [header, ...rows].map((row) => row.map((cell) => `"${String(cell || "").replace(/"/g, '""')}"`).join(",")).join("\n");
       }
 
+      function saveSource(source) {
+        if (!source) return false;
+        const exists = savedSources.some((item) => (item.doi || item.title) === (source.doi || source.title));
+        if (!exists) savedSources.push(source);
+        persist();
+        renderSavedSources();
+        markDraftChanged();
+        return !exists;
+      }
+
+      function sourceToSummary(source) {
+        const key = citationKey(source);
+        const authors = (source.authors || []).slice(0, 3).join(", ") || "Unknown author";
+        const venue = source.venue || source.source || "unknown venue";
+        const year = source.year || "n.d.";
+        const abstract = source.abstract ? ` ${source.abstract.slice(0, 420)}${source.abstract.length > 420 ? "..." : ""}` : "";
+        return `\n\n\\paragraph{${source.title}} ${authors} (${year}) in ${venue}. This source may support the manuscript's discussion of narrative diffusion, inoculation, behavioural modelling, digital twins, or policy decision support. ${abstract} \\cite{${key}}\n`;
+      }
+
+      function sourceToLiteratureParagraph(source) {
+        const key = citationKey(source);
+        const title = source.title || "Untitled source";
+        const venue = source.venue || source.source || "the literature";
+        const year = source.year || "n.d.";
+        return `\n\n${title} (${year}) contributes to the evidence base by showing how ${venue} addresses a problem adjacent to NDIM. Use this source only after verifying the full text and confirming the exact claim it supports \\cite{${key}}.`;
+      }
+
       function buildHtmlExport() {
         return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml($("title").value)}</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><style>body{font-family:Georgia,serif;max-width:850px;margin:40px auto;line-height:1.6}.equation{padding:12px 14px;background:#fff;border:1px solid #d3c7b5;border-left:4px solid #385c8f;border-radius:8px;overflow-x:auto}.katex-display{text-align:left}</style></head><body>${$("previewPage").innerHTML}</body></html>`;
       }
@@ -1611,26 +1705,45 @@ ER  -`).join("\n\n");
             <p>${escapeHtml(source.venue || source.source || "Unknown venue")} | ${source.openAccess ? "open access" : "metadata only"}</p>
             ${source.abstract ? `<p class="small">${escapeHtml(source.abstract.slice(0, 360))}${source.abstract.length > 360 ? "..." : ""}</p>` : ""}
             <div class="source-actions">
-              <button data-save-source="${index}" type="button">Save citation</button>
+              <button data-save-source="${index}" type="button">Save source</button>
+              <button data-add-bib="${index}" type="button">Add to BibTeX library</button>
               <button data-insert-cite="${index}" type="button">Insert citation</button>
+              <button data-insert-summary="${index}" type="button">Insert summary</button>
+              <button data-add-lit-review="${index}" type="button">Add to literature review</button>
               ${source.url ? `<a class="button" href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">Open source</a>` : ""}
             </div>
           </div>`).join("");
         $("litResults").innerHTML = warnings + (cards || `<div class="source-card"><strong>No records found</strong><p>Try a broader query or include paywalled metadata.</p></div>`);
-        $$("[data-save-source]").forEach((button) => {
+        $$("[data-save-source], [data-add-bib]").forEach((button) => {
           button.addEventListener("click", () => {
-            const source = latestResults[Number(button.dataset.saveSource)];
-            if (!savedSources.some((item) => (item.doi || item.title) === (source.doi || source.title))) savedSources.push(source);
-            persist();
-            renderSavedSources();
-            markDraftChanged();
+            const index = Number(button.dataset.saveSource ?? button.dataset.addBib);
+            const source = latestResults[index];
+            saveSource(source);
+            button.textContent = "Saved";
           });
         });
         $$("[data-insert-cite]").forEach((button) => {
           button.addEventListener("click", () => {
             const source = latestResults[Number(button.dataset.insertCite)];
             const key = citationKey(source);
+            saveSource(source);
             insertAtCursor($("sourceEditor"), ` \\cite{${key}}`);
+            markDraftChanged();
+          });
+        });
+        $$("[data-insert-summary]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const source = latestResults[Number(button.dataset.insertSummary)];
+            saveSource(source);
+            insertAtCursor($("sourceEditor"), sourceToSummary(source));
+            markDraftChanged();
+          });
+        });
+        $$("[data-add-lit-review]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const source = latestResults[Number(button.dataset.addLitReview)];
+            saveSource(source);
+            insertAtCursor($("sourceEditor"), sourceToLiteratureParagraph(source));
             markDraftChanged();
           });
         });
@@ -1663,6 +1776,47 @@ ER  -`).join("\n\n");
         $("litResults").innerHTML = `<div class="source-card"><h3>Literature map</h3><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Theme</th><th align="left">Sources</th><th align="left">Use</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       }
 
+      function insertSavedReferences() {
+        if (!savedSources.length) {
+          alert("Save sources first, then insert them into the manuscript.");
+          return;
+        }
+        const text = `\n\n\\section{Selected source notes}\n${savedSources.map(sourceToLiteratureParagraph).join("")}\n`;
+        insertAtCursor($("sourceEditor"), text);
+        markDraftChanged();
+      }
+
+      function generateAnnotatedBibliography() {
+        if (!savedSources.length) {
+          alert("Save sources first, then generate an annotated bibliography.");
+          return;
+        }
+        const text = `\n\n\\section{Annotated bibliography draft}\n${savedSources.map(sourceToSummary).join("")}\n`;
+        insertAtCursor($("sourceEditor"), text);
+        markDraftChanged();
+      }
+
+      function buildSynthesisPromptFromSources() {
+        const sourceSummary = savedSources.map(citationLine).join("\n");
+        $("aiTask").value = "literature";
+        $("aiPrompt").value = `You are preparing a literature synthesis for the NDIM manuscript.
+
+Use only the saved sources listed below. Do not invent citations. Organize the synthesis as thesis, antithesis, and synthesis:
+- Thesis: what existing misinformation, diffusion, inoculation, digital twin, or public-health modelling studies already offer.
+- Antithesis: what these studies do not yet capture about governed narrative evidence and policy-facing evidence chains.
+- Synthesis: how NDIM can be framed as a careful methodological contribution without overclaiming validation.
+
+Saved sources:
+${sourceSummary || "No saved sources yet."}
+
+Manuscript context:
+${$("sourceEditor").value.slice(0, 5000)}
+`;
+        $$("[data-pane]").forEach((item) => item.classList.toggle("active", item.dataset.pane === "assistant"));
+        $$(".editor-pane-mode").forEach((pane) => pane.classList.remove("active"));
+        $("pane-assistant").classList.add("active");
+      }
+
       function currentOpenAiKey() {
         return sessionStorage.getItem(OPENAI_KEY_SESSION) || localStorage.getItem(OPENAI_KEY_LOCAL) || "";
       }
@@ -1673,6 +1827,30 @@ ER  -`).join("\n\n");
         const key = currentOpenAiKey();
         status.classList.toggle("loaded", Boolean(key));
         status.textContent = key ? `loaded ...${key.slice(-4)}` : "not loaded";
+      }
+
+      function aiEnabled() {
+        return $("aiAssistanceEnabled")?.checked === true;
+      }
+
+      function updateAiMode() {
+        const enabled = aiEnabled();
+        localStorage.setItem(AI_MODE_KEY, enabled ? "1" : "0");
+        $("aiSwitchLabel")?.classList.toggle("on", enabled);
+        if ($("aiSwitchText")) $("aiSwitchText").textContent = enabled ? "AI assistance on" : "AI assistance off";
+        if ($("aiModePill")) $("aiModePill").textContent = enabled ? "AI on" : "AI off";
+        if ($("aiModeNote")) {
+          $("aiModeNote").textContent = enabled
+            ? "AI is on. Only the prepared prompt is sent, and only after you click Draft with loaded key and confirm."
+            : "AI is off. You can still build and copy prompts, search literature, save sources, preview the manuscript, and export. Nothing is sent to an external model.";
+        }
+        $("openaiKeyPanel")?.classList.toggle("hidden", !enabled);
+        if ($("runOpenAi")) $("runOpenAi").disabled = !enabled;
+      }
+
+      function restoreAiMode() {
+        if ($("aiAssistanceEnabled")) $("aiAssistanceEnabled").checked = localStorage.getItem(AI_MODE_KEY) === "1";
+        updateAiMode();
       }
 
       function loadOpenAiKey() {
@@ -1761,6 +1939,10 @@ ${$("sourceEditor").value.slice(0, 9000)}
       }
 
       async function runOpenAi() {
+        if (!aiEnabled()) {
+          $("aiOutput").value = "AI assistance is off. Turn it on before sending a prompt to an external model, or use Copy prompt.";
+          return;
+        }
         if (!$("aiPrompt").value.trim()) buildAiPrompt();
         const key = currentOpenAiKey();
         if (!key) {
@@ -1854,6 +2036,7 @@ ${$("sourceEditor").value.slice(0, 9000)}
         renderSavedSources();
         renderPreview();
         updateOpenAiKeyStatus();
+        restoreAiMode();
         wireTabs();
         wireSplitter();
         ["title", "authors", "keywords", "articleType", "journalSection", "sourceEditor"].forEach((id) => {
@@ -1880,8 +2063,12 @@ ${$("sourceEditor").value.slice(0, 9000)}
         $("printPdf").addEventListener("click", () => window.print());
         $("runLitSearch").addEventListener("click", searchLiterature);
         $("buildLiteratureMap").addEventListener("click", buildLiteratureMap);
+        $("insertSavedReferences").addEventListener("click", insertSavedReferences);
+        $("generateAnnotatedBibliography").addEventListener("click", generateAnnotatedBibliography);
+        $("buildSynthesisPrompt").addEventListener("click", buildSynthesisPromptFromSources);
         $("exportRis").addEventListener("click", () => downloadBlob("ndim-sources.ris", buildRis(), "application/x-research-info-systems"));
         $("exportCsv").addEventListener("click", () => downloadBlob("ndim-sources.csv", buildCsv(), "text/csv"));
+        $("aiAssistanceEnabled").addEventListener("change", updateAiMode);
         $("loadOpenAiKey").addEventListener("click", loadOpenAiKey);
         $("clearOpenAiKey").addEventListener("click", clearOpenAiKey);
         $("buildAiPrompt").addEventListener("click", buildAiPrompt);

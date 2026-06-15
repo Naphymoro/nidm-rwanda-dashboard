@@ -227,6 +227,10 @@ def manual():
         },
     )
 
+@app.get("/manual.html", response_class=HTMLResponse)
+def manual_html_alias():
+    return manual()
+
 @app.get("/academy", response_class=HTMLResponse)
 def academy():
     return HTMLResponse(
@@ -237,6 +241,10 @@ def academy():
         },
     )
 
+@app.get("/academy.html", response_class=HTMLResponse)
+def academy_html_alias():
+    return academy()
+
 @app.get("/publication", response_class=HTMLResponse)
 def publication():
     return HTMLResponse(
@@ -246,6 +254,14 @@ def publication():
             "Pragma": "no-cache",
         },
     )
+
+@app.get("/publication.html", response_class=HTMLResponse)
+def publication_html_alias():
+    return publication()
+
+@app.get("/index.html", response_class=HTMLResponse)
+def index_html_alias():
+    return root()
 
 @app.get("/stress-test-corpus")
 def stress_test_corpus():
