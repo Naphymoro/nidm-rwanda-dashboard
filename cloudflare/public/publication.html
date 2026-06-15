@@ -97,6 +97,67 @@
         flex-wrap: wrap;
         gap: 8px;
       }
+      .toolbar-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 253, 249, .76);
+      }
+      .toolbar-group button,
+      .toolbar-group .button,
+      .toolbar-menu summary,
+      .toolbar-menu .button,
+      .toolbar-menu button {
+        min-height: 36px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+      .toolbar-menu {
+        position: relative;
+      }
+      .toolbar-menu summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+        font-weight: 850;
+        cursor: pointer;
+        list-style: none;
+      }
+      .toolbar-menu summary::-webkit-details-marker { display: none; }
+      .toolbar-menu summary::after {
+        content: "v";
+        color: var(--soft);
+        font: 850 10px var(--font-data);
+      }
+      .menu-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: 95;
+        display: grid;
+        gap: 6px;
+        width: 220px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 253, 249, .98);
+        box-shadow: 0 18px 60px rgba(70, 55, 30, .18);
+      }
+      .menu-panel button,
+      .menu-panel .button {
+        display: block;
+        width: 100%;
+        text-align: left;
+      }
       .workspace {
         display: grid;
         grid-template-columns: minmax(420px, var(--editor-width, 52%)) 12px minmax(380px, 1fr);
@@ -388,6 +449,81 @@
         padding: 12px;
         color: var(--muted);
       }
+      .assistant-callout {
+        display: grid;
+        gap: 10px;
+        border: 1px solid rgba(117, 139, 96, .26);
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(117, 139, 96, .12), rgba(255, 253, 249, .78));
+        padding: 14px;
+      }
+      .key-manager {
+        display: grid;
+        gap: 12px;
+      }
+      .key-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .key-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 9px;
+        background: rgba(255, 253, 249, .72);
+        color: var(--muted);
+        font: 850 11px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .key-status.loaded {
+        border-color: rgba(117, 139, 96, .5);
+        color: #536b3e;
+      }
+      .key-status::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--soft);
+      }
+      .key-status.loaded::before { background: var(--green); }
+      .assistant-tools {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+      }
+      .prompt-options {
+        display: grid;
+        gap: 8px;
+        align-content: start;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 253, 249, .72);
+        padding: 12px;
+      }
+      .checkline {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 750;
+        color: var(--muted);
+      }
+      .checkline input {
+        width: auto;
+      }
+      .ssm-note {
+        border-left: 4px solid var(--green);
+        padding: 10px 12px;
+        background: rgba(117, 139, 96, .09);
+        border-radius: 12px;
+        color: var(--muted);
+      }
       .ok { color: var(--green); }
       .warn { color: var(--amber); }
       .stop { color: var(--red); }
@@ -428,6 +564,10 @@
       @media (max-width: 960px) {
         .topbar { position: static; align-items: flex-start; flex-direction: column; }
         .toolbar { justify-content: flex-start; }
+        .toolbar-group { width: 100%; overflow-x: auto; }
+        .toolbar-menu { width: calc(50% - 4px); }
+        .toolbar-menu summary { width: 100%; justify-content: space-between; }
+        .menu-panel { left: 0; right: auto; width: min(280px, 90vw); }
         .mobile-tabs { display: flex; flex-wrap: wrap; }
         .workspace {
           display: block;
@@ -454,7 +594,7 @@
           padding: 28px 22px;
           min-height: auto;
         }
-        .two, .three { grid-template-columns: 1fr; }
+        .two, .three, .assistant-tools { grid-template-columns: 1fr; }
       }
       @media print {
         .topbar, .side, .editor-pane, .preview-tools, .mobile-tabs { display: none !important; }
@@ -482,17 +622,32 @@
           <strong>Scientific Publication Workspace</strong>
         </div>
       </div>
-      <div class="toolbar">
-        <button class="primary" id="saveDraft" type="button">Save draft</button>
-        <button id="compilePreview" type="button">Compile preview</button>
-        <button id="toggleOutline" type="button">Manuscript outline</button>
-        <button id="loadNdim" type="button">Load NDIM results</button>
-        <button id="exportTex" type="button">Export .tex</button>
-        <button id="exportBib" type="button">Export .bib</button>
-        <button id="exportHtml" type="button">Export HTML</button>
-        <button id="printPdf" type="button">Print / PDF</button>
-        <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Manual</a>
-        <a class="button" href="./index.html">Back to tool</a>
+      <div class="toolbar" aria-label="Publication commands">
+        <div class="toolbar-group" aria-label="Draft commands">
+          <button class="primary" id="saveDraft" type="button">Save</button>
+          <button id="compilePreview" type="button">Compile</button>
+          <button id="toggleOutline" type="button">Outline</button>
+        </div>
+        <div class="toolbar-group" aria-label="NDIM source commands">
+          <button id="loadNdim" type="button">Load NDIM results</button>
+        </div>
+        <details class="toolbar-menu">
+          <summary>Export</summary>
+          <div class="menu-panel">
+            <button id="exportTex" type="button">Export .tex</button>
+            <button id="exportBib" type="button">Export .bib</button>
+            <button id="exportHtml" type="button">Export HTML</button>
+            <button id="printPdf" type="button">Print / PDF</button>
+          </div>
+        </details>
+        <details class="toolbar-menu">
+          <summary>Help</summary>
+          <div class="menu-panel">
+            <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Open manual</a>
+            <a class="button" href="./academy.html" target="_blank" rel="noreferrer">Open academy</a>
+            <a class="button" href="./index.html">Back to tool</a>
+          </div>
+        </details>
       </div>
     </header>
 
@@ -640,27 +795,82 @@
             <span class="pill">BYOK privacy gate</span>
           </div>
           <div class="editor-grid">
-            <div class="notice">
-              The assistant is optional. Do not send sensitive narratives unless you have permission. The safer default is to generate a prompt and review it before any API call.
+            <div class="assistant-callout">
+              <strong>Use AI as a drafting assistant, not as the author.</strong>
+              <span class="small">Load your own key only when you have permission to send manuscript text to OpenAI. The assistant should use saved sources first, avoid invented citations, and label everything as a draft for author review.</span>
             </div>
-            <div class="two">
-              <label><span class="mono">OpenAI API key</span><input id="openaiKey" type="password" autocomplete="off" placeholder="sk-... optional" /></label>
-              <label><span class="mono">Task</span>
-                <select id="aiTask">
-                  <option value="abstract">Improve abstract</option>
-                  <option value="jargon">Simplify jargon</option>
-                  <option value="limitations">Strengthen limitations</option>
-                  <option value="literature">Draft literature synthesis from saved sources</option>
-                  <option value="equations">Explain equations in plain language</option>
-                  <option value="claims">Check claims against NDIM outputs</option>
-                </select>
-              </label>
+            <div class="panel pad key-manager">
+              <div class="key-head">
+                <div>
+                  <div class="mono">OpenAI key manager</div>
+                  <h2 style="margin:2px 0 0">Bring your own key</h2>
+                  <p class="small" style="margin:4px 0 0">Keys are not exported with the manuscript. Session storage is the safest default.</p>
+                </div>
+                <span class="key-status" id="openaiKeyStatus">not loaded</span>
+              </div>
+              <div class="three">
+                <label><span class="mono">OpenAI API key</span><input id="openaiKey" type="password" autocomplete="off" placeholder="Paste key, then load" /></label>
+                <label><span class="mono">Storage mode</span>
+                  <select id="openaiKeyMode">
+                    <option value="session">Session only</option>
+                    <option value="local">Remember on this browser</option>
+                  </select>
+                </label>
+                <label><span class="mono">Writing voice</span>
+                  <select id="aiPersona">
+                    <option value="frontiers-methodologist">Frontiers methods author</option>
+                    <option value="behavioral-scientist">Behavioral scientist</option>
+                    <option value="systems-practitioner">Soft systems practitioner</option>
+                    <option value="policy-scholar">Policy scholar</option>
+                    <option value="plain-language-editor">Plain-language scientific editor</option>
+                  </select>
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="primary" id="loadOpenAiKey" type="button">Load key</button>
+                <button id="clearOpenAiKey" type="button">Clear key</button>
+              </div>
+            </div>
+            <div class="assistant-tools">
+              <div class="prompt-options">
+                <label><span class="mono">Task</span>
+                  <select id="aiTask">
+                    <option value="abstract">Improve abstract</option>
+                    <option value="introduction">Draft introduction</option>
+                    <option value="literature-gap">Sharpen literature gap</option>
+                    <option value="theoretical-framework">Build theoretical framing</option>
+                    <option value="ssm-methodology">Assess SSM fit</option>
+                    <option value="rich-picture">Draft rich picture narrative</option>
+                    <option value="model-formulation">Strengthen model formulation</option>
+                    <option value="sampling-strategy">Strengthen sampling strategy</option>
+                    <option value="digital-twin">Explain digital twin method</option>
+                    <option value="inoculation-theory">Strengthen inoculation theory section</option>
+                    <option value="literature">Draft literature synthesis from saved sources</option>
+                    <option value="equations">Explain equations in plain language</option>
+                    <option value="limitations">Strengthen limitations</option>
+                    <option value="claims">Check claims against NDIM outputs</option>
+                  </select>
+                </label>
+                <label><span class="mono">Citation discipline</span>
+                  <select id="citationMode">
+                    <option value="saved-only">Use saved sources only</option>
+                    <option value="search-needed">Use saved sources and mark search gaps</option>
+                    <option value="no-citations">No citations, prose only</option>
+                  </select>
+                </label>
+                <label class="checkline"><input id="aiUseSavedSources" type="checkbox" checked /> Use saved references before making claims</label>
+                <label class="checkline"><input id="aiIncludeEquations" type="checkbox" checked /> Include NDIM equations when relevant</label>
+              </div>
+              <div class="ssm-note">
+                <strong>SSM lens.</strong>
+                Soft Systems Methodology can help NDIM explain the messy human system around a technology: actors, trust, power, information channels, contested meanings, and practical accommodations before the equations are run.
+              </div>
             </div>
             <label><span class="mono">Prompt sent to assistant</span><textarea id="aiPrompt"></textarea></label>
             <div class="button-row">
               <button class="primary" id="buildAiPrompt" type="button">Build safe prompt</button>
               <button id="copyAiPrompt" type="button">Copy prompt</button>
-              <button id="runOpenAi" type="button">Run OpenAI with my key</button>
+              <button id="runOpenAi" type="button">Draft with loaded key</button>
             </div>
             <label><span class="mono">Draft output requiring author review</span><textarea id="aiOutput"></textarea></label>
           </div>
@@ -708,6 +918,8 @@
       const $$ = (selector) => Array.from(document.querySelectorAll(selector));
       const STORAGE_KEY = "ndim-publication-workspace-v2";
       const SPLIT_KEY = "ndim-publication-editor-width";
+      const OPENAI_KEY_LOCAL = "ndim-publication-openai-key";
+      const OPENAI_KEY_SESSION = "ndim-publication-openai-key-session";
 
       const seed = {
         title: "The Narrative Diffusion and Inoculation Model: A Governed Evidence-to-Policy Engine for Public-Interest Technology Narratives",
@@ -739,6 +951,11 @@ NDIM fills this gap by coupling evidence governance with behavioral dynamics. It
 NDIM is built on five ideas. First, narratives are evidence objects, not loose text. Second, meaning must be encoded before modelling. Third, population-level dynamics and household-level heterogeneity should be read together. Fourth, a digital twin should update predictions when approved field evidence disagrees with model expectations. Fifth, policy output should remain advisory until uncertainty, validation, assumptions, and human review are visible.
 
 Inoculation theory is central to this framework. A narrative intervention can work like a weak-dose vaccine: it exposes people to a misleading claim in a controlled way, explains why the claim is misleading, and strengthens resistance before stronger misinformation arrives. NDIM formalizes this as an intervention term that can alter trust, misinformation decay, resistance, or adoption-transition parameters.
+
+\section{Soft Systems Methodology and rich picture framing}
+NDIM also benefits from Soft Systems Methodology because the problem is not only technical. Public-interest technologies move through human systems where ministries, households, field officers, vendors, health workers, civil society, elders, social media actors, and local champions may hold different definitions of the problem.
+
+A rich picture can be used before formal modelling to map actors, information channels, trusted messengers, fears, incentives, institutions, and points of conflict. This does not replace the NDIM equations. It helps researchers decide what the equations should pay attention to. In practice, the rich picture can identify where a barrier is economic, where it is cultural, where it is about safety, where it is about trust in the messenger, and where an inoculation message could be useful or harmful.
 
 \section{NDIM workflow}
 The workflow is sequential but iterative. Field evidence is collected through structured interviews, open stories, focus groups, key informant interviews, indigenous knowledge records, citizen-science reports, crowdsourced batches, and optional social media feeds. Each record passes an SDMX-style contract for country, administrative unit, period, language, source, consent, visibility, route metadata, and review status.
@@ -926,6 +1143,7 @@ To be completed by the author team.
         ["introduction", "Introduction", "Why story-aware modelling is needed"],
         ["literature-gap-and-contribution", "Literature gap", "What NDIM adds"],
         ["conceptual-framework", "Conceptual framework", "The scientific logic"],
+        ["soft-systems-methodology-and-rich-picture-framing", "SSM framing", "Actors and messy systems"],
         ["ndim-workflow", "NDIM workflow", "Evidence to policy"],
         ["model-formulation", "Model formulation", "Behavioral equations"],
         ["behavioral-and-agent-based-layer", "Agent layer", "Household heterogeneity"],
@@ -1445,28 +1663,97 @@ ER  -`).join("\n\n");
         $("litResults").innerHTML = `<div class="source-card"><h3>Literature map</h3><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left">Theme</th><th align="left">Sources</th><th align="left">Use</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       }
 
+      function currentOpenAiKey() {
+        return sessionStorage.getItem(OPENAI_KEY_SESSION) || localStorage.getItem(OPENAI_KEY_LOCAL) || "";
+      }
+
+      function updateOpenAiKeyStatus() {
+        const status = $("openaiKeyStatus");
+        if (!status) return;
+        const key = currentOpenAiKey();
+        status.classList.toggle("loaded", Boolean(key));
+        status.textContent = key ? `loaded ...${key.slice(-4)}` : "not loaded";
+      }
+
+      function loadOpenAiKey() {
+        const key = $("openaiKey").value.trim();
+        if (!key) {
+          $("aiOutput").value = "Paste an OpenAI API key first. For safety, session-only storage is recommended for shared computers.";
+          updateOpenAiKeyStatus();
+          return;
+        }
+        if ($("openaiKeyMode").value === "local") {
+          localStorage.setItem(OPENAI_KEY_LOCAL, key);
+          sessionStorage.removeItem(OPENAI_KEY_SESSION);
+        } else {
+          sessionStorage.setItem(OPENAI_KEY_SESSION, key);
+          localStorage.removeItem(OPENAI_KEY_LOCAL);
+        }
+        $("openaiKey").value = "";
+        $("aiOutput").value = "OpenAI key loaded for this browser context. The key is not written into the manuscript exports.";
+        updateOpenAiKeyStatus();
+      }
+
+      function clearOpenAiKey() {
+        sessionStorage.removeItem(OPENAI_KEY_SESSION);
+        localStorage.removeItem(OPENAI_KEY_LOCAL);
+        $("openaiKey").value = "";
+        $("aiOutput").value = "OpenAI key cleared from this browser context.";
+        updateOpenAiKeyStatus();
+      }
+
       function buildAiPrompt() {
-        const sourceSummary = savedSources.slice(0, 8).map(citationLine).join("\n");
+        const useSources = $("aiUseSavedSources")?.checked !== false;
+        const includeEquations = $("aiIncludeEquations")?.checked !== false;
+        const citationMode = $("citationMode")?.value || "saved-only";
+        const persona = {
+          "frontiers-methodologist": "a Frontiers-style methods author who writes precise, cautious, journal-ready prose",
+          "behavioral-scientist": "a behavioral scientist who explains trust, salience, reactance, norms, and adoption without jargon",
+          "systems-practitioner": "a Soft Systems Methodology practitioner who can frame rich pictures, messy problem situations, actors, and accommodations",
+          "policy-scholar": "a policy scholar who writes for ministries, NGOs, and public-interest research teams",
+          "plain-language-editor": "a plain-language scientific editor who makes hard ideas readable without weakening the science"
+        }[$("aiPersona")?.value || "frontiers-methodologist"];
+        const sourceSummary = useSources ? savedSources.slice(0, 12).map(citationLine).join("\n") : "";
         const task = $("aiTask").value;
         const taskText = {
           abstract: "Improve the abstract for clarity, scientific caution, and Frontiers-style readability.",
+          introduction: "Draft a stronger introduction that starts from the practical policy problem, then introduces NDIM as the method.",
+          "literature-gap": "Sharpen the literature gap: explain what epidemic-style misinformation models do well, what they miss for governed narrative evidence, and how NDIM fills the gap.",
+          "theoretical-framework": "Develop the theoretical framing by connecting narrative evidence, inoculation theory, behavioral diffusion, systems thinking, and policy decision support.",
+          "ssm-methodology": "Assess whether Soft Systems Methodology is useful for this paper and draft a concise methodology subsection explaining how rich pictures structure the problem before formal modelling.",
+          "rich-picture": "Draft a rich-picture narrative for NDIM: actors, institutions, information channels, trusted messengers, fears, barriers, interventions, and feedback loops.",
+          "model-formulation": "Strengthen the mathematical model formulation and explain how behavioral variables enter the compartmental, agent-based, digital-twin, Bayesian, and policy-optimization layers.",
+          "sampling-strategy": "Strengthen the sampling and research design using rigorous mixed-methods fieldwork: key informants, focus groups, structured narratives, validation workshops, double coding, and calibration.",
+          "digital-twin": "Explain the digital twin as a feedback copy of the evidence environment, including how encoded narratives, models, Bayesian updates, and inoculation tests change predictions.",
+          "inoculation-theory": "Strengthen the inoculation theory section: threat recognition, weak-dose exposure, refutational preemption, trusted messenger fit, reactance risk, and booster strategy.",
           jargon: "Rewrite the selected manuscript ideas in plain but scientifically accurate language.",
           limitations: "Strengthen the limitations so the alpha-stage method does not overclaim validation.",
           literature: "Draft a thesis-antithesis-synthesis literature paragraph using only the listed sources.",
           equations: "Explain the NDIM equations in plain language without diluting the science.",
           claims: "Check whether the manuscript makes claims unsupported by the described NDIM outputs."
         }[task];
-        $("aiPrompt").value = `You are assisting with an NDIM Engine manuscript. ${taskText}
+        const citationInstruction = {
+          "saved-only": "Use only the saved sources listed below for in-text citations and reference claims. If the saved sources are insufficient, write [source needed] rather than inventing a citation.",
+          "search-needed": "Use saved sources where available. For missing evidence, mark [literature search needed: topic] and suggest search terms instead of inventing citations.",
+          "no-citations": "Do not add citations. Focus on prose, structure, and scientific logic only."
+        }[citationMode];
+        const equationInstruction = includeEquations
+          ? "When relevant, connect the prose to the NDIM equations already in the manuscript, including behavioral vector z_i, Phi, S-M-T-I-R compartments, agent propensity, digital twin feedback, Bayesian updating, and policy optimization."
+          : "Do not add new equations unless absolutely necessary; focus on prose and structure.";
+        $("aiPrompt").value = `You are ${persona}. You are assisting with an NDIM Engine manuscript. ${taskText}
 
 Rules:
 - Do not invent citations.
-- Use only the supplied saved sources when discussing literature.
+- ${citationInstruction}
 - Clearly separate established evidence from alpha-stage software claims.
 - Keep the writing professional, concise, and suitable for Frontiers-style preparation.
+- Avoid overclaiming novelty. Describe NDIM as a distinctive research/software innovation whose validation is still in progress.
+- If using Soft Systems Methodology, show how it complements NDIM instead of replacing the mathematical model.
+- ${equationInstruction}
 - Mark any text as draft requiring author review.
 
 Saved sources:
-${sourceSummary || "No saved sources yet."}
+${sourceSummary || "No saved sources supplied in this workspace."}
 
 Manuscript source:
 ${$("sourceEditor").value.slice(0, 9000)}
@@ -1474,9 +1761,10 @@ ${$("sourceEditor").value.slice(0, 9000)}
       }
 
       async function runOpenAi() {
-        const key = $("openaiKey").value.trim();
+        if (!$("aiPrompt").value.trim()) buildAiPrompt();
+        const key = currentOpenAiKey();
         if (!key) {
-          $("aiOutput").value = "Add your OpenAI API key first, or use Copy prompt and run it in your approved writing environment.";
+          $("aiOutput").value = "Load your OpenAI API key first, or use Copy prompt and run it in an approved writing environment.";
           return;
         }
         const ok = confirm("This will send the prompt text to OpenAI using your key. Confirm only if you have permission to send this manuscript content.");
@@ -1565,6 +1853,7 @@ ${$("sourceEditor").value.slice(0, 9000)}
         renderSectionList();
         renderSavedSources();
         renderPreview();
+        updateOpenAiKeyStatus();
         wireTabs();
         wireSplitter();
         ["title", "authors", "keywords", "articleType", "journalSection", "sourceEditor"].forEach((id) => {
@@ -1593,6 +1882,8 @@ ${$("sourceEditor").value.slice(0, 9000)}
         $("buildLiteratureMap").addEventListener("click", buildLiteratureMap);
         $("exportRis").addEventListener("click", () => downloadBlob("ndim-sources.ris", buildRis(), "application/x-research-info-systems"));
         $("exportCsv").addEventListener("click", () => downloadBlob("ndim-sources.csv", buildCsv(), "text/csv"));
+        $("loadOpenAiKey").addEventListener("click", loadOpenAiKey);
+        $("clearOpenAiKey").addEventListener("click", clearOpenAiKey);
         $("buildAiPrompt").addEventListener("click", buildAiPrompt);
         $("copyAiPrompt").addEventListener("click", () => copyText($("aiPrompt").value, $("copyAiPrompt"), "Copy prompt"));
         $("runOpenAi").addEventListener("click", runOpenAi);
