@@ -418,6 +418,106 @@
         text-decoration: underline;
         text-underline-offset: 3px;
       }
+      .app.workspace-start-mode {
+        --sidebar-w: 0px;
+        grid-template-columns: 1fr;
+      }
+      .app.workspace-start-mode .sidebar {
+        position: relative;
+        height: auto;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(220px, auto) minmax(0, 1fr) minmax(260px, auto);
+        align-items: center;
+        gap: 14px;
+        padding: 10px 18px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .app.workspace-start-mode .brand {
+        min-height: 0;
+        height: auto;
+        border-bottom: 0;
+        padding: 0;
+      }
+      .app.workspace-start-mode .stepper {
+        display: none;
+      }
+      .app.workspace-start-mode .sidebar-footer {
+        margin-top: 0;
+        padding: 0;
+        border-top: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+      }
+      .app.workspace-start-mode .sidebar-footer > .eyebrow {
+        margin: 0;
+        white-space: nowrap;
+      }
+      .app.workspace-start-mode .resource-table {
+        min-width: 230px;
+      }
+      .app.workspace-start-mode .resource-table caption {
+        display: none;
+      }
+      .app.workspace-start-mode .resource-table th,
+      .app.workspace-start-mode .resource-table td {
+        padding: 7px 9px;
+      }
+      .app.workspace-start-mode .sidebar-footer > .button {
+        min-height: 38px;
+        padding: 8px 12px;
+        white-space: nowrap;
+      }
+      .app.workspace-start-mode .main {
+        min-height: auto;
+      }
+      .app.workspace-start-mode .topbar {
+        padding: 16px 18px;
+        background:
+          radial-gradient(circle at 12% 8%, rgba(183, 145, 88, .12), transparent 30%),
+          var(--panel);
+      }
+      .app.workspace-start-mode .topbar h1 {
+        font-size: clamp(28px, 4vw, 52px);
+        letter-spacing: -.03em;
+      }
+      .app.workspace-start-mode .topbar p {
+        max-width: 760px;
+        font-size: 14px;
+      }
+      .app.workspace-start-mode .top-actions {
+        display: none;
+      }
+      .app.workspace-start-mode .content {
+        min-height: auto;
+        padding: 14px var(--content-x) 18px;
+      }
+      .app.workspace-start-mode .command-center {
+        border-radius: 18px;
+        border-left: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        margin: 0;
+        width: 100%;
+        overflow: hidden;
+      }
+      .app.workspace-start-mode .workspace-launchpad {
+        grid-template-columns: minmax(0, 1.25fr) minmax(270px, .8fr) minmax(280px, .8fr);
+        min-height: 0;
+      }
+      .app.workspace-start-mode .workspace-title-row h2 {
+        font-size: clamp(36px, 6vw, 72px);
+      }
+      .app.workspace-start-mode .workspace-title-row p {
+        font-size: 15px;
+        max-width: 820px;
+      }
+      .app.workspace-start-mode .start-panels {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 14px 16px 16px;
+      }
       .app.workspace-start-mode .stepper {
         flex: 0 0 auto;
       }
@@ -704,6 +804,10 @@
         padding: 7px 10px;
         font: 850 10px var(--font-data);
         letter-spacing: .08em;
+        line-height: 1.2;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        text-align: center;
         text-transform: uppercase;
       }
       .workspace-switcher h3,
@@ -2709,6 +2813,10 @@
         }
         .grid-2 { grid-template-columns: 1fr; }
         .workspace-launchpad, .start-panels, .command-head, .intake-utility-grid, .compact-control-grid, .intake-step-grid, .intake-review-grid { grid-template-columns: 1fr; }
+        .app.workspace-start-mode .workspace-launchpad,
+        .app.workspace-start-mode .start-panels {
+          grid-template-columns: 1fr;
+        }
         .flow-lane { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .chain-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       }
@@ -2746,6 +2854,16 @@
           grid-template-columns: minmax(0, 1fr) auto;
           align-items: center;
         }
+        .app.workspace-start-mode .sidebar {
+          grid-template-columns: minmax(0, 1fr);
+          align-items: stretch;
+        }
+        .app.workspace-start-mode .sidebar-footer {
+          grid-template-columns: minmax(0, 1fr) auto;
+        }
+        .app.workspace-start-mode .resource-table {
+          min-width: 0;
+        }
         .reasoning { top: 12px; right: 12px; bottom: 12px; }
         .command-metrics {
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2760,6 +2878,29 @@
           grid-template-columns: 1fr;
         }
         .sidebar { max-height: none; }
+        .app.workspace-start-mode .sidebar {
+          padding: 12px;
+        }
+        .app.workspace-start-mode .sidebar-footer {
+          grid-template-columns: 1fr;
+        }
+        .app.workspace-start-mode .resource-table,
+        .app.workspace-start-mode .sidebar-footer > .button {
+          width: 100%;
+        }
+        .app.workspace-start-mode .topbar {
+          padding: 14px;
+        }
+        .app.workspace-start-mode .topbar h1 {
+          font-size: clamp(30px, 12vw, 44px);
+        }
+        .app.workspace-start-mode .content {
+          --content-x: 12px;
+          padding-top: 12px;
+        }
+        .app.workspace-start-mode .command-center {
+          border-radius: 14px;
+        }
         .topbar { align-items: flex-start; flex-direction: column; padding: 16px; }
         .top-actions, .top-actions .button, .run-status { width: 100%; justify-content: center; }
         .stage-jump { width: 100%; border-radius: 12px; }
@@ -3081,7 +3222,7 @@ Indigenous knowledge, Citizen science report.</p>
               </div>
               <div class="workspace-pill-row" aria-label="Workspace evidence routes">
                 <span class="workspace-pill">Structured interview</span><span class="workspace-pill">Open story</span><span class="workspace-pill">Indigenous knowledge</span><span class="workspace-pill">Citizen science report</span><span class="workspace-pill">Crowdsourced batch</span>
-                <span class="workspace-pill">B</span>
+                <span class="workspace-pill">Evidence grade B</span>
               </div>
               <div class="agent-action-row">
                 <div class="start-control">
@@ -5864,7 +6005,7 @@ narratives are not shared by accident.</p>
               </div>
               <div class="workspace-pill-row" aria-label="Workspace evidence routes">
                 ${modes.map((label) => `<span class="workspace-pill">${escapeHtml(label)}</span>`).join("")}
-                <span class="workspace-pill">${escapeHtml(evidenceGrade())}</span>
+                <span class="workspace-pill">Evidence grade ${escapeHtml(evidenceGrade())}</span>
               </div>
               <div class="agent-action-row">
                 <div class="start-control">
@@ -5874,7 +6015,7 @@ narratives are not shared by accident.</p>
                 <button class="button" data-open-workspace-manager type="button">${icon("folder")} Workspace manager</button>
                 <button class="button" data-open-assistant-panel type="button">${icon("assistant")} Research assistant</button>
                 ${state.workspace.started ? `<button class="button" data-duplicate-active-workspace type="button">${icon("copy")} Duplicate workspace</button>` : ""}
-                <a class="button" href="/manual#workspaces" target="_blank" rel="noreferrer">Workspace guide</a>
+                <a class="button" href="./manual.html#workspaces" target="_blank" rel="noreferrer">Workspace guide</a>
               </div>
             </section>
             <section class="workspace-switcher">
@@ -5947,7 +6088,8 @@ narratives are not shared by accident.</p>
                 <h2>Run this workspace from evidence to policy</h2>
                 <p>The workspace above defines the project. This workbench then shows the evidence ledger, governance status, model readiness, assistant guidance, and next action needed before a policy output can be trusted.</p>
                 <div class="reference-links" aria-label="Tool references">
-                  <a class="button" href="/manual" target="_blank" rel="noreferrer">Open tool manual</a>
+                  <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Open tool manual</a>
+                  <a class="button" href="./academy.html" target="_blank" rel="noreferrer">Open NDIM Academy</a>
                   <a class="button" href="#narrativeRepository" data-jump-repository>Open narrative repository</a>
                   <button class="button" data-open-full-repository type="button">Open full repository</button>
                 </div>
@@ -7361,7 +7503,7 @@ narratives are not shared by accident.</p>
             <h2>Ingest narratives with context</h2>
             <p class="copy">Choose the evidence route, attach SDMX context, then stage records into the governed narrative ledger.</p>
             <div class="reference-links" style="margin-bottom: 14px;">
-              <a class="button" href="/manual" target="_blank" rel="noreferrer">Open tool manual</a>
+              <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Open tool manual</a>
               <a class="button" href="#narrativeRepository" data-jump-repository>Open narrative repository</a>
               <button class="button" data-open-full-repository type="button">Open full repository</button>
             </div>
@@ -10361,12 +10503,12 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
       async function runIntakeOption() {
         const option = state.intakeOption || $("intakeOptionSelect")?.value || "manual";
         if (option === "manual") {
-          openSupportPage("/manual#narrative-intake", "Intake guide");
+          openSupportPage("./manual.html#narrative-intake", "Intake guide");
           return;
         }
         if (option === "corpus") {
           state.intakeOption = "manual";
-          openSupportPage("/manual", "Tool manual");
+          openSupportPage("./manual.html", "Tool manual");
           return;
         }
         if (option === "copy") {
