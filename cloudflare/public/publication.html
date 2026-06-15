@@ -1,38 +1,655 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NDIM Publication Workspace</title>
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="./index.html"><span class="brand-mark">ND</span><span><strong>NDIM Engine</strong><small>Publication</small></span></a>
-    <nav class="nav"><a href="./index.html">Home</a><a href="./manual.html">Manual</a><a href="./academy.html">Academy</a></nav>
-  </header>
-  <main class="narrow">
-    <p class="eyebrow">Scientific publication</p>
-    <h1>Prepare the argument before claiming the finding.</h1>
-    <p class="lede">
-      This page frames NDIM as a methods and software contribution. The current
-      status should be described carefully: conceptually developed, implemented
-      as an alpha tool, and awaiting field validation with double-coded data.
-    </p>
-    <section class="lesson">
-      <h2>Suggested article shape</h2>
-      <ol>
-        <li>Problem: policy teams need to use narrative evidence without losing context.</li>
-        <li>Gap: diffusion models often simplify meaning too early.</li>
-        <li>Method: NDIM links governed narratives, inoculation-aware encoding, simulation, uncertainty, and policy output.</li>
-        <li>Validation plan: double coding, inter-rater reliability, LLM-human agreement, and field testing.</li>
-      </ol>
-    </section>
-    <section class="lesson">
-      <h2>Claim boundary</h2>
-      <p>Until field validation is complete, NDIM should not be presented as a proven predictor. It should be presented as a research workflow and computational framework ready for empirical testing.</p>
-    </section>
-  </main>
-  <footer><p><a href="./index.html">Back to NDIM home</a></p></footer>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NDIM Scientific Publication Workspace</title>
+    <style>
+      :root {
+        --paper: #fbfaf7;
+        --panel: #fffdf9;
+        --wash: #f1eadf;
+        --ink: #12100d;
+        --muted: #625849;
+        --soft: #9c8d77;
+        --line: #d3c7b5;
+        --accent: #111111;
+        --green: #5f7b50;
+        --amber: #a8732f;
+        --red: #9f493d;
+        --blue: #385c8f;
+        --font-ui: "Myriad Pro", "Myriad Set Pro", "Segoe UI", Arial, sans-serif;
+        --font-data: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: linear-gradient(135deg, #fbfaf7, #f7f0e7 70%, #fbfaf7);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        line-height: 1.55;
+      }
+      main {
+        width: min(1180px, calc(100% - 28px));
+        margin: 0 auto;
+        padding: 16px 0 72px;
+      }
+      h1, h2, h3 { margin: 0 0 10px; line-height: 1.1; }
+      h1 { font-size: clamp(34px, 5.4vw, 64px); letter-spacing: -.045em; max-width: 940px; }
+      h2 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -.03em; }
+      h3 { font-size: 20px; letter-spacing: -.02em; }
+      p, li, label, input, select, textarea, button { font-size: 16px; }
+      p, li { color: var(--muted); }
+      a { color: var(--ink); font-weight: 850; }
+      textarea, input, select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 253, 249, .95);
+        color: var(--ink);
+        padding: 12px;
+        font-family: var(--font-ui);
+      }
+      textarea { min-height: 144px; resize: vertical; }
+      label { display: grid; gap: 6px; font-weight: 850; }
+      label span, .mono {
+        color: var(--soft);
+        font: 850 11px var(--font-data);
+        letter-spacing: .13em;
+        text-transform: uppercase;
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(251, 250, 247, .94);
+        backdrop-filter: blur(16px);
+      }
+      .topbar nav { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      .button, button {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+        color: var(--ink);
+        padding: 10px 13px;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .button:hover, button:hover { border-color: var(--accent); color: var(--ink); }
+      .primary { background: var(--accent); border-color: var(--accent); color: white; }
+      .primary:hover { color: white; background: #2a241f; }
+      .hero, .card, details {
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: rgba(255, 253, 249, .78);
+        box-shadow: 0 20px 64px rgba(70, 55, 30, .08);
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+        gap: 24px;
+        padding: clamp(22px, 4vw, 42px);
+        margin-bottom: 18px;
+      }
+      .hero-copy { max-width: 820px; }
+      .source-note {
+        border-left: 4px solid var(--green);
+        padding: 12px 14px;
+        background: rgba(95, 123, 80, .08);
+        border-radius: 10px;
+        color: var(--muted);
+      }
+      .grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 18px; align-items: start; }
+      .card { padding: 18px; }
+      .stack { display: grid; gap: 14px; }
+      .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #efbd67;
+        border-radius: 999px;
+        padding: 8px 11px;
+        color: #8a672d;
+        background: rgba(255, 247, 231, .82);
+        font: 850 12px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+      .readiness { display: grid; gap: 9px; }
+      .check {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: rgba(251, 250, 247, .8);
+      }
+      .check strong { color: var(--ink); }
+      .status { font: 850 11px var(--font-data); letter-spacing: .1em; text-transform: uppercase; color: var(--soft); }
+      .ok { color: var(--green); }
+      .warn { color: var(--amber); }
+      .stop { color: var(--red); }
+      details { padding: 0; overflow: hidden; }
+      summary {
+        padding: 16px 18px;
+        cursor: pointer;
+        font-size: 20px;
+        font-weight: 900;
+      }
+      details > div { padding: 0 18px 18px; }
+      pre {
+        overflow: auto;
+        max-height: 420px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #14110e;
+        color: #f8f0e4;
+        padding: 14px;
+        font: 13px/1.55 var(--font-data);
+      }
+      .preview {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        background: white;
+      }
+      .preview h3 { margin-top: 18px; }
+      .small { font-size: 14px; color: var(--muted); }
+      .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .quiet-list { margin: 0; padding-left: 18px; }
+      .quiet-list li { margin: 6px 0; }
+      .callout {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        background: rgba(241, 234, 223, .55);
+      }
+      footer { margin-top: 24px; color: var(--muted); }
+      @media (max-width: 900px) {
+        .hero, .grid, .two, .three { grid-template-columns: 1fr; }
+        .topbar { position: static; align-items: flex-start; flex-direction: column; }
+        .topbar nav { justify-content: flex-start; }
+      }
+      @media print {
+        .topbar, .hero, .editor, .exports, footer { display: none !important; }
+        body { background: white; }
+        main { width: auto; padding: 0; }
+        .card { border: 0; box-shadow: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <div>
+          <div class="mono">NDIM Engine</div>
+          <strong>Scientific Publication Workspace</strong>
+        </div>
+        <nav>
+          <a class="button" href="./index.html">Back to tool</a>
+          <a class="button" href="./manual.html">Manual</a>
+          <a class="button" href="./academy.html">Academy</a>
+          <a class="button" href="https://www.frontiersin.org/journals/human-dynamics" target="_blank" rel="noreferrer">Journal site</a>
+        </nav>
+      </header>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="mono">Publication planning</p>
+          <h1>Turn NDIM into a clean, honest manuscript plan.</h1>
+          <p>
+            This workspace helps you prepare a publication-quality draft without pretending that the method
+            is already fully validated. It keeps the story simple: what NDIM is, why it differs from ordinary
+            misinformation-contagion models, what has been implemented, what still needs evidence, and which
+            claims are safe to make at alpha stage.
+          </p>
+          <p class="source-note">
+            Format guidance is based on Frontiers author guidance, Frontiers article-type guidance, and the
+            Frontiers in Human Dynamics journal sections. Always confirm the final manuscript against the
+            current journal website before submission.
+          </p>
+        </div>
+        <div class="card stack">
+          <label>
+            <span>Article type</span>
+            <select id="articleType">
+              <option value="methods">Methods</option>
+              <option value="conceptual">Conceptual Analysis</option>
+              <option value="policy">Policy and Practice Reviews</option>
+              <option value="tech">Technology and Code</option>
+              <option value="brief">Policy Brief</option>
+              <option value="research">Original Research</option>
+              <option value="data">Data Report</option>
+            </select>
+          </label>
+          <label>
+            <span>Target section</span>
+            <select id="journalSection">
+              <option>Environment, Politics and Society</option>
+              <option>Population, Environment and Development</option>
+              <option>Digital Impacts</option>
+              <option>Social Networks</option>
+              <option>Institutions and Collective Action</option>
+              <option>Dynamics of Migration and (Im)Mobility</option>
+            </select>
+          </label>
+          <div id="articleAdvice" class="callout small"></div>
+          <div class="button-row">
+            <button class="primary" id="exportTex" type="button">Export LaTeX</button>
+            <button id="printPdf" type="button">Print to PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="stack editor">
+          <div class="card stack">
+            <h2>Manuscript basics</h2>
+            <div class="two">
+              <label><span>Working title</span><input id="title" value="The Narrative Diffusion and Inoculation Model: A Governed Evidence-to-Policy Engine for Clean-Cooking Narratives" /></label>
+              <label><span>Running title</span><input id="runningTitle" value="NDIM Engine" /></label>
+            </div>
+            <div class="two">
+              <label><span>Authors</span><input id="authors" value="Cecil Ouma; collaborators to be added" /></label>
+              <label><span>Keywords</span><input id="keywords" value="narrative diffusion; inoculation theory; digital twin; clean cooking; policy modelling; Rwanda" /></label>
+            </div>
+          </div>
+
+          <div class="card stack">
+            <h2>Core manuscript text</h2>
+            <label><span>Plain-language abstract</span><textarea id="abstractText"></textarea></label>
+            <label><span>Scientific contribution</span><textarea id="contributionText"></textarea></label>
+            <label><span>Methods summary</span><textarea id="methodsText"></textarea></label>
+            <label><span>Evidence, validation, and limitations</span><textarea id="limitationsText"></textarea></label>
+          </div>
+
+          <details open>
+            <summary>Manuscript outline</summary>
+            <div>
+              <ol class="quiet-list">
+                <li>Problem: clean-cooking adoption is shaped by stories, trust, fear, cost, identity, and social influence.</li>
+                <li>Gap: many contagion models describe spread, but do not preserve governed narrative evidence through to policy output.</li>
+                <li>Innovation: NDIM links narrative ingestion, SDMX-style governance, inoculation-aware encoding, simulation, uncertainty, and policy synthesis.</li>
+                <li>Method: describe evidence routes, ledger, encoding variables, compartmental model, agent model, digital twin, Bayesian update, RL optimizer, and policy brief.</li>
+                <li>Alpha evidence: report software stress tests and synthetic narratives as engineering validation only.</li>
+                <li>Future validation: double coding, inter-rater reliability, LLM-human agreement, field outcomes, and sensitivity analysis.</li>
+              </ol>
+            </div>
+          </details>
+
+          <details>
+            <summary>LaTeX source preview</summary>
+            <div><pre id="latexPreview"></pre></div>
+          </details>
+
+          <details class="exports" open>
+            <summary>Exports</summary>
+            <div class="button-row">
+              <button id="exportBib" type="button">Export bibliography starter</button>
+              <button id="exportMd" type="button">Export Markdown outline</button>
+              <button id="exportHtml" type="button">Export HTML brief</button>
+              <button id="copyChecklist" type="button">Copy author checklist</button>
+            </div>
+            <p class="small">
+              LaTeX export is a source draft. To submit to Frontiers, use the current Frontiers template and
+              article instructions from the journal website.
+            </p>
+          </details>
+        </div>
+
+        <aside class="stack">
+          <div class="card stack">
+            <h2>Publication readiness</h2>
+            <div class="readiness" id="readiness"></div>
+          </div>
+          <div class="card stack">
+            <h2>Claim boundary checker</h2>
+            <p class="small">This catches language that may overclaim the alpha-stage method.</p>
+            <div id="claimReport" class="readiness"></div>
+          </div>
+          <div class="card stack">
+            <h2>Frontiers fit</h2>
+            <p id="fitText"></p>
+            <ul class="quiet-list">
+              <li><a href="https://www.frontiersin.org/guidelines/author-guidelines" target="_blank" rel="noreferrer">Frontiers author guidelines</a></li>
+              <li><a href="https://www.frontiersin.org/about/article-types" target="_blank" rel="noreferrer">Frontiers article types</a></li>
+              <li><a href="https://www.frontiersin.org/journals/human-dynamics" target="_blank" rel="noreferrer">Frontiers in Human Dynamics</a></li>
+              <li><a href="https://www.frontiersin.org/guidelines/author-guidelines#templates" target="_blank" rel="noreferrer">Frontiers templates</a></li>
+            </ul>
+          </div>
+          <div class="card stack">
+            <h2>Readable preview</h2>
+            <div class="preview" id="htmlPreview"></div>
+          </div>
+        </aside>
+      </section>
+
+      <footer>
+        <p>
+          This workspace is a drafting aid for NDIM authors. It does not replace peer review, ethics review,
+          data validation, or the final journal formatting instructions.
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const defaults = {
+        abstractText:
+          "Clean-cooking adoption is not only a technology problem. It is also a narrative problem. People decide through stories about safety, cost, time, status, trust, gender roles, and what neighbours have experienced. The Narrative Diffusion and Inoculation Model (NDIM) is proposed as a governed evidence-to-policy workflow that preserves these narratives from field intake to policy output. NDIM combines structured narrative ingestion, SDMX-style evidence governance, human and LLM-assisted encoding, compartmental and agent-based simulation, digital-twin feedback, Bayesian uncertainty updating, reinforcement-learning policy search, and inoculation-message testing. This alpha manuscript positions NDIM as a method and software architecture. It does not claim field efficacy until double-coded narratives, community validation, and outcome data are available.",
+        contributionText:
+          "NDIM's contribution is the integration of narrative governance and simulation. Existing misinformation-diffusion models often begin after stories have already been simplified into states such as exposed, infected, or recovered. NDIM starts earlier. It asks where the story came from, who can see it, whether it passed review, how it should be encoded, and how the resulting evidence should alter model assumptions. That makes the workflow useful for researchers and policy teams who need both computational insight and an audit trail.",
+        methodsText:
+          "The workflow is organized as evidence intake, SDMX-style validation, repository approval, narrative encoding, compartmental modelling, agent-based modelling, digital-twin feedback, Bayesian updating, policy optimization, regional analysis, knowledge graph synthesis, inoculation lab testing, and policy-brief export. The executable alpha uses deterministic local fallbacks where external LLM access is not available. The publication should distinguish implemented software functionality from empirically validated claims.",
+        limitationsText:
+          "The current alpha should be treated as a research platform under development. Synthetic narratives are useful for stress testing but cannot prove policy effectiveness. Required validation includes double-coded human annotations, inter-rater reliability, LLM-human agreement, score calibration, sensitivity analysis, uncertainty reporting, and prospective field evaluation."
+      };
+      const articleMeta = {
+        methods: {
+          label: "Methods",
+          status: "Best current fit",
+          advice: "Use this when the paper is mainly about NDIM as a method, workflow, and reproducible software pipeline.",
+          fit: "A Methods framing is the cleanest current option because the alpha can describe the workflow rigorously without overclaiming field results."
+        },
+        conceptual: {
+          label: "Conceptual Analysis",
+          status: "Strong fit",
+          advice: "Use this when the paper emphasizes why narrative governance, inoculation theory, and diffusion modelling belong together.",
+          fit: "A conceptual framing works if the manuscript foregrounds theory, model logic, and the contribution to human dynamics."
+        },
+        policy: {
+          label: "Policy and Practice Reviews",
+          status: "Possible fit",
+          advice: "Use this if the paper reviews clean-cooking policy practice and shows how NDIM could support decision workflows.",
+          fit: "This is suitable if the manuscript becomes a policy-methods review, not just a software description."
+        },
+        tech: {
+          label: "Technology and Code",
+          status: "Possible fit",
+          advice: "Use this if the paper emphasizes the software, repository, reproducibility, and implementation details.",
+          fit: "This can work if the code, architecture, tests, and availability are central to the article."
+        },
+        brief: {
+          label: "Policy Brief",
+          status: "Short format",
+          advice: "Use this for a shorter decision-facing article, not a full methods manuscript.",
+          fit: "A brief is useful after the method is validated enough to support specific policy recommendations."
+        },
+        research: {
+          label: "Original Research",
+          status: "Not ready yet",
+          advice: "Use only after real field data, validation, results, and inferential claims are available.",
+          fit: "Original Research needs empirical evidence. The current alpha should not be framed as completed field validation."
+        },
+        data: {
+          label: "Data Report",
+          status: "Not ready yet",
+          advice: "Use only after a documented, consented, de-identified dataset is ready for release or controlled access.",
+          fit: "A Data Report needs a real dataset and governance documentation. Synthetic stress-test files are not enough."
+        }
+      };
+      function state() {
+        return {
+          articleType: $("articleType").value,
+          journalSection: $("journalSection").value,
+          title: $("title").value.trim(),
+          runningTitle: $("runningTitle").value.trim(),
+          authors: $("authors").value.trim(),
+          keywords: $("keywords").value.trim(),
+          abstractText: $("abstractText").value.trim(),
+          contributionText: $("contributionText").value.trim(),
+          methodsText: $("methodsText").value.trim(),
+          limitationsText: $("limitationsText").value.trim()
+        };
+      }
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
+      }
+      function latexEscape(value) {
+        return String(value || "")
+          .replace(/\\/g, "\\textbackslash{}")
+          .replace(/([#$%&_{}])/g, "\\$1")
+          .replace(/~/g, "\\textasciitilde{}")
+          .replace(/\^/g, "\\textasciicircum{}");
+      }
+      function sentenceBlock(value) {
+        return escapeHtml(value).replace(/\n+/g, "</p><p>");
+      }
+      function readinessRows(s) {
+        const wordCount = (s.abstractText + " " + s.methodsText + " " + s.limitationsText).split(/\s+/).filter(Boolean).length;
+        const meta = articleMeta[s.articleType];
+        return [
+          ["Article framing", meta.status, meta.status.includes("Not") ? "stop" : meta.status.includes("Possible") ? "warn" : "ok"],
+          ["Title and authors", s.title && s.authors ? "ready" : "missing", s.title && s.authors ? "ok" : "warn"],
+          ["Abstract length", wordCount >= 120 ? "reasonable" : "too thin", wordCount >= 120 ? "ok" : "warn"],
+          ["Validation boundary", /alpha|synthetic|validation|field/i.test(s.limitationsText) ? "explicit" : "needs clearer limits", /alpha|synthetic|validation|field/i.test(s.limitationsText) ? "ok" : "warn"],
+          ["Export readiness", "LaTeX, BibTeX, Markdown, HTML, print-to-PDF", "ok"]
+        ];
+      }
+      function overclaimWarnings(s) {
+        const text = [s.abstractText, s.contributionText, s.methodsText, s.limitationsText].join(" ").toLowerCase();
+        const warnings = [];
+        [
+          ["validated", "Use 'to be validated' unless you have real validation results."],
+          ["proven", "Avoid 'proven' at alpha stage. Use 'proposed' or 'tested in software stress tests'."],
+          ["causal", "Causal claims need field or experimental evidence."],
+          ["effective intervention", "Effectiveness claims need outcome evidence."],
+          ["policy-ready", "Say 'policy-supporting prototype' unless human-reviewed deployment evidence exists."]
+        ].forEach(([term, message]) => {
+          if (text.includes(term)) warnings.push(message);
+        });
+        if (!warnings.length) warnings.push("No obvious overclaim language detected. Still review carefully before submission.");
+        return warnings;
+      }
+      function buildLatex() {
+        const s = state();
+        const meta = articleMeta[s.articleType];
+        return `% NDIM Frontiers source draft
+% Use the current official Frontiers LaTeX template/class before submission.
+\\documentclass[utf8]{frontiersSCNS}
+\\usepackage{url,hyperref,lineno,microtype}
+\\linenumbers
+\\begin{document}
+
+\\title{${latexEscape(s.title)}}
+\\author{${latexEscape(s.authors)}}
+\\institute{Affiliations to be completed}
+\\maketitle
+
+\\begin{abstract}
+${latexEscape(s.abstractText)}
+\\end{abstract}
+
+\\section{Introduction}
+${latexEscape(s.contributionText)}
+
+\\section{Methods}
+${latexEscape(s.methodsText)}
+
+\\section{Validation roadmap and limitations}
+${latexEscape(s.limitationsText)}
+
+\\section{Article positioning}
+Target article type: ${latexEscape(meta.label)}. Target journal section: ${latexEscape(s.journalSection)}.
+
+\\section{Data availability statement}
+No field dataset is released with this alpha draft. Synthetic stress-test narratives are used only for software testing.
+
+\\section{Ethics statement}
+Any field deployment involving human narratives requires ethics review, consent, community engagement, and data governance approval.
+
+\\section{Author contributions}
+To be completed by the author team.
+
+\\section{Conflict of interest}
+To be completed by the author team.
+
+\\bibliographystyle{frontiersinSCNS}
+\\bibliography{ndim-frontiers-starter}
+
+\\end{document}
+`;
+      }
+      function buildBib() {
+        return `@misc{frontiersAuthorGuidelines,
+  title = {Frontiers Author Guidelines},
+  author = {{Frontiers}},
+  year = {2026},
+  url = {https://www.frontiersin.org/guidelines/author-guidelines}
+}
+
+@misc{frontiersArticleTypes,
+  title = {Frontiers Article Types},
+  author = {{Frontiers}},
+  year = {2026},
+  url = {https://www.frontiersin.org/about/article-types}
+}
+
+@misc{frontiersHumanDynamics,
+  title = {Frontiers in Human Dynamics},
+  author = {{Frontiers}},
+  year = {2026},
+  url = {https://www.frontiersin.org/journals/human-dynamics}
+}
+`;
+      }
+      function buildMarkdown() {
+        const s = state();
+        return `# ${s.title}
+
+Authors: ${s.authors}
+
+Target article type: ${articleMeta[s.articleType].label}
+Target section: ${s.journalSection}
+
+## Abstract
+${s.abstractText}
+
+## Scientific contribution
+${s.contributionText}
+
+## Methods
+${s.methodsText}
+
+## Validation and limitations
+${s.limitationsText}
+
+## Publication warning
+This is an alpha-stage publication plan. Do not claim field validation until the required data and analysis exist.
+`;
+      }
+      function buildHtmlExport() {
+        const s = state();
+        return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(s.title)}</title><style>body{font-family:Arial,sans-serif;max-width:820px;margin:40px auto;line-height:1.6}h1{line-height:1.1}</style></head><body>${previewHtml()}</body></html>`;
+      }
+      function previewHtml() {
+        const s = state();
+        return `<h1>${escapeHtml(s.title)}</h1>
+          <p><strong>Authors:</strong> ${escapeHtml(s.authors)}</p>
+          <p><strong>Target:</strong> ${escapeHtml(articleMeta[s.articleType].label)} in ${escapeHtml(s.journalSection)}</p>
+          <h3>Abstract</h3><p>${sentenceBlock(s.abstractText)}</p>
+          <h3>Contribution</h3><p>${sentenceBlock(s.contributionText)}</p>
+          <h3>Methods</h3><p>${sentenceBlock(s.methodsText)}</p>
+          <h3>Validation and limitations</h3><p>${sentenceBlock(s.limitationsText)}</p>`;
+      }
+      function downloadBlob(filename, content, type = "text/plain") {
+        const blob = content instanceof Blob ? content : new Blob([content], { type });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(a.href);
+        a.remove();
+      }
+      function cleanName(value, ext) {
+        const base = String(value || "ndim-frontiers-manuscript").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ndim-frontiers-manuscript";
+        return `${base}.${ext}`;
+      }
+      async function copyChecklist() {
+        const rows = [
+          "1. Confirm article type and journal section on the current Frontiers website.",
+          "2. Remove all claims of field validation unless real validation data are included.",
+          "3. Add ethics, data availability, author contribution, and conflict-of-interest statements.",
+          "4. Add references beyond the starter Frontiers sources.",
+          "5. Compile the final submission with the official current Frontiers template."
+        ];
+        const text = rows.join("\\n");
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        } catch (_) {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "readonly");
+          area.style.position = "fixed";
+          area.style.left = "-9999px";
+          document.body.appendChild(area);
+          area.select();
+          try { copied = document.execCommand("copy"); } catch (__) { copied = false; }
+          area.remove();
+        }
+        $("copyChecklist").textContent = copied ? "Checklist copied" : "Checklist ready";
+        setTimeout(() => $("copyChecklist").textContent = "Copy author checklist", 1400);
+      }
+      function render() {
+        const s = state();
+        const meta = articleMeta[s.articleType];
+        $("articleAdvice").innerHTML = `<strong>${escapeHtml(meta.label)}:</strong> ${escapeHtml(meta.advice)}`;
+        $("fitText").textContent = meta.fit;
+        $("readiness").innerHTML = readinessRows(s).map(([label, value, tone]) =>
+          `<div class="check"><strong>${escapeHtml(label)}</strong><span class="status ${tone}">${escapeHtml(value)}</span></div>`
+        ).join("");
+        $("claimReport").innerHTML = overclaimWarnings(s).map((msg, index) =>
+          `<div class="check"><strong>${index === 0 ? "Review note" : "Also check"}</strong><span class="status ${msg.startsWith("No obvious") ? "ok" : "warn"}">${escapeHtml(msg)}</span></div>`
+        ).join("");
+        $("latexPreview").textContent = buildLatex();
+        $("htmlPreview").innerHTML = previewHtml();
+      }
+      function init() {
+        $("abstractText").value = defaults.abstractText;
+        $("contributionText").value = defaults.contributionText;
+        $("methodsText").value = defaults.methodsText;
+        $("limitationsText").value = defaults.limitationsText;
+        ["articleType", "journalSection", "title", "runningTitle", "authors", "keywords", "abstractText", "contributionText", "methodsText", "limitationsText"].forEach((id) => {
+          $(id).addEventListener("input", render);
+          $(id).addEventListener("change", render);
+        });
+        $("exportTex").addEventListener("click", () => downloadBlob(cleanName($("title").value, "tex"), buildLatex(), "application/x-tex"));
+        $("exportBib").addEventListener("click", () => downloadBlob("ndim-frontiers-starter.bib", buildBib(), "application/x-bibtex"));
+        $("exportMd").addEventListener("click", () => downloadBlob("ndim-frontiers-outline.md", buildMarkdown(), "text/markdown"));
+        $("exportHtml").addEventListener("click", () => downloadBlob("ndim-frontiers-preview.html", buildHtmlExport(), "text/html"));
+        $("printPdf").addEventListener("click", () => window.print());
+        $("copyChecklist").addEventListener("click", copyChecklist);
+        window.buildLatex = buildLatex;
+        window.buildMarkdown = buildMarkdown;
+        window.buildHtmlExport = buildHtmlExport;
+        window.overclaimWarnings = overclaimWarnings;
+        render();
+      }
+      init();
+    </script>
+  </body>
 </html>

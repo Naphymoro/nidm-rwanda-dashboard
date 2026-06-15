@@ -3242,6 +3242,10 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         }
         .grid-2 { grid-template-columns: 1fr; }
         .workspace-launchpad, .workspace-side-stack, .workspace-command-row, .start-panels, .command-head, .workbench-overview, .workbench-science-grid, .os-workbench-grid, .intake-utility-grid, .compact-control-grid, .intake-step-grid, .intake-review-grid { grid-template-columns: 1fr; }
+        .science-os .workspace-launchpad,
+        .science-os .os-workbench-grid {
+          grid-template-columns: 1fr;
+        }
         .os-metrics-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .os-stage-insight-grid { grid-template-columns: 1fr; }
         .flow-lane { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -3281,6 +3285,34 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           grid-template-columns: minmax(0, 1fr) auto;
           align-items: center;
         }
+        .app.workspace-start-mode .sidebar {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(260px, auto);
+          align-items: center;
+          gap: 12px;
+          padding: 0 12px;
+        }
+        .app.workspace-start-mode .brand {
+          min-height: 58px;
+          height: auto;
+          border-bottom: 0;
+          padding: 0;
+        }
+        .app.workspace-start-mode .sidebar-footer {
+          grid-template-columns: repeat(4, minmax(0, auto));
+          align-items: center;
+          border-top: 0;
+          padding: 0;
+        }
+        .app.workspace-start-mode .sidebar-footer .eyebrow {
+          margin: 0;
+          white-space: nowrap;
+        }
+        .app.workspace-start-mode .sidebar-footer .button {
+          min-height: 38px;
+          padding: 8px 10px;
+          white-space: nowrap;
+        }
         .reasoning { top: 12px; right: 12px; bottom: 12px; }
         .command-metrics {
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3295,6 +3327,15 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           grid-template-columns: 1fr;
         }
         .sidebar { max-height: none; }
+        .app.workspace-start-mode .sidebar {
+          display: block;
+          padding: 0;
+        }
+        .app.workspace-start-mode .sidebar-footer {
+          grid-template-columns: 1fr;
+          padding: 10px 12px;
+          border-top: 1px solid var(--line);
+        }
         .topbar { align-items: flex-start; flex-direction: column; padding: 16px; }
         .top-actions, .top-actions .button, .run-status { width: 100%; justify-content: center; }
         .stage-jump { width: 100%; border-radius: 12px; }
@@ -3506,6 +3547,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           </div>
           <div class="top-actions">
             <button class="workspace-chip" id="workspaceButton" type="button" title="Open Workspace Manager">Workspace: <span id="workspaceName">loading</span></button>
+            <a class="button" href="/manual" target="_blank" rel="noreferrer">Manual</a>
+            <a class="button" href="/academy" target="_blank" rel="noreferrer">Academy</a>
+            <a class="button" href="/publication" target="_blank" rel="noreferrer">Publication</a>
             <select id="stageJumpSelect" class="stage-jump" aria-label="Jump to workflow stage"></select>
             <button class="button primary" id="quickRunButton" type="button">Run current stage</button>
             <button class="button" id="toggleTraceButton" type="button">Activity log</button>

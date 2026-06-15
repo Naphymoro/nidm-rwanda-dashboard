@@ -1,49 +1,658 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NDIM Manual</title>
-  <link rel="stylesheet" href="./styles.css" />
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="./index.html"><span class="brand-mark">ND</span><span><strong>NDIM Engine</strong><small>Manual</small></span></a>
-    <nav class="nav"><a href="./index.html">Home</a><a href="./academy.html">Academy</a><a href="./publication.html">Publication</a></nav>
-  </header>
-  <main class="narrow">
-    <p class="eyebrow">Manual</p>
-    <h1>How to use NDIM without getting lost.</h1>
-    <p class="lede">
-      Start with evidence. Do not start with the model. NDIM treats the model as
-      advisory until narratives have source, place, consent, review status, and
-      enough context to be interpreted responsibly.
-    </p>
-    <details open>
-      <summary>1. Create or open a workspace</summary>
-      <p>A workspace keeps one project separate from another. For example, ClimateTales Rwanda should live in its own workspace instead of being mixed with a generic clean-cooking pilot.</p>
-    </details>
-    <details>
-      <summary>2. Ingest narratives</summary>
-      <p>Choose the evidence route, load or paste the story, then add country, administrative unit, language, source, period, consent, and visibility.</p>
-    </details>
-    <details>
-      <summary>3. Review and commit evidence</summary>
-      <p>Approved records enter the accepted repository. Rejected records remain traceable but should not drive policy claims.</p>
-    </details>
-    <details>
-      <summary>4. Encode meaning</summary>
-      <p>Manual, AI, and hybrid encoding should be compared. Scores should be understandable and attached back to the narrative record.</p>
-    </details>
-    <details>
-      <summary>5. Model and interpret</summary>
-      <p>Compartmental and agent-based models help explore what may happen under assumptions. They are not proof by themselves.</p>
-    </details>
-    <details>
-      <summary>6. Export a policy brief</summary>
-      <p>The final output should be a readable decision brief with confidence level, evidence grade, assumptions, limitations, and required human review.</p>
-    </details>
-  </main>
-  <footer><p><a href="./index.html">Back to NDIM home</a></p></footer>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NDIM Engine Manual</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <style>
+      :root {
+        --ink:#11100e;
+        --body:#564b3d;
+        --muted:#8a7d68;
+        --paper:#fbfaf7;
+        --line:#d6cbbb;
+        --soft:#f3efe7;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Myriad Pro", "Segoe UI", Arial, sans-serif;
+        line-height: 1.65;
+      }
+      main {
+        width: min(980px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 34px 0 80px;
+      }
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+        margin-bottom: 18px;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(34px, 6vw, 58px);
+        line-height: 1.02;
+        letter-spacing: -.02em;
+      }
+      h2, h3 { line-height: 1.22; }
+      p, li, td {
+        color: var(--body);
+        font-size: 16px;
+      }
+      a {
+        color: var(--ink);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+      .small-link-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 14px;
+        font-size: 14px;
+      }
+      details {
+        border-top: 1px solid var(--line);
+        padding: 0;
+      }
+      details:last-of-type { border-bottom: 1px solid var(--line); }
+      summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 18px 0;
+        font-size: 22px;
+        font-weight: 800;
+      }
+      summary::-webkit-details-marker { display: none; }
+      summary::before {
+        content: "+";
+        display: inline-block;
+        width: 26px;
+        color: var(--muted);
+        font-family: Consolas, monospace;
+      }
+      details[open] summary::before { content: "-"; }
+      .section-body {
+        padding: 0 0 24px 26px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0 18px;
+        background: white;
+      }
+      th, td {
+        border: 1px solid var(--line);
+        padding: 9px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--soft);
+        color: var(--ink);
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      code, pre, .mono {
+        font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+      }
+      pre {
+        background: #11100e;
+        color: #f7efe3;
+        border-radius: 8px;
+        padding: 12px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
+      .note {
+        border-left: 3px solid var(--ink);
+        background: var(--soft);
+        padding: 10px 12px;
+        margin: 14px 0;
+      }
+      .callout {
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 10px;
+        padding: 12px;
+        margin: 14px 0;
+      }
+      .callout strong {
+        color: var(--ink);
+      }
+      .exercise-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin: 14px 0;
+      }
+      .exercise-card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: white;
+        padding: 12px;
+      }
+      .exercise-card h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+      .exercise-card p {
+        margin: 0;
+        font-size: 14px;
+      }
+      .math-display {
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 12px 0;
+        overflow-x: auto;
+      }
+      .math-display.rendered-fallback {
+        font-family: "Cambria Math", "STIX Two Math", Georgia, serif;
+        font-size: 20px;
+        line-height: 1.9;
+      }
+      .math-display .katex-display {
+        margin: 0;
+        text-align: left;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      .eq-line {
+        display: flex;
+        align-items: center;
+        gap: .45em;
+        white-space: nowrap;
+      }
+      .eq-var { font-style: italic; }
+      .eq-op { color: var(--muted); }
+      .frac {
+        display: inline-grid;
+        grid-template-rows: auto auto;
+        text-align: center;
+        line-height: 1.1;
+        vertical-align: middle;
+        margin-right: .1em;
+      }
+      .frac > span:first-child {
+        border-bottom: 1px solid currentColor;
+        padding: 0 .2em .08em;
+      }
+      .frac > span:last-child {
+        padding: .08em .2em 0;
+      }
+      .eq-matrix {
+        display: inline-grid;
+        gap: .15em;
+        padding-left: .45em;
+        border-left: 2px solid var(--line);
+      }
+      #backTop {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        color: var(--ink);
+        padding: 9px 12px;
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 8px 24px rgba(40, 32, 20, .10);
+      }
+      @media (max-width: 720px) {
+        main { width: min(100% - 22px, 980px); padding-top: 18px; }
+        summary { font-size: 19px; }
+        .section-body { padding-left: 0; }
+        table, thead, tbody, th, td, tr { display: block; }
+        thead { display: none; }
+        tr { border: 1px solid var(--line); margin: 10px 0; background: white; }
+        td { border: 0; border-bottom: 1px solid var(--line); }
+        .exercise-grid { grid-template-columns: 1fr; }
+        td::before {
+          content: attr(data-label);
+          display: block;
+          color: var(--muted);
+          font: 800 11px "Cascadia Mono", Consolas, monospace;
+          letter-spacing: .07em;
+          text-transform: uppercase;
+        }
+      }
+    </style>
+  </head>
+  <body id="top">
+    <main>
+      <header>
+        <p class="mono">NDIM ENGINE MANUAL</p>
+        <h1>Narrative Diffusion and Inoculation Model</h1>
+        <p>NDIM is a local-first scientific and policy tool for turning governed narrative evidence into model inputs, uncertainty-aware simulations, intervention tests, and a human-reviewed policy brief.</p>
+        <p class="small-link-row">
+          <a href="./index.html">Back to tool</a>
+          <a href="./academy.html">NDIM Academy</a>
+          <a href="./publication.html">Scientific Publication</a>
+          <a href="./academy.html#modules">Academy modules</a>
+          <a href="./academy.html#practice">Academy exercises</a>
+          <a href="#installation">Installation</a>
+          <a href="#source-access">Source access</a>
+          <a href="#workspaces">Workspaces</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#equations">Equations</a>
+          <a href="#repository">Repository</a>
+          <a href="#cloud-repository">Google repository</a>
+          <a href="#climatetales">ClimateTales tutorial</a>
+          <a href="#multimodal">Multimodal roadmap</a>
+        </p>
+      </header>
+
+      <details id="academy-learning-path" open>
+        <summary>Academy learning path</summary>
+        <div class="section-body">
+          <p>The manual is the operating reference. <a href="./academy.html">NDIM Academy</a> is the guided course. Use Academy when a novice user needs plain-language lessons, worked examples, exercises, and interpretation support.</p>
+          <table>
+            <thead><tr><th>User need</th><th>Best place</th><th>What the user gets</th></tr></thead>
+            <tbody>
+              <tr><td data-label="User need">Learn NDIM from scratch</td><td data-label="Best place"><a href="./academy.html#modules">Academy modules</a></td><td data-label="What the user gets">Full lessons with objectives, key terms, examples, exercises, observations, interpretations, and common mistakes.</td></tr>
+              <tr><td data-label="User need">Practise with ClimateTales Rwanda</td><td data-label="Best place"><a href="./academy.html#module-climatetales">ClimateTales module</a></td><td data-label="What the user gets">A route-by-route synthetic evidence exercise from intake to policy brief.</td></tr>
+              <tr><td data-label="User need">Operate the tool quickly</td><td data-label="Best place"><a href="#workflow">Manual workflow section</a></td><td data-label="What the user gets">Concise stage instructions and output expectations.</td></tr>
+              <tr><td data-label="User need">Explain equations simply</td><td data-label="Best place"><a href="./academy.html#equations">Academy equations</a></td><td data-label="What the user gets">Plain-language explanation of the compartmental model, agent model, digital twin, Bayesian update, and optimizer.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details id="installation" open>
+        <summary>Installation and local use</summary>
+        <div class="section-body">
+          <p>NDIM is intended to run on the user machine. The desktop launcher starts a local backend and opens the browser interface at a localhost address such as <code>http://127.0.0.1:8010/</code>.</p>
+          <ol>
+            <li>Install NDIM Engine using the platform installer or bundle.</li>
+            <li>Open NDIM Engine from the desktop shortcut or application menu.</li>
+            <li>Wait for the local status page to show the backend URL.</li>
+            <li>Click <strong>Open NDIM Engine</strong> to begin.</li>
+            <li>If the backend fails, click <strong>Export support bundle</strong> and share the ZIP with the maintainer.</li>
+          </ol>
+          <p>For alpha testing, the Windows portable ZIP or setup executable can be used by invited testers. A ministry-ready public release still needs fresh-machine acceptance testing, Windows signing, and macOS packaging on macOS. The core workflow itself is local-first: ingestion, deterministic encoding fallback, governance, modelling, repository browsing, backup, restore, and exports can run without internet.</p>
+          <table>
+            <thead><tr><th>Capability</th><th>Current alpha status</th><th>Policy deployment caution</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Capability">Install locally</td><td data-label="Current alpha status">Windows alpha package exists; clean-machine proof is still required.</td><td data-label="Policy deployment caution">Do not call it institutional-ready until non-technical testers install successfully.</td></tr>
+              <tr><td data-label="Capability">Work offline</td><td data-label="Current alpha status">Core workflow and smoke tests pass offline.</td><td data-label="Policy deployment caution">Remote LLMs remain optional and require user permission.</td></tr>
+              <tr><td data-label="Capability">Backup and restore</td><td data-label="Current alpha status">Backups include manifest hashes and restore validation.</td><td data-label="Policy deployment caution">Treat full backups as sensitive research data.</td></tr>
+              <tr><td data-label="Capability">No terminal for users</td><td data-label="Current alpha status">The launcher is designed for no-terminal use.</td><td data-label="Policy deployment caution">Release artifacts must be tested outside the development machine.</td></tr>
+            </tbody>
+          </table>
+          <p class="note">Local-first means evidence stays on the local machine unless the user deliberately exports or syncs it. Consent, visibility, reviewer approval, and repository settings still matter.</p>
+        </div>
+      </details>
+
+      <details id="source-access">
+        <summary>Source access and GitHub</summary>
+        <div class="section-body">
+          <p>The NDIM source repository is managed on GitHub. If the repository is private, people who are not listed as collaborators may see a GitHub <strong>404</strong> page even when the link is correct. That is GitHub's normal privacy behavior.</p>
+          <p>For testers or institutional reviewers, the maintainer should either add them as GitHub collaborators or publish a release package that does not require source-code access.</p>
+          <table>
+            <thead><tr><th>User type</th><th>Best access route</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td data-label="User type">Ordinary app user</td><td data-label="Best access route">NDIM Web link or installer/release package</td><td data-label="Why">They should not need GitHub or a terminal.</td></tr>
+              <tr><td data-label="User type">Alpha tester</td><td data-label="Best access route">GitHub Release files plus manual and demo video</td><td data-label="Why">They test the app behavior, not the codebase.</td></tr>
+              <tr><td data-label="User type">Developer or auditor</td><td data-label="Best access route">GitHub collaborator access to <code>https://github.com/Naphymoro/nidm-rwanda-dashboard</code></td><td data-label="Why">They may need commits, workflows, source files, and audit history.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details id="workspaces" open>
+        <summary>Workspaces and Research Assistant</summary>
+        <div class="section-body">
+          <p>The opening screen is now workspace-first. A workspace is the project container that tells NDIM which country settings, evidence routes, field templates, encoding rubrics, model defaults, digital-twin assumptions, repository paths, validation files, stress-test corpus, assistant guidance, and export formats to use.</p>
+          <p>The Research Assistant behaves like a state-aware progress guide: it reads the active workspace, evidence counts, governance state, model progress, and policy readiness, then explains what is complete, what is waiting, and what the next best action should be.</p>
+          <p>The launchpad has three parts: a compact route strip showing which evidence routes are enabled, a <strong>Workspace controls</strong> block with Start, Workspace manager, New workspace, and Guide actions, and the floating Research Assistant button. Duplicate actions live beside each existing workspace inside the manager so users copy the exact project they intend to reuse.</p>
+          <table>
+            <thead><tr><th>Action</th><th>What it means</th><th>When to use it</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Action">Start workspace</td><td data-label="What it means">Opens the workspace start menu.</td><td data-label="When to use it">Begin with an existing workspace, create a new one, duplicate a template, or import a package.</td></tr>
+              <tr><td data-label="Action">Manager</td><td data-label="What it means">Shows available local workspaces.</td><td data-label="When to use it">Switch between NDIM Core, ClimateTales Rwanda, or another local project.</td></tr>
+              <tr><td data-label="Action">Duplicate</td><td data-label="What it means">Copies settings, templates, validation material, and stress-test material into a new workspace.</td><td data-label="When to use it">Adapt ClimateTales Rwanda to another country or clean-tech domain without changing the original.</td></tr>
+              <tr><td data-label="Action">Guide</td><td data-label="What it means">Opens this manual at the workspace section.</td><td data-label="When to use it">Train a new researcher or field analyst.</td></tr>
+              <tr><td data-label="Action">Floating assistant</td><td data-label="What it means">Opens the agent-like progress guide.</td><td data-label="When to use it">Ask what is complete, what is missing, and what to run next.</td></tr>
+            </tbody>
+          </table>
+          <p>The default presets are <strong>NDIM Core</strong> and <strong>ClimateTales Rwanda</strong>. ClimateTales Rwanda adapts the same workflow toward social insight mining, digital listening, behavioural design labs, story activation pilots, influencer training, gamified influence simulation, and AIMS/Imperial report outputs.</p>
+          <p>The <strong>Research Assistant</strong> panel is a collapsible guide. It does not invent science. It reads the current workflow state and tells the user what has been completed, what is missing, what the next action should be, and when policy caution is required.</p>
+        </div>
+      </details>
+
+      <span id="narrative-intake"></span>
+      <details id="workflow" open>
+        <summary>Workflow from evidence to policy</summary>
+        <div class="section-body">
+          <p>The tool is designed as a sequential scientific story:</p>
+          <ol>
+            <li><strong>Narrative intake:</strong> choose country, administrative unit, evidence route, consent, visibility, and narrative body.</li>
+            <li><strong>SDMX gate:</strong> check that the record has enough structure to become a governed observation.</li>
+            <li><strong>Repository:</strong> approve or reject records, commit reviewed records, and inspect accepted/rejected evidence in the standalone repository tab.</li>
+            <li><strong>Encoding:</strong> score narratives manually, with an LLM, or through hybrid review.</li>
+            <li><strong>Compartmental model:</strong> run the population-level S/M/T/I/R diffusion model or labelled fallback curve using encoded evidence.</li>
+            <li><strong>Agent-based model:</strong> test household heterogeneity, peer influence, trust, and local barriers.</li>
+            <li><strong>Digital twin:</strong> feed observed field information back into the virtual model and rerun scenarios.</li>
+            <li><strong>Bayesian update:</strong> move from priors to posteriors for trust and barrier assumptions.</li>
+            <li><strong>RL optimizer:</strong> compare candidate intervention packages by reward, cost, and risk.</li>
+            <li><strong>Regional analysis:</strong> optionally isolate or group places when policy recommendations need local targeting.</li>
+            <li><strong>Knowledge graph:</strong> connect stories, themes, places, messengers, barriers, and intervention concepts.</li>
+            <li><strong>Inoculation lab:</strong> diagnose threat type, misinformation mechanism, weak-dose claim, refutational preemption, reactance risk, trusted messenger fit, booster need, and narrative resilience; then test counter-narratives as narrative vaccines.</li>
+            <li><strong>Policy output:</strong> export a human-readable brief with assumptions, limitations, uncertainty, required review, and HTML/PDF-friendly outputs.</li>
+          </ol>
+          <p class="note">Regional analysis is optional. If skipped, the final policy brief should say that recommendations use pooled evidence rather than place-specific analysis.</p>
+        </div>
+      </details>
+
+      <details id="equations">
+        <summary>Core equations</summary>
+        <div class="section-body">
+          <h3>Encoding</h3>
+          <p>Encoding turns a narrative into bounded model variables. Manual encoding should include a short justification for each score.</p>
+          <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
+          <table>
+            <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Symbol">E</td><td data-label="Meaning">Exposure, salience, or emotional intensity.</td></tr>
+              <tr><td data-label="Symbol">C</td><td data-label="Meaning">Credibility and local grounding.</td></tr>
+              <tr><td data-label="Symbol">tau</td><td data-label="Meaning">Trust alignment.</td></tr>
+              <tr><td data-label="Symbol">kappa</td><td data-label="Meaning">Inoculation or resistance opportunity.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Compartmental NDIM</h3>
+          <p>The documented model uses susceptible, misinformation-exposed, truth-aligned, inoculated, and resistant/adoption-aligned compartments. In the basic teaching setup, these compartments conserve the population: people move between states, but the total population share remains one.</p>
+          <div class="math-display">\begin{aligned}
+\frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \mu M \\
+\frac{dT}{dt} &= \beta_tST + \rho M - \eta T \\
+\frac{dI}{dt} &= \iota S + \eta T - \gamma I \\
+\frac{dR}{dt} &= \gamma I + \mu M
+\end{aligned}</div>
+          <p>Read each derivative as a rate of change. For example, if misinformation contact is high, the M compartment grows. If trusted correction and inoculation are strong, the model moves people toward T, I, and R.</p>
+
+          <h3>Agent-based model</h3>
+          <p>The agent-based model is the household-level companion to the population equation. It represents each household as a decision maker with its own trust, barrier level, peer influence, message exposure, and adoption probability.</p>
+          <div class="math-display">P(adopt_i) = logistic(trust_i + peer_i + evidence_i - barrier_i - misinformation_i)</div>
+          <p>This helps test whether the smooth population curve hides local friction. If the agent model is lower than the compartmental model, local peer networks, trust gaps, or access barriers may be slowing adoption.</p>
+
+          <h3>Digital twin feedback</h3>
+          <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
+          <p>The current twin is a prototype feedback loop. It receives the compartmental model, the agent-based model, approved evidence, encoded narratives, and field feedback. It then reruns the scenario after trust, barriers, or intervention strength change.</p>
+          <p>Example: if the population curve predicts strong adoption but field evidence shows safety fear remains high, the twin adjusts the assumptions and reruns the forecast. The new curve is not a final truth; it is a better scenario because it listened to the field signal.</p>
+
+          <h3>Inoculation diagnosis</h3>
+          <p>The upgrade adds a separate diagnosis layer after adoption encoding. The diagnosis estimates misinformation risk, reactance risk, messenger fit, and intervention strength before the inoculation lab drafts any counter-narrative.</p>
+          <div class="math-display">V_i = 0.20T_i + 0.20M_i + 0.18R_i + 0.14G_i - 0.08X_i</div>
+          <table>
+            <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Symbol">V_i</td><td data-label="Meaning">Recommended narrative vaccine strength for story i.</td></tr>
+              <tr><td data-label="Symbol">T_i</td><td data-label="Meaning">Threat recognition score.</td></tr>
+              <tr><td data-label="Symbol">M_i</td><td data-label="Meaning">Misinformation risk score.</td></tr>
+              <tr><td data-label="Symbol">R_i</td><td data-label="Meaning">Refutability score.</td></tr>
+              <tr><td data-label="Symbol">G_i</td><td data-label="Meaning">Trusted messenger fit score.</td></tr>
+              <tr><td data-label="Symbol">X_i</td><td data-label="Meaning">Reactance risk penalty.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Bayesian update</h3>
+          <div class="math-display">\begin{aligned}
+prior &= Beta(\alpha,\beta) \\
+posterior &= Beta(\alpha + successes,\beta + failures)
+\end{aligned}</div>
+          <p>The prior is what the model believed before new evidence. The posterior is what the model believes after approved evidence is added. This matters because a policy recommendation should show uncertainty, not only a single confident-looking number.</p>
+
+          <h3>RL optimizer</h3>
+          <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
+          <p>The optimizer ranks candidate interventions by expected reward. Reward balances adoption gain, cost, risk, and uncertainty. It supports human review; it does not automatically decide policy.</p>
+        </div>
+      </details>
+
+      <details id="repository">
+        <summary>Repository and governance</summary>
+        <div class="section-body">
+          <p>The repository has an active approval queue, an accepted repository, and a rejected repository. Records should move only after review and commit.</p>
+          <table>
+            <thead><tr><th>Area</th><th>Purpose</th><th>Main action</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Area">Active approval queue</td><td data-label="Purpose">Records are staged and governed but not reviewed.</td><td data-label="Main action">Approve or Reject.</td></tr>
+              <tr><td data-label="Area">Reviewed, waiting commit</td><td data-label="Purpose">Records have a decision but have not entered a repository.</td><td data-label="Main action">Commit reviewed records.</td></tr>
+              <tr><td data-label="Area">Accepted repository</td><td data-label="Purpose">Evidence can be encoded, modelled, and used in policy output.</td><td data-label="Main action">Inspect, export, or Uncommit.</td></tr>
+              <tr><td data-label="Area">Rejected repository</td><td data-label="Purpose">Evidence is retained for audit but excluded from modelling.</td><td data-label="Main action">Inspect or Uncommit.</td></tr>
+            </tbody>
+          </table>
+          <p>The full repository opens in a separate HTML tab from the main workflow. This keeps the workflow readable while still allowing detailed filtering by country, administrative unit, route, theme, consent, visibility, status, reviewer, and evidence seal.</p>
+        </div>
+      </details>
+
+      <details id="cloud-repository">
+        <summary>Google Drive and Sheets research repository</summary>
+        <div class="section-body">
+          <p>For the hosted research phase, NDIM can run as a web app while the shared project repository lives in a Google account. This keeps the user experience simple: researchers open the web app, and the project owner manages the shared Drive folder and Sheets ledger.</p>
+          <table>
+            <thead><tr><th>Part</th><th>What it stores</th><th>Plain explanation</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Part">Google Drive</td><td data-label="What it stores">Uploads, SDMX exports, accepted/rejected narrative packages, reports, backups, and policy briefs.</td><td data-label="Plain explanation">Drive is the project filing cabinet.</td></tr>
+              <tr><td data-label="Part">Google Sheets</td><td data-label="What it stores">Narrative IDs, routes, places, consent, visibility, reviewer decisions, hashes, encoding scores, model runs, and export links.</td><td data-label="Plain explanation">Sheets is the evidence ledger.</td></tr>
+              <tr><td data-label="Part">NDIM Web</td><td data-label="What it stores">The app logic, modelling workflow, manual, Academy, and export tools.</td><td data-label="Plain explanation">The app is the workbench; Drive and Sheets are storage and governance layers.</td></tr>
+            </tbody>
+          </table>
+          <p>The repository stage has a <strong>Check Google repository</strong> button. It asks the backend whether the Drive folder ID and Sheet ID are configured. When they are configured, the app shows buttons to open the Drive repository and Sheets ledger. When they are not configured, the app keeps the safer behavior: prepare downloadable SDMX JSON, observation CSV, and DSD JSON packages for manual upload.</p>
+          <p class="note">Drive and Sheets are useful for a controlled research pilot. They are not a full production database. For a large institutional deployment, keep PostgreSQL or another governed database as the system of record and use Drive/Sheets for documents, reports, and controlled repository views.</p>
+        </div>
+      </details>
+
+      <span id="climatetales"></span>
+      <details id="stress-test-corpus" open>
+        <summary>ClimateTales stress-test tutorial and exercises</summary>
+        <div class="section-body">
+          <p>The ClimateTales Rwanda corpus is bundled in <code>stress_test_corpus/</code>. It is synthetic, realistic test data for the Rwanda clean-cooking and climate-technology adoption context. It is not loaded by default. A tester must deliberately choose a file during intake.</p>
+          <p>The goal is not to prove a policy result. The goal is to stress-test the tool: route-specific intake, SDMX fields, approval and rejection, repository behavior, manual and LLM-style encoding, model response, digital-twin feedback, uncertainty, inoculation messages, and final policy export.</p>
+          <div class="exercise-grid">
+            <div class="exercise-card"><h3>Minimum test</h3><p>Use one route-specific CSV, approve several records, encode, run models, and export a brief.</p></div>
+            <div class="exercise-card"><h3>Full route test</h3><p>Repeat the workflow for each route-specific CSV to check that every evidence path works.</p></div>
+            <div class="exercise-card"><h3>Stress test</h3><p>Use the master CSV to test a mixed repository, filtering, batch encoding, and policy synthesis.</p></div>
+          </div>
+          <table>
+            <thead><tr><th>Route</th><th>File</th><th>Use</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Route">Structured interview</td><td data-label="File"><code>climatetales_structured_interview_synthetic.csv</code></td><td data-label="Use">Tests Q1-Q5 field protocol, respondent profile, cooking role, current stove/fuel, and post-interview coding.</td></tr>
+              <tr><td data-label="Route">Open story</td><td data-label="File"><code>climatetales_open_story_synthetic.csv</code></td><td data-label="Use">Tests free multi-paragraph narratives, oral history, meeting notes, and lived-experience stories.</td></tr>
+              <tr><td data-label="Route">Indigenous knowledge</td><td data-label="File"><code>climatetales_indigenous_knowledge_synthetic.csv</code></td><td data-label="Use">Tests attribution, cultural sensitivity, community validation, contested meanings, and local ecological knowledge.</td></tr>
+              <tr><td data-label="Route">Citizen science report</td><td data-label="File"><code>climatetales_citizen_science_synthetic.csv</code></td><td data-label="Use">Tests community observations, confidence, validation status, location precision, and contributor type.</td></tr>
+              <tr><td data-label="Route">Crowdsourced batch</td><td data-label="File"><code>climatetales_crowdsourced_batch_synthetic.csv</code></td><td data-label="Use">Tests moderation, deduplication, approval, rejection, commit, and repository filtering.</td></tr>
+              <tr><td data-label="Route">Social media feed</td><td data-label="File"><code>climatetales_social_media_feeds_synthetic.csv</code></td><td data-label="Use">Tests experimental feed handling, platform/source checkboxes, rumor monitoring, and digital listening notes.</td></tr>
+              <tr><td data-label="Route">Mixed master corpus</td><td data-label="File"><code>climatetales_ndim_synthetic_narratives_master.csv</code></td><td data-label="Use">Tests all routes together as a larger evidence repository.</td></tr>
+              <tr><td data-label="Route">Bonus single story</td><td data-label="File"><code>climatetales_bonus_manual_story.txt</code></td><td data-label="Use">Tests single-story import and manual intake practice.</td></tr>
+              <tr><td data-label="Route">Desk review report</td><td data-label="File"><code>climatetales_ndim_desk_review_report.pdf</code> and <code>.docx</code></td><td data-label="Use">Read before interpreting the corpus; it gives the research context and should not be treated as raw narrative evidence unless deliberately imported.</td></tr>
+            </tbody>
+          </table>
+          <h3>Exercise A: prepare the workspace</h3>
+          <ol>
+            <li>Open NDIM Engine locally.</li>
+            <li>In <strong>Workspace controls</strong>, click <strong>Start workspace</strong>.</li>
+            <li>Choose <strong>Open existing workspace</strong> and select <strong>ClimateTales Rwanda</strong>. If you want to experiment without changing the original, choose <strong>Duplicate</strong> first and work on the copy.</li>
+            <li>Open the floating Research Assistant. It should explain that the workspace is active and that Stage 01 is the next task.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> the workbench should show the active ClimateTales workspace, evidence routes, repository status, and current stage. If the workspace cannot be opened, test workspace storage before testing the science workflow.</div>
+
+          <h3>Exercise B: import a route-specific CSV</h3>
+          <ol>
+            <li>Open Stage 01, <strong>Narrative intake</strong>.</li>
+            <li>Under <strong>Evidence input method</strong>, choose <strong>Batch import: CSV or text</strong>.</li>
+            <li>Under <strong>Evidence route</strong>, choose the route matching the file, for example <strong>Structured interview</strong> for <code>climatetales_structured_interview_synthetic.csv</code>.</li>
+            <li>Click the import button and select the file from <code>stress_test_corpus/</code>.</li>
+            <li>Check that country, province, district, sector, language, source type, source name, period, consent, visibility, and route-specific fields are populated or editable.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> each CSV row should become a separate candidate narrative record. The app should not collapse the batch into one story. Route-specific fields should make sense for the selected route.</div>
+
+          <h3>Exercise C: test single story and manual entry</h3>
+          <ol>
+            <li>Choose <strong>Single story import</strong> and load <code>climatetales_bonus_manual_story.txt</code>.</li>
+            <li>Confirm that the text appears as one evidence item, not as a paragraph-split batch.</li>
+            <li>Choose <strong>Manual entry</strong> and paste or type a short invented field note. This should keep the user in the form and should not open a file picker.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> batch import, single import, and manual entry should behave differently. This is important because field teams may use all three modes.</div>
+
+          <h3>Exercise D: SDMX readiness and repository governance</h3>
+          <ol>
+            <li>Review <strong>SDMX readiness and record preview</strong>. Required fields should be marked ready or missing in plain language.</li>
+            <li>Click <strong>Stage and validate</strong>.</li>
+            <li>Move to the repository/SDMX gate review. Approve some records and reject at least one record.</li>
+            <li>Click <strong>Commit reviewed records</strong>. Approved records should move to the Accepted repository; rejected records should move to the Rejected repository; the active queue should shrink.</li>
+            <li>Open the full repository in its separate HTML tab. Filter or inspect accepted and rejected records. Use <strong>Uncommit</strong> on one record to verify that it returns to the active approval queue.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> the repository should read like human governance, not code. Accepted evidence is eligible for encoding and modelling; rejected evidence remains visible for audit but should not drive the model.</div>
+
+          <h3>Exercise E: encode story by story</h3>
+          <ol>
+            <li>Move to <strong>Encoding</strong>.</li>
+            <li>Select <strong>Manual / rule-based</strong>. For each story, enter numeric scores for the variables and write short justifications. Use <strong>Encode current story</strong> to move through the queue.</li>
+            <li>Run <strong>AI</strong> or <strong>Hybrid</strong> if a user-owned LLM key is available. If no key is available, the deterministic heuristic fallback should be clearly labelled.</li>
+            <li>Use comparison blocks to check whether different narratives receive different scores. Stories about cost fear, safety rumors, trusted health workers, peer influence, or time savings should not all score the same.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> manual, heuristic, and hybrid outputs should vary by narrative content. A flat score across all stories is a bug or a calibration warning.</div>
+
+          <h3>Exercise F: model, learn, and test inoculation</h3>
+          <ol>
+            <li>Run <strong>Compartmental model</strong>. Read the S/M/T/I/R curves and axis labels. A final percentage is the simulated adoption-aligned share at the final time horizon, not a measured real-world adoption rate.</li>
+            <li>Run <strong>Agent-based model</strong>. Compare whether household-level peer effects change the result relative to the population curve.</li>
+            <li>Run <strong>Digital twin</strong>. Enter or inspect feedback values and check whether the feedback-adjusted run differs from baseline.</li>
+            <li>Run <strong>Bayesian update</strong>. Check whether posterior intervals widen when evidence is thin and narrow when evidence is stronger.</li>
+            <li>Run <strong>RL optimizer</strong>. Treat the reward as a shortlist signal, not an automatic decision.</li>
+            <li>Run <strong>Knowledge graph</strong> to inspect repeated places, themes, messenger types, and barrier clusters.</li>
+            <li>Run <strong>Inoculation lab</strong>. The lab should generate a weak-dose claim, refutational response, trusted messenger recommendation, booster strategy, and intervention strength. Inject the inoculation narrative into the twin and compare before, during, and after projections.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> model stages should explain what changed and why. If an inoculation message changes predictions, the app should show whether it modified trust, resistance, misinformation decay, adoption transition, or agent-level behavior.</div>
+
+          <h3>Exercise G: optional regional analysis</h3>
+          <ol>
+            <li>Run regional analysis when the test dataset includes enough place variation.</li>
+            <li>Compare one district against another, or group districts with similar narrative patterns.</li>
+            <li>If skipped, continue to policy output. The policy brief should clearly state that recommendations use pooled evidence only.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> regional analysis should help decide whether Rwanda-wide messaging is appropriate or whether districts need different messengers, demonstrations, or financing supports.</div>
+
+          <h3>Exercise H: export and interpret the policy brief</h3>
+          <ol>
+            <li>Run <strong>Policy output</strong>.</li>
+            <li>Download the HTML policy brief, use print-to-PDF for a PDF-friendly copy, and keep JSON only as an audit export.</li>
+            <li>Check that the brief includes evidence grade, confidence, assumptions, limitations, uncertainty, human-review requirement, accepted narrative IDs, and whether ClimateTales stress-test data was synthetic.</li>
+          </ol>
+          <div class="callout"><strong>Expected result:</strong> the policy brief should be readable by a ministry analyst. It should not look like raw JSON, and it should not overclaim synthetic stress-test results as real field evidence.</div>
+        </div>
+      </details>
+
+      <details id="interpretation">
+        <summary>Interpreting results</summary>
+        <div class="section-body">
+          <p>A model percentage such as <strong>95.3%</strong> means the projected adoption-aligned share of the simulated population at the final time horizon. It does not mean that 95.3% of real households have already adopted.</p>
+          <table>
+            <thead><tr><th>Output</th><th>Meaning</th><th>Caution</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Output">ODE curve</td><td data-label="Meaning">Population-level diffusion pathway.</td><td data-label="Caution">Can hide local household variation.</td></tr>
+              <tr><td data-label="Output">Agent model</td><td data-label="Meaning">Household and peer-effect pathway.</td><td data-label="Caution">Depends on network assumptions.</td></tr>
+              <tr><td data-label="Output">Digital twin</td><td data-label="Meaning">Feedback-adjusted scenario rerun.</td><td data-label="Caution">Only as good as the observed feedback and calibration rule.</td></tr>
+              <tr><td data-label="Output">Inoculation diagnosis</td><td data-label="Meaning">Threat profile, weak-dose claim, refutational move, trusted messenger, and booster plan.</td><td data-label="Caution">Must be reviewed for cultural sensitivity and possible reactance before field use.</td></tr>
+              <tr><td data-label="Output">Posterior</td><td data-label="Meaning">Updated uncertainty about trust and barriers.</td><td data-label="Caution">Sparse evidence should widen caution.</td></tr>
+              <tr><td data-label="Output">RL reward</td><td data-label="Meaning">Relative intervention score.</td><td data-label="Caution">Shortlist for review, not an automatic decision.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details id="exports">
+        <summary>Outputs and exports</summary>
+        <div class="section-body">
+          <p>The main output is a human-readable policy brief. It should state evidence grade, confidence level, assumptions, limitations, uncertainty, required human review, and recommended intervention.</p>
+          <p>Use HTML for a readable brief. Use browser print-to-PDF for PDF export when direct PDF generation is unavailable. JSON remains available for audit and reproducibility.</p>
+        </div>
+      </details>
+
+      <details id="multimodal">
+        <summary>Multimodal and translation roadmap</summary>
+        <div class="section-body">
+          <p>This is a roadmap section, not a claim that all features are implemented today.</p>
+          <ul>
+            <li><strong>Speech to text:</strong> transcribe field interviews, radio discussions, and community meetings before SDMX validation.</li>
+            <li><strong>Text to speech:</strong> read field templates, policy briefs, and inoculation messages aloud for accessibility and training.</li>
+            <li><strong>Kinyarwanda-English translation:</strong> support translation both directions with translator notes, contested meanings, and confidence flags.</li>
+            <li><strong>Local language partners:</strong> integrate resources such as Digital Umuganda where licensing, quality, and governance allow.</li>
+            <li><strong>Multimodal evidence:</strong> eventually ingest audio, images of field forms, transcripts, and social feed summaries, but only after consent and provenance checks.</li>
+          </ul>
+          <p class="note">Translation and transcription can introduce errors. Store original evidence, translated text, reviewer identity, and confidence so policy users know what is certain and what remains uncertain.</p>
+        </div>
+      </details>
+    </main>
+    <a id="backTop" href="#top">Back to top</a>
+    <script>
+      function fallbackEquation(tex) {
+        const compact = tex.replace(/\s+/g, " ");
+        const frac = (top, bottom) => `<span class="frac"><span>${top}</span><span>${bottom}</span></span>`;
+        const line = (left, right) => `<div class="eq-line"><span>${left}</span><span class="eq-op">=</span><span>${right}</span></div>`;
+        if (compact.includes("\\Phi_i")) {
+          return `<div class="eq-line"><span class="eq-var">Φ<sub>i</sub></span><span class="eq-op">=</span><span>0.30<span class="eq-var">E<sub>i</sub></span> + 0.30<span class="eq-var">C<sub>i</sub></span> + 0.20<span class="eq-var">τ<sub>i</sub></span> + 0.20<span class="eq-var">κ<sub>i</sub></span></span></div>`;
+        }
+        if (compact.includes("\\frac{dS}{dt}")) {
+          return `<div class="eq-matrix">
+            ${line(frac("dS", "dt"), `-β<sub>m</sub>SM - β<sub>t</sub>ST - ιS`)}
+            ${line(frac("dM", "dt"), `β<sub>m</sub>SM - ρM - μM`)}
+            ${line(frac("dT", "dt"), `β<sub>t</sub>ST + ρM - ηT`)}
+            ${line(frac("dI", "dt"), `ιS + ηT - γI`)}
+            ${line(frac("dR", "dt"), `γI + μM`)}
+          </div>`;
+        }
+        if (compact.includes("\\theta_{t+1}")) {
+          return `<div class="eq-line"><span class="eq-var">θ<sub>t+1</sub></span><span class="eq-op">=</span><span><span class="eq-var">θ<sub>t</sub></span> + λ(<span class="eq-var">y<sub>observed</sub></span> - <span class="eq-var">y<sub>predicted</sub></span>)</span></div>`;
+        }
+        if (compact.includes("prior") && compact.includes("posterior")) {
+          return `<div class="eq-matrix">
+            ${line(`<span class="eq-var">prior</span>`, `Beta(α, β)`)}
+            ${line(`<span class="eq-var">posterior</span>`, `Beta(α + successes, β + failures)`)}
+          </div>`;
+        }
+        if (compact.includes("Q(s,a)")) {
+          return `<div class="eq-line"><span class="eq-var">Q(s,a)</span><span class="eq-op">←</span><span><span class="eq-var">Q(s,a)</span> + α [ r + γ max<sub>a′</sub><span class="eq-var">Q(s′,a′)</span> - <span class="eq-var">Q(s,a)</span> ]</span></div>`;
+        }
+        return `<div class="eq-line">${tex}</div>`;
+      }
+
+      function renderManualMath() {
+        document.querySelectorAll(".math-display").forEach((node) => {
+          if (node.dataset.rendered === "1") return;
+          const tex = node.textContent.trim();
+          if (window.katex) {
+            try {
+              window.katex.render(tex, node, { displayMode: true, throwOnError: false, strict: "ignore" });
+              node.dataset.rendered = "1";
+              return;
+            } catch (error) {
+              node.dataset.rendered = "0";
+            }
+          }
+          node.innerHTML = fallbackEquation(tex);
+          node.classList.add("rendered-fallback");
+          node.dataset.rendered = "1";
+        });
+      }
+      window.addEventListener("load", () => {
+        renderManualMath();
+        if (window.location.hash) {
+          const target = document.querySelector(window.location.hash);
+          if (target && target.tagName.toLowerCase() === "details") target.open = true;
+        }
+      });
+    </script>
+  </body>
 </html>
