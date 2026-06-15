@@ -57,3 +57,53 @@ D1 database: ndim-alpha-db
 R2 bucket: ndim-alpha-files
 ```
 
+## Cloudflare Worker backend
+
+The first Worker backend scaffold now lives in:
+
+```text
+cloudflare/worker/
+```
+
+It provides:
+
+- `GET /api/health`
+- `GET /api/workspaces`
+- `POST /api/workspaces`
+- `GET /api/narratives`
+- `POST /api/narratives`
+- `GET /api/narratives/{id}`
+- `POST /api/narratives/{id}/review`
+- `POST /api/narratives/commit-reviewed`
+- `POST /api/narratives/{id}/uncommit`
+- `POST /api/narratives/{id}/encode`
+- `POST /api/files/upload`
+- `GET /api/repository/export`
+
+Use this schema for D1:
+
+```text
+cloudflare/schema/schema.sql
+```
+
+After creating the D1 database in Cloudflare, update this file:
+
+```text
+cloudflare/worker/wrangler.toml
+```
+
+Replace:
+
+```text
+database_id = "replace-after-cloudflare-creates-d1"
+```
+
+with the real D1 database ID from Cloudflare.
+
+The static backend test page is:
+
+```text
+cloudflare/public/backend-check.html
+```
+
+Open it after deploying the Worker and paste the Worker URL to check the API.

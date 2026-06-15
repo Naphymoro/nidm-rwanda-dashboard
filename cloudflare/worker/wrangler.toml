@@ -1,0 +1,17 @@
+name = "ndim-engine-api"
+main = "src/index.ts"
+compatibility_date = "2026-06-15"
+
+[vars]
+NDIM_ENV = "alpha"
+MAX_UPLOAD_MB = "20"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ndim-alpha-db"
+database_id = "replace-after-cloudflare-creates-d1"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "ndim-alpha-files"
+

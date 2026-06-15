@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NDIM Cloudflare Backend Check</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./index.html"><span class="brand-mark">ND</span><span><strong>NDIM Engine</strong><small>Backend check</small></span></a>
+    <nav class="nav"><a href="./index.html">Home</a><a href="./manual.html">Manual</a></nav>
+  </header>
+  <main class="narrow">
+    <p class="eyebrow">Cloudflare Worker</p>
+    <h1>Check the web backend.</h1>
+    <p class="lede">Paste your Worker URL after it is deployed. This page tests whether the lightweight NDIM web backend is reachable.</p>
+    <label>
+      Worker URL
+      <input id="apiBase" type="url" placeholder="https://ndim-engine-api.your-account.workers.dev" />
+    </label>
+    <div class="actions">
+      <button class="button primary" id="healthBtn">Check health</button>
+      <button class="button" id="sampleBtn">Create sample narrative</button>
+    </div>
+    <pre id="result" class="output">Waiting for test.</pre>
+  </main>
+  <script>
+    const apiBase = document.querySelector("#apiBase");
+    const result = document.querySelector("#result");
+    function base() {
+      return apiBase.value.replace(/\/$/, "");
+    }
+    function show(data) {
+      result.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    }
+    document.querySelector("#healthBtn").addEventListener("click", async () => {
+      try {
+        const res = await fetch(`${base()}/api/health`);
+        show(await res.json());
+      } catch (error) {
+        show(String(error));
+      }
+    });
+    document.querySelector("#sampleBtn").addEventListener("click", async () => {
+      try {
+        const res = await fetch(`${base()}/api/narratives`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            workspace_id: "default",
+            route: "open_story",
+            title: "Sample Musanze clean cooking narrative",
+            body: "In Musanze, a cooperative member said she wants a pressure cooker because it saves time, but neighbors worry it may explode. A health worker demonstration made her trust the appliance more.",
+            country: "Rwanda",
+            admin1: "Northern Province",
+            admin2: "Musanze",
+            language: "English",
+            source_type: "field_note",
+            source_name: "Cloudflare backend check",
+            period: "2026",
+            consent_level: "training_sample",
+            visibility: "restricted"
+          })
+        });
+        show(await res.json());
+      } catch (error) {
+        show(String(error));
+      }
+    });
+  </script>
+</body>
+</html>

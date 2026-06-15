@@ -225,6 +225,40 @@ details {
   margin: .8rem 0;
 }
 
+label {
+  display: grid;
+  gap: .45rem;
+  margin-top: 1.25rem;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+input {
+  width: 100%;
+  min-height: 3rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: rgba(255, 253, 250, .86);
+  color: var(--ink);
+  font: inherit;
+}
+
+button.button {
+  cursor: pointer;
+  font: inherit;
+}
+
+.output {
+  margin-top: 1rem;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--wash);
+  white-space: pre-wrap;
+}
+
 summary {
   cursor: pointer;
   font-weight: 800;
