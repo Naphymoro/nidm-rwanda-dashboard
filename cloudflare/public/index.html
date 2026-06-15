@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NDIM Engine</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./index.html" aria-label="NDIM Engine home">
+      <span class="brand-mark">ND</span>
+      <span>
+        <strong>NDIM Engine</strong>
+        <small>Narrative Diffusion and Inoculation Model</small>
+      </span>
+    </a>
+    <nav class="nav" aria-label="Main navigation">
+      <a href="./manual.html">Manual</a>
+      <a href="./academy.html">Academy</a>
+      <a href="./publication.html">Publication</a>
+      <a href="https://github.com/Naphymoro/nidm-rwanda-dashboard">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Public alpha web entry point</p>
+        <h1>From field narratives to policy-ready evidence.</h1>
+        <p class="lede">
+          NDIM helps researchers and policy teams collect community narratives,
+          validate the evidence trail, encode narrative risk and inoculation
+          signals, test model implications, and prepare human-reviewed decision
+          briefs.
+        </p>
+        <div class="actions">
+          <a class="button primary" href="./manual.html">Read the manual</a>
+          <a class="button" href="./academy.html">Learn NDIM</a>
+        </div>
+      </div>
+      <aside class="status-card" aria-label="Deployment status">
+        <p class="eyebrow">Cloudflare status</p>
+        <h2>Web alpha shell</h2>
+        <p>
+          This Pages site is the public front door. The full scientific backend
+          is still served by the local app, Cloud Run, or advanced Colab mode
+          until the Worker, D1, and R2 layer is connected.
+        </p>
+      </aside>
+    </section>
+
+    <section class="workflow" aria-labelledby="workflow-title">
+      <div class="section-heading">
+        <p class="eyebrow">Evidence-to-policy workflow</p>
+        <h2 id="workflow-title">What the tool is meant to do</h2>
+      </div>
+      <div class="steps">
+        <article><span>01</span><h3>Ingest</h3><p>Bring in interviews, open stories, focus groups, indigenous knowledge, citizen science reports, or social feeds.</p></article>
+        <article><span>02</span><h3>Govern</h3><p>Check source, consent, place, period, reviewer status, visibility, and SDMX-compatible metadata.</p></article>
+        <article><span>03</span><h3>Encode</h3><p>Score narrative meaning, misinformation risk, trust, barriers, social influence, and inoculation opportunity.</p></article>
+        <article><span>04</span><h3>Model</h3><p>Run compartmental and agent-based simulations to understand possible adoption pathways.</p></article>
+        <article><span>05</span><h3>Learn</h3><p>Use evidence feedback, Bayesian updating, and optimization to improve the decision picture.</p></article>
+        <article><span>06</span><h3>Export</h3><p>Generate readable policy briefs with confidence levels, limitations, assumptions, and human review.</p></article>
+      </div>
+    </section>
+
+    <section class="split">
+      <article class="panel">
+        <p class="eyebrow">For ordinary users</p>
+        <h2>Use the web interface first.</h2>
+        <p>
+          The public web app should become the default way for non-technical
+          testers to learn the process, prepare evidence, and review outputs.
+          No terminal should be needed.
+        </p>
+      </article>
+      <article class="panel">
+        <p class="eyebrow">For advanced users</p>
+        <h2>Run heavy modelling separately.</h2>
+        <p>
+          Larger Python modelling jobs can run through the local desktop app,
+          Cloud Run, or Colab while the public web layer remains affordable and
+          easy to access.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p>NDIM Engine alpha. Local-first research software with a Cloudflare public entry point.</p>
+  </footer>
+</body>
+</html>
