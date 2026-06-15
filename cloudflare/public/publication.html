@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NDIM Scientific Publication Workspace</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <style>
       :root {
         --paper: #fbfaf7;
@@ -97,7 +99,7 @@
       }
       .workspace {
         display: grid;
-        grid-template-columns: minmax(420px, 1fr) minmax(380px, .92fr);
+        grid-template-columns: minmax(420px, var(--editor-width, 52%)) 12px minmax(380px, 1fr);
         height: calc(100vh - 58px);
         min-height: 680px;
       }
@@ -162,6 +164,29 @@
       .editor-pane {
         border-right: 1px solid var(--line);
         background: rgba(255, 253, 249, .54);
+      }
+      .splitter {
+        position: relative;
+        z-index: 20;
+        border-right: 1px solid var(--line);
+        border-left: 1px solid rgba(211, 199, 181, .55);
+        background: linear-gradient(180deg, rgba(255,255,255,.6), rgba(214,203,187,.42));
+        cursor: col-resize;
+      }
+      .splitter::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 78px;
+        border-radius: 999px;
+        background: rgba(98, 88, 73, .36);
+        transform: translate(-50%, -50%);
+      }
+      body.resizing {
+        cursor: col-resize;
+        user-select: none;
       }
       .preview-pane {
         background: rgba(241, 234, 223, .52);
@@ -297,11 +322,35 @@
       .equation {
         display: block;
         margin: 14px 0;
-        padding: 12px;
-        border-left: 3px solid var(--blue);
-        background: #f8f8f8;
-        font-family: var(--font-data);
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--blue);
+        border-radius: 8px;
+        background: #fff;
+        font-family: "Cambria Math", "STIX Two Math", Georgia, serif;
         overflow-x: auto;
+      }
+      .equation .katex-display {
+        margin: 0;
+        text-align: left;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      .equation-fallback {
+        font-size: 18px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+      }
+      .compile-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 850;
+      }
+      .compile-controls input {
+        width: auto;
       }
       .preview-tools {
         display: flex;
@@ -373,7 +422,7 @@
       .hidden { display: none !important; }
       @media (max-width: 1180px) {
         .workspace {
-          grid-template-columns: minmax(360px, 1fr) minmax(320px, .85fr);
+          grid-template-columns: minmax(360px, var(--editor-width, 52%)) 12px minmax(320px, 1fr);
         }
       }
       @media (max-width: 960px) {
@@ -385,6 +434,7 @@
           height: auto;
           min-height: 0;
         }
+        .splitter { display: none; }
         .editor-pane, .preview-pane {
           display: none;
           border-right: 0;
@@ -636,13 +686,18 @@
         </div>
       </section>
 
+      <div class="splitter" id="splitter" role="separator" aria-label="Resize manuscript editor and preview" aria-orientation="vertical" tabindex="0"></div>
+
       <section class="preview-pane" id="previewPane">
         <div class="preview-tools">
           <div>
-            <div class="mono">Live preview</div>
+            <div class="mono">Compiled preview</div>
             <strong>Print-ready manuscript view</strong>
           </div>
-          <span class="pill" id="compileStatus">preview current</span>
+          <div class="button-row" style="justify-content:flex-end">
+            <label class="compile-controls"><input id="livePreview" type="checkbox" /> Live preview</label>
+            <span class="pill" id="compileStatus">preview current</span>
+          </div>
         </div>
         <article class="publication-page" id="previewPage"></article>
       </section>
@@ -652,6 +707,7 @@
       const $ = (id) => document.getElementById(id);
       const $$ = (selector) => Array.from(document.querySelectorAll(selector));
       const STORAGE_KEY = "ndim-publication-workspace-v2";
+      const SPLIT_KEY = "ndim-publication-editor-width";
 
       const seed = {
         title: "The Narrative Diffusion and Inoculation Model: A Governed Evidence-to-Policy Engine for Public-Interest Technology Narratives",
@@ -662,41 +718,189 @@
         source: String.raw`\title{The Narrative Diffusion and Inoculation Model: A Governed Evidence-to-Policy Engine for Public-Interest Technology Narratives}
 
 \begin{abstract}
-Public-interest technologies rarely move through communities as neutral objects. They travel through stories about safety, cost, trust, status, memory, gendered work, institutional credibility, and the experience of neighbours. NDIM is proposed as a governed evidence-to-policy workflow for studying those stories before they are compressed into model states. The alpha system links narrative intake, SDMX-style evidence governance, manual and LLM-assisted encoding, compartmental and agent-based simulation, digital-twin feedback, Bayesian uncertainty updating, intervention optimization, inoculation message testing, and policy-brief export. This manuscript workspace frames NDIM as a method and software architecture. It does not claim field efficacy until double-coded narratives, community validation, and outcome data are available.
+Public-interest technologies rarely move through communities as neutral objects. They travel through stories about safety, cost, trust, status, memory, gendered work, institutional credibility, and the experience of neighbours. Many diffusion and misinformation models are valuable once a claim has already been converted into abstract states such as susceptible, exposed, infected, or recovered. The Narrative Diffusion and Inoculation Model (NDIM) starts earlier in the chain. It treats stories as governed evidence, encodes their behavioral meaning, links them to place and consent, and then uses them to inform coupled compartmental, agent-based, digital-twin, Bayesian, and policy-optimization layers. This manuscript presents NDIM as an alpha-stage methodological and software framework for narrative-aware policy modelling. It contributes a formal evidence-to-policy workflow, a behavioral mathematical formulation, and a field methodology for future validation. It does not claim intervention effectiveness until field data, double-coded narratives, community validation, and outcome-linked calibration are available.
 \end{abstract}
 
-\keywords{narrative diffusion; inoculation theory; digital twin; policy modelling; public health; Rwanda}
+\keywords{narrative diffusion; inoculation theory; digital twin; behavioral modelling; Bayesian updating; policy optimization; public health; Rwanda}
 
 \section{Introduction}
-Many epidemic-style models of misinformation begin after the story has already been translated into states such as susceptible, exposed, infected, or recovered. That is useful for studying spread, but it can hide the social life of the narrative. NDIM begins earlier. It asks where the story came from, who can see it, who reviewed it, what it means, and how that meaning should change policy-facing model assumptions.
+Technologies meant to serve public goals do not diffuse only through price, infrastructure, or official information. They also move through stories. A household may adopt a clean-cooking device because a neighbour says it saves time. Another may resist because an elder remembers an accident. A caregiver may accept a malaria vaccine after a trusted nurse explains it, while another delays because a warning travelled through a respected family network. These narratives are not noise around the model. They are part of the mechanism.
 
-\section{Why NDIM is different}
-NDIM treats a narrative as governed evidence, not just as a signal. A story enters with provenance, consent, visibility, administrative location, source type, route metadata, review status, and a tamper-evident hash. Only then does it become a candidate input to encoding and modelling. This preserves the chain from field observation to policy recommendation.
+Conventional adoption and misinformation models often begin after narratives have already been simplified into model states. This abstraction is useful, but it can remove the very details that determine whether an intervention is trusted, rejected, misunderstood, or politically acceptable. NDIM responds to this problem by preserving a chain from field narrative to policy output. It asks: who told the story, where was it heard, what kind of evidence is it, who reviewed it, what behavioral signal does it carry, and how should that signal affect dynamic predictions?
 
-\section{Methods}
-The workflow is organized as evidence intake, SDMX-style validation, repository approval, narrative encoding, compartmental modelling, agent-based modelling, digital-twin feedback, Bayesian updating, policy optimization, regional analysis, knowledge graph synthesis, inoculation lab testing, and policy-brief export.
+\section{Literature gap and contribution}
+Epidemiological and contagion-style models have been widely adapted to misinformation, rumor spread, behavioral diffusion, and technology adoption. These models help explain spread, persistence, correction, and saturation. Their strength is mathematical clarity. Their weakness, for policy-facing narrative work, is that the evidence usually enters after it has already been reduced to states or parameters.
+
+The gap is therefore not that existing models are wrong. The gap is that they often separate qualitative narrative evidence from formal simulation. They may model exposure without preserving consent. They may model correction without diagnosing whether a message is culturally credible. They may model adoption without recording whether the story came from a key informant, a focus group, a social media feed, an indigenous knowledge holder, or a structured interview.
+
+NDIM fills this gap by coupling evidence governance with behavioral dynamics. Its contribution is the integration of governed narrative intake, inoculation-aware encoding, population-level differential equations, household-level agent modelling, digital-twin feedback, Bayesian uncertainty updating, intervention optimization, and human-reviewed policy synthesis in one workflow.
+
+\section{Conceptual framework}
+NDIM is built on five ideas. First, narratives are evidence objects, not loose text. Second, meaning must be encoded before modelling. Third, population-level dynamics and household-level heterogeneity should be read together. Fourth, a digital twin should update predictions when approved field evidence disagrees with model expectations. Fifth, policy output should remain advisory until uncertainty, validation, assumptions, and human review are visible.
+
+Inoculation theory is central to this framework. A narrative intervention can work like a weak-dose vaccine: it exposes people to a misleading claim in a controlled way, explains why the claim is misleading, and strengthens resistance before stronger misinformation arrives. NDIM formalizes this as an intervention term that can alter trust, misinformation decay, resistance, or adoption-transition parameters.
+
+\section{NDIM workflow}
+The workflow is sequential but iterative. Field evidence is collected through structured interviews, open stories, focus groups, key informant interviews, indigenous knowledge records, citizen-science reports, crowdsourced batches, and optional social media feeds. Each record passes an SDMX-style contract for country, administrative unit, period, language, source, consent, visibility, route metadata, and review status.
+
+Approved records enter the narrative repository. They can then be encoded manually, with an LLM, or through hybrid review. Encoded scores feed the compartmental model and agent-based model. Their outputs feed the digital twin. The twin updates uncertain parameters with Bayesian learning, compares candidate interventions through an optimizer, tests inoculation narratives, and produces a decision brief with confidence level, evidence grade, assumptions, limitations, and required human review.
 
 \section{Model formulation}
-The compartmental layer is represented by narrative-aware transitions among susceptible, misinformation-influenced, trust-building, adopter, and resistant compartments:
+Let \(i\) index narrative records and \(t\) index time. Each narrative is encoded into a bounded behavioral vector:
 
 \[
-\frac{dS}{dt} = -\beta_t S T - \beta_m S M + \rho R
+\mathbf{z}_i = (E_i, C_i, \tau_i, \kappa_i, B_i, M_i, G_i, X_i)
 \]
+
+where \(E_i\) is exposure or salience, \(C_i\) is credibility and local grounding, \(\tau_i\) is trust alignment, \(\kappa_i\) is inoculation opportunity, \(B_i\) is barrier intensity, \(M_i\) is misinformation risk, \(G_i\) is trusted-messenger fit, and \(X_i\) is reactance risk. A narrative force-of-influence score is:
 
 \[
-\Phi = w_E E + w_C C + w_\tau \tau - w_\kappa \kappa
+\Phi_i(t) = w_EE_i + w_CC_i + w_\tau\tau_i - w_BB_i - w_MM_i + w_\kappa\kappa_i + w_GG_i - w_XX_i
 \]
 
-Here, \(\Phi\) is not magic. It is a transparent bridge from encoded stories to model movement. Exposure, credibility, trust, and barrier scores change the rate at which people move toward trust, misinformation influence, adoption, or resistance.
+This score is not a black box. It is a transparent bridge from evidence interpretation to model movement. The weights can be fixed for teaching, estimated from validation data, or updated by Bayesian calibration.
+
+The compartmental layer uses five narrative states: susceptible \(S\), misinformation-influenced \(M\), trust-aligned \(T\), inoculated \(I\), and resistant or adoption-aligned \(R\). A compact NDIM system is:
+
+\[
+\begin{aligned}
+\frac{dS}{dt} &= -\lambda_m(t)S - \lambda_t(t)S - u_I(t)S + \omega_RR, \\
+\frac{dM}{dt} &= \lambda_m(t)S + \chi_{TM}T - [\rho(t)+\mu(t)+\delta_m]M, \\
+\frac{dT}{dt} &= \lambda_t(t)S + \rho(t)M - [\eta(t)+\chi_{TM}+\delta_t]T, \\
+\frac{dI}{dt} &= u_I(t)S + \eta(t)T + \mu(t)M - \gamma I, \\
+\frac{dR}{dt} &= \gamma I - \omega_RR.
+\end{aligned}
+\]
+
+The misinformation pressure \(\lambda_m(t)\) and trust pressure \(\lambda_t(t)\) are narrative contact functions:
+
+\[
+\lambda_m(t) = \beta_m A_m(t)\left[1+\overline{M}(t)-\overline{\kappa}(t)\right],
+\quad
+\lambda_t(t) = \beta_t A_t(t)\left[1+\overline{\tau}(t)+\overline{G}(t)\right].
+\]
+
+Here \(A_m(t)\) and \(A_t(t)\) represent exposure to misinformation and trusted information environments. The bars denote approved repository averages or region-specific averages. In the conserved teaching version, \(\delta_m=\delta_t=0\), so \(S+M+T+I+R=1\). In the non-conserved version, \(\delta_m\) and \(\delta_t\) represent exits from the observed evidence frame, for example migration, loss to follow-up, or unobserved decision pathways.
+
+\section{Behavioral and agent-based layer}
+The agent layer gives each household or decision unit its own state. For agent \(a\), adoption propensity is:
+
+\[
+P(A_a(t+1)=1) = \sigma\left(\alpha_0+\alpha_\tau\tau_a+\alpha_P P_a+\alpha_GG_a+\alpha_VV_a-\alpha_BB_a-\alpha_MM_a-\alpha_XX_a\right),
+\]
+
+where \(\sigma(x)=1/(1+e^{-x})\). \(P_a\) is peer exposure:
+
+\[
+P_a(t) = \frac{\sum_b W_{ab}A_b(t)}{\sum_b W_{ab}+\epsilon}.
+\]
+
+This layer is important because a population curve can look smooth while real households experience different trust, cost, gendered labor, peer influence, and exposure histories. The agent model tests whether an intervention that appears strong at population level remains credible under household heterogeneity.
+
+\section{Inoculation and intervention control}
+An inoculation message is represented as a controlled intervention \(u_I(t)\). It is estimated from threat recognition, weak-dose claim clarity, refutational preemption, messenger fit, and reactance risk:
+
+\[
+V_i = \psi_TT_i + \psi_MM_i + \psi_RR_i + \psi_GG_i - \psi_XX_i,
+\quad
+u_I(t) = u_0 + \zeta\overline{V}(t).
+\]
+
+The interpretation is practical. A stronger narrative vaccine should increase the transition from susceptible to inoculated, increase misinformation decay through \(\mu(t)\), or reduce misinformation pressure through \(\lambda_m(t)\). If reactance risk is high, the same message may backfire, so \(X_i\) penalizes intervention strength.
 
 \section{Digital twin}
 The digital twin is the running model copy of the evidence environment. It receives approved evidence, encoded narratives, compartmental trajectories, agent-level variation, Bayesian uncertainty, optimizer outputs, and inoculation messages. Its job is not to declare truth. Its job is to show how assumptions and evidence change predictions.
 
+Let \(\theta_t\) be the current model parameter vector and \(y_t\) be a field observation or validation signal. A lightweight feedback update can be written as:
+
+\[
+\theta_{t+1} = \theta_t + K_t\left(y_t - H(\hat{x}_t)\right),
+\]
+
+where \(H(\hat{x}_t)\) is the model-predicted observable and \(K_t\) controls how strongly new evidence changes the twin. If field observations show that safety fear remains high while the model predicts rapid adoption, the twin lowers trust or raises barrier assumptions and reruns the scenario.
+
+\section{Bayesian uncertainty update}
+NDIM should not present a single number as if uncertainty has disappeared. For parameter \(\theta\), the general update is:
+
+\[
+p(\theta\mid D) \propto p(D\mid \theta)p(\theta),
+\]
+
+where \(p(\theta)\) is the prior belief and \(D\) is approved evidence. For bounded probabilities such as trust alignment or adoption readiness, a teaching version can use:
+
+\[
+\theta \sim Beta(\alpha,\beta), \quad
+\theta\mid D \sim Beta(\alpha+s,\beta+f).
+\]
+
+Here \(s\) and \(f\) are evidence-weighted confirmations and contradictions. The policy meaning is simple: a thin evidence base should produce wide intervals, and a stronger validated evidence base should narrow them.
+
+\section{Policy optimization}
+The optimizer compares intervention packages rather than replacing human judgement. A policy \(\pi\) is selected by maximizing expected reward under uncertainty:
+
+\[
+\pi^\star = \arg\max_{\pi}\; \mathbb{E}\left[\sum_{t=0}^{T}\gamma^t\left(A_t - c_t - r_t - q_t\right)\right],
+\]
+
+where \(A_t\) is adoption or protective behavior gain, \(c_t\) is cost, \(r_t\) is social or ethical risk, and \(q_t\) is uncertainty penalty. In reinforcement-learning notation:
+
+\[
+Q(s,a) \leftarrow Q(s,a)+\alpha\left[r+\gamma\max_{a'}Q(s',a')-Q(s,a)\right].
+\]
+
+The output is a ranked set of candidate actions with confidence and limitations, not an automatic decision.
+
+\section{Study design}
+The proposed validation design is mixed-methods and sequential. Phase one builds the governed narrative corpus. Phase two double-codes and calibrates encoding. Phase three links encoded narratives to model behavior. Phase four validates model outputs against observed adoption, intervention response, or community feedback.
+
+The design combines key informant interviews, focus group discussions, structured narrative elicitation, open stories, citizen-science reporting, indigenous knowledge capture, and validation workshops. This combination is necessary because NDIM studies both individual accounts and the social pathways through which those accounts gain credibility.
+
+\section{Sampling strategy}
+Sampling should be scientifically rigorous while remaining practical for field teams. The proposed approach is stratified multi-stage purposive sampling with maximum-variation logic. Administrative strata should include country, province or region, district, and local unit. Social strata should include gender, age group, livelihood, household cooking role or health decision role, adoption status, exposure to the intervention, and trusted information channels.
+
+Within each stratum, researchers should purposively recruit high-relevance participants: early adopters, non-adopters, people who rejected the intervention, local leaders, health workers, market actors, technology distributors, community mobilizers, and knowledge holders. Focus groups should be separated where power dynamics could suppress honest narrative exchange. Key informants should be selected for institutional knowledge, field experience, or influence over community interpretation.
+
+A validation subsample should be double-coded by at least two human coders. Disagreement should be retained as evidence, not erased. Inter-rater reliability, LLM-human agreement, calibration curves, and member checking should be reported before any strong policy claims are made.
+
+\section{Data collection protocol}
+The field protocol should capture both context and story. Each record should include administrative location, period, language, source type, consent level, visibility, respondent or contributor role, route type, and narrative body. Structured interviews may use a Q1-Q5 narrative worksheet. Focus groups should record group composition and facilitation notes. Key informant interviews should record institutional role and domain expertise. Citizen-science reports should record confidence, validation status, and evidence link where ethically appropriate.
+
+The core narrative prompt should invite experience rather than only opinion: what happened, where it happened, who was involved, what people said, what made the decision difficult, and what future outcome the respondent imagines. This structure allows NDIM to encode trust, barrier, social influence, misinformation risk, emotional intensity, messenger fit, and inoculation opportunity.
+
+\section{Encoding and validation}
+Manual encoding should score one narrative at a time with a short justification for each variable. LLM-assisted encoding may be used only when the user has permission and the provider is declared. Hybrid encoding should display both human and LLM scores before a reconciled score is accepted. The validation dataset should include double-coded examples, adjudicated gold labels, inter-rater reliability, LLM-human agreement, score calibration, and examples of disagreement.
+
+\section{Regional synthesis and knowledge graph}
+Regional analysis allows NDIM to avoid treating all places as identical. For region \(r\), evidence-weighted narrative force can be summarized as:
+
+\[
+\overline{\Phi}_r(t) = \frac{\sum_{i\in r} q_i\Phi_i(t)}{\sum_{i\in r} q_i+\epsilon},
+\]
+
+where \(q_i\) is an evidence-quality weight based on consent, source reliability, reviewer confidence, and validation status. This quantity can shift regional trust, barrier, or inoculation parameters without claiming that one story represents an entire place.
+
+The knowledge graph represents narrative objects, places, themes, messengers, barriers, interventions, and outcomes as a graph \(G=(V,E)\). Edges record relationships such as heard-in, mentions, trusted-by, contradicts, supports, and targets. A simple relevance score for a candidate intervention \(a\) in region \(r\) is:
+
+\[
+K(a,r) = \sum_{v\in V_r} centrality(v)\cdot fit(a,v)\cdot q_v.
+\]
+
+This graph does not replace the differential equations. It helps researchers see which stories, places, themes, and messengers are connected before writing policy recommendations.
+
 \section{Validation roadmap}
-The alpha system requires validation before field claims can be made. The required roadmap includes double-coded narratives, inter-rater reliability, LLM-human agreement, score calibration, sensitivity analysis, uncertainty intervals, prospective outcome validation, and community review.
+The alpha system requires validation before field claims can be made. The roadmap includes double-coded narratives, inter-rater reliability, LLM-human agreement, score calibration, sensitivity analysis, uncertainty intervals, prospective outcome validation, community review, and comparison against observed intervention outcomes.
 
 \section{Ethics and data governance}
 Narratives may contain sensitive community knowledge. NDIM therefore separates raw evidence, approved evidence, rejected evidence, metadata, hashes, exports, and policy outputs. LLM use is optional and should only occur when the user has permission to send text to a provider.
+
+\section{Expected outputs}
+Before field validation, NDIM can produce structured evidence ledgers, encoding reports, model scenarios, uncertainty summaries, intervention comparisons, inoculation-message drafts, and policy brief templates. These outputs are decision-support artifacts. They are not evidence of effectiveness by themselves.
+
+\section{Results placeholder}
+Results will require field data. This section should later report corpus composition, coding reliability, model calibration, uncertainty intervals, scenario behavior, digital-twin updates, and policy-output performance.
+
+\section{Discussion placeholder}
+Discussion should be written only after validation evidence exists. It should interpret where NDIM improved insight, where it failed, what assumptions mattered most, and what ethical or practical limitations remain.
 
 \section{Limitations}
 Synthetic narratives are useful for stress-testing software behavior, but they cannot prove intervention effectiveness. The current manuscript should describe NDIM as an alpha-stage method and software platform unless real field validation data are added.
@@ -720,12 +924,20 @@ To be completed by the author team.
       const sections = [
         ["abstract", "Abstract", "What the paper says in one page"],
         ["introduction", "Introduction", "Why story-aware modelling is needed"],
-        ["why-ndim-is-different", "Why NDIM is different", "The innovation claim"],
-        ["methods", "Methods", "Workflow and implementation"],
-        ["model-formulation", "Model formulation", "Equations and assumptions"],
-        ["digital-twin", "Digital twin", "How feedback updates predictions"],
-        ["validation-roadmap", "Validation roadmap", "What must be tested"],
-        ["ethics-and-data-governance", "Ethics", "Consent, visibility, review"],
+        ["literature-gap-and-contribution", "Literature gap", "What NDIM adds"],
+        ["conceptual-framework", "Conceptual framework", "The scientific logic"],
+        ["ndim-workflow", "NDIM workflow", "Evidence to policy"],
+        ["model-formulation", "Model formulation", "Behavioral equations"],
+        ["behavioral-and-agent-based-layer", "Agent layer", "Household heterogeneity"],
+        ["inoculation-and-intervention-control", "Inoculation control", "Narrative vaccine terms"],
+        ["digital-twin", "Digital twin", "Feedback updates"],
+        ["bayesian-uncertainty-update", "Bayesian update", "Uncertainty learning"],
+        ["policy-optimization", "Policy optimization", "Decision support"],
+        ["study-design", "Study design", "Validation plan"],
+        ["sampling-strategy", "Sampling strategy", "Rigorous field design"],
+        ["data-collection-protocol", "Data collection", "Narrative protocols"],
+        ["encoding-and-validation", "Encoding validation", "Human and LLM checks"],
+        ["regional-synthesis-and-knowledge-graph", "Regional synthesis", "Graphs and places"],
         ["limitations", "Limitations", "What not to overclaim"]
       ];
 
@@ -761,24 +973,72 @@ To be completed by the author team.
       }
 
       function inlineMarkup(value) {
-        return escapeHtml(stripTex(value))
+        const mathTokens = [];
+        const protectedValue = String(value || "")
+          .replace(/\\\(([\s\S]*?)\\\)/g, (_, tex) => {
+            const token = `@@INLINE_MATH_${mathTokens.length}@@`;
+            mathTokens.push(tex.trim());
+            return token;
+          })
+          .replace(/\$([^$\n]+)\$/g, (_, tex) => {
+            const token = `@@INLINE_MATH_${mathTokens.length}@@`;
+            mathTokens.push(tex.trim());
+            return token;
+          });
+        let html = escapeHtml(stripTex(protectedValue))
           .replace(/\n{2,}/g, "</p><p>")
           .replace(/\n/g, "<br>");
+        mathTokens.forEach((tex, index) => {
+          html = html.replace(`@@INLINE_MATH_${index}@@`, `<span class="inline-equation" data-tex="${escapeHtml(tex)}"></span>`);
+        });
+        return html;
       }
 
       function renderEquations(body) {
-        const blocks = [];
         let index = 0;
-        const regex = /\\\[([\s\S]*?)\\\]/g;
+        const regex = /\\\[([\s\S]*?)\\\]|\$\$([\s\S]*?)\$\$|\\begin\{(equation\*?|align\*?|aligned|gather\*?)\}([\s\S]*?)\\end\{\3\}/g;
         let html = "";
         let match;
         while ((match = regex.exec(body))) {
           html += `<p>${inlineMarkup(body.slice(index, match.index))}</p>`;
-          html += `<div class="equation">\\[${escapeHtml(match[1].trim())}\\]</div>`;
+          const tex = normalizeDisplayTex(match);
+          html += `<div class="equation" data-tex="${escapeHtml(tex)}"></div>`;
           index = match.index + match[0].length;
         }
         html += `<p>${inlineMarkup(body.slice(index))}</p>`;
         return html.replace(/<p>\s*<\/p>/g, "");
+      }
+
+      function normalizeDisplayTex(match) {
+        if (match[1]) return match[1].trim();
+        if (match[2]) return match[2].trim();
+        const env = match[3] || "";
+        const content = (match[4] || "").trim();
+        if (/^align/.test(env) || env === "aligned") return `\\begin{aligned}\n${content}\n\\end{aligned}`;
+        return content;
+      }
+
+      function renderMathInPreview() {
+        const targets = [...$$(".equation[data-tex]"), ...$$(".inline-equation[data-tex]")];
+        targets.forEach((node) => {
+          const tex = node.dataset.tex || "";
+          const displayMode = node.classList.contains("equation");
+          if (window.katex) {
+            try {
+              window.katex.render(tex, node, { displayMode, throwOnError: false, strict: "ignore" });
+              return;
+            } catch (error) {
+              node.textContent = displayMode ? tex : `(${tex})`;
+              node.classList.add("equation-fallback");
+              return;
+            }
+          }
+          node.textContent = displayMode ? tex : `(${tex})`;
+          node.classList.add("equation-fallback");
+        });
+        if (window.MathJax?.typesetPromise) {
+          window.MathJax.typesetPromise([$("previewPage")]).catch(() => {});
+        }
       }
 
       function renderPreview() {
@@ -793,17 +1053,18 @@ To be completed by the author team.
           <p><strong>Authors:</strong> ${escapeHtml($("authors").value || "To be completed")}</p>
           <p><strong>Article preparation:</strong> ${escapeHtml(meta.label)}; ${escapeHtml($("journalSection").value)}</p>
           <p><strong>Keywords:</strong> ${escapeHtml(stripTex(parsed.keywords || $("keywords").value))}</p>
-          <h2>Abstract</h2>
+          <h2 id="abstract">Abstract</h2>
           <p>${inlineMarkup(parsed.abstract)}</p>
           ${sectionHtml}
           <h2>References</h2>
           ${savedSources.length ? `<ol>${savedSources.map((source) => `<li>${escapeHtml(citationLine(source))}</li>`).join("")}</ol>` : `<p>No saved references yet. Use Literature search, then save selected sources.</p>`}
         `;
-        $("compileStatus").textContent = "preview current";
-        if (window.MathJax?.typesetPromise) {
-          window.MathJax.typesetPromise([$("previewPage")]).catch(() => {});
-        }
+        renderMathInPreview();
+        const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        $("compileStatus").textContent = `compiled ${time}`;
+        $("draftStatus").textContent = "preview current";
         updateChecklist();
+        renderSectionList();
       }
 
       function articleMeta() {
@@ -833,7 +1094,12 @@ To be completed by the author team.
       }
 
       function renderSectionList() {
-        $("sectionList").innerHTML = sections.map(([id, title, sub]) =>
+        const parsed = parseSource($("sourceEditor")?.value || seed.source);
+        const dynamicSections = [
+          ["abstract", "Abstract", "What the paper says in one page"],
+          ...parsed.sections.map((section) => [sectionId(section.title), section.title, "Manuscript section"])
+        ];
+        $("sectionList").innerHTML = (dynamicSections.length > 1 ? dynamicSections : sections).map(([id, title, sub]) =>
           `<a class="section-link" href="#${id}" data-section="${id}"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(sub)}</span></a>`
         ).join("");
         $$(".section-link").forEach((link) => link.addEventListener("click", closeOutlineDrawer));
@@ -848,7 +1114,7 @@ To be completed by the author team.
             savedSources.splice(Number(button.dataset.removeSource), 1);
             persist();
             renderSavedSources();
-            renderPreview();
+            markDraftChanged();
           });
         });
       }
@@ -876,6 +1142,53 @@ To be completed by the author team.
         $("journalSection").value = data.journalSection || seed.journalSection;
         $("sourceEditor").value = data.source || seed.source;
         savedSources = Array.isArray(data.savedSources) ? data.savedSources : [];
+      }
+
+      function markDraftChanged() {
+        $("draftStatus").textContent = "draft changed";
+        $("compileStatus").textContent = "draft changed";
+        if ($("livePreview")?.checked) renderPreview();
+      }
+
+      function restoreSplit() {
+        const saved = Number(localStorage.getItem(SPLIT_KEY));
+        if (saved >= 38 && saved <= 72) document.documentElement.style.setProperty("--editor-width", `${saved}%`);
+      }
+
+      function setSplitFromClientX(clientX) {
+        const rect = document.querySelector(".workspace").getBoundingClientRect();
+        if (!rect.width) return;
+        const pct = Math.max(38, Math.min(72, ((clientX - rect.left) / rect.width) * 100));
+        document.documentElement.style.setProperty("--editor-width", `${pct.toFixed(2)}%`);
+        localStorage.setItem(SPLIT_KEY, String(pct.toFixed(2)));
+      }
+
+      function wireSplitter() {
+        const splitter = $("splitter");
+        if (!splitter) return;
+        let active = false;
+        splitter.addEventListener("pointerdown", (event) => {
+          active = true;
+          splitter.setPointerCapture?.(event.pointerId);
+          document.body.classList.add("resizing");
+          setSplitFromClientX(event.clientX);
+        });
+        splitter.addEventListener("pointermove", (event) => {
+          if (active) setSplitFromClientX(event.clientX);
+        });
+        splitter.addEventListener("pointerup", () => {
+          active = false;
+          document.body.classList.remove("resizing");
+        });
+        splitter.addEventListener("keydown", (event) => {
+          if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+          const current = Number(localStorage.getItem(SPLIT_KEY)) || 52;
+          const next = current + (event.key === "ArrowRight" ? 2 : -2);
+          const clamped = Math.max(38, Math.min(72, next));
+          document.documentElement.style.setProperty("--editor-width", `${clamped}%`);
+          localStorage.setItem(SPLIT_KEY, String(clamped));
+          event.preventDefault();
+        });
       }
 
       function downloadBlob(filename, content, type = "text/plain") {
@@ -968,7 +1281,7 @@ ER  -`).join("\n\n");
       }
 
       function buildHtmlExport() {
-        return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml($("title").value)}</title><style>body{font-family:Georgia,serif;max-width:850px;margin:40px auto;line-height:1.6}.equation{padding:10px;background:#f8f8f8;border-left:3px solid #385c8f}</style></head><body>${$("previewPage").innerHTML}</body></html>`;
+        return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml($("title").value)}</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><style>body{font-family:Georgia,serif;max-width:850px;margin:40px auto;line-height:1.6}.equation{padding:12px 14px;background:#fff;border:1px solid #d3c7b5;border-left:4px solid #385c8f;border-radius:8px;overflow-x:auto}.katex-display{text-align:left}</style></head><body>${$("previewPage").innerHTML}</body></html>`;
       }
 
       function domainQuery(query) {
@@ -1092,7 +1405,7 @@ ER  -`).join("\n\n");
             if (!savedSources.some((item) => (item.doi || item.title) === (source.doi || source.title))) savedSources.push(source);
             persist();
             renderSavedSources();
-            renderPreview();
+            markDraftChanged();
           });
         });
         $$("[data-insert-cite]").forEach((button) => {
@@ -1100,7 +1413,7 @@ ER  -`).join("\n\n");
             const source = latestResults[Number(button.dataset.insertCite)];
             const key = citationKey(source);
             insertAtCursor($("sourceEditor"), ` \\cite{${key}}`);
-            renderPreview();
+            markDraftChanged();
           });
         });
       }
@@ -1207,7 +1520,7 @@ ${$("sourceEditor").value.slice(0, 9000)}
           return;
         }
         insertAtCursor($("sourceEditor"), `\n\n\\section{NDIM results snapshot}\n${payload.slice(0, 3000)}\n`);
-        renderPreview();
+        markDraftChanged();
       }
 
       function openOutlineDrawer() {
@@ -1248,19 +1561,23 @@ ${$("sourceEditor").value.slice(0, 9000)}
 
       function init() {
         restore();
+        restoreSplit();
         renderSectionList();
         renderSavedSources();
         renderPreview();
         wireTabs();
+        wireSplitter();
         ["title", "authors", "keywords", "articleType", "journalSection", "sourceEditor"].forEach((id) => {
           $(id).addEventListener("input", () => {
-            $("draftStatus").textContent = "unsaved draft";
-            if (id !== "sourceEditor") renderPreview();
+            markDraftChanged();
           });
-          $(id).addEventListener("change", renderPreview);
+          $(id).addEventListener("change", markDraftChanged);
         });
         $("saveDraft").addEventListener("click", persist);
         $("compilePreview").addEventListener("click", renderPreview);
+        $("livePreview").addEventListener("change", () => {
+          if ($("livePreview").checked) renderPreview();
+        });
         $("toggleOutline").addEventListener("click", openOutlineDrawer);
         $("closeOutline").addEventListener("click", closeOutlineDrawer);
         $("outlineBackdrop").addEventListener("click", closeOutlineDrawer);
@@ -1279,7 +1596,8 @@ ${$("sourceEditor").value.slice(0, 9000)}
         $("buildAiPrompt").addEventListener("click", buildAiPrompt);
         $("copyAiPrompt").addEventListener("click", () => copyText($("aiPrompt").value, $("copyAiPrompt"), "Copy prompt"));
         $("runOpenAi").addEventListener("click", runOpenAi);
-        window.ndimPublicationWorkspace = { buildTex, buildBib, buildRis, buildCsv, searchLiterature, renderPreview };
+        window.addEventListener("load", renderMathInPreview);
+        window.ndimPublicationWorkspace = { buildTex, buildBib, buildRis, buildCsv, searchLiterature, renderPreview, markDraftChanged };
       }
 
       init();
