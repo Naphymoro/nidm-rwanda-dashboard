@@ -1,14 +1,2 @@
-/manual /manual.html 200
-/manual/ /manual.html 200
-/manual/* /manual.html 200
-/academy /academy.html 200
-/academy/ /academy.html 200
-/academy/* /academy.html 200
-/publication /publication.html 200
-/publication/ /publication.html 200
-/publication/* /publication.html 200
-/backend-check /backend-check.html 200
-/backend-check/ /backend-check.html 200
-/stress-test-corpus /manual.html#stress-test-corpus 302
-/source-access /manual.html#source-access 302
-/* /index.html 200
+/stress-test-corpus /manual#stress-test-corpus 302
+/source-access /manual#source-access 302
