@@ -306,6 +306,38 @@
         gap: 5px;
         justify-items: end;
       }
+      .ai-setup-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: end;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 12px;
+        background: rgba(255, 253, 249, .84);
+      }
+      .ai-setup-copy {
+        flex: 1 1 220px;
+        min-width: 200px;
+      }
+      .ai-setup-copy strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+      .ai-setup-bar label {
+        flex: 1 1 150px;
+        min-width: 0;
+      }
+      .ai-setup-bar .ai-key-input {
+        flex: 2 1 240px;
+      }
+      .ai-setup-bar button {
+        flex: 0 0 auto;
+      }
+      .ai-setup-bar .key-status {
+        flex: 1 1 140px;
+        text-align: left;
+      }
       .ai-switch {
         display: inline-flex;
         align-items: center;
@@ -517,6 +549,9 @@
         display: grid;
         gap: 12px;
       }
+      .ai-setup-bar.key-manager {
+        display: flex;
+      }
       .key-head {
         display: flex;
         align-items: flex-start;
@@ -656,6 +691,10 @@
         }
         .two, .three, .assistant-tools { grid-template-columns: 1fr; }
       }
+      @media (max-width: 640px) {
+        .ai-setup-bar.key-manager { display: grid; grid-template-columns: 1fr; }
+        .ai-setup-bar .key-status { text-align: left; }
+      }
       @media print {
         .topbar, .side, .editor-pane, .preview-tools, .mobile-tabs { display: none !important; }
         body { background: white; }
@@ -756,13 +795,30 @@
               <strong>Write, search, cite, preview, and export from one bench</strong>
             </div>
             <div class="ai-control">
-              <div class="mono">Writing assistant setup</div>
+              <div class="mono">AI activation</div>
               <label class="ai-switch" id="aiSwitchLabel">
                 <input id="aiAssistanceEnabled" type="checkbox" />
                 <span id="aiSwitchText">AI assistance off</span>
               </label>
-              <span class="small ai-setup-status" id="aiSetupStatus">No key loaded. Load a key in AI Assistant before turning AI on.</span>
+              <span class="small ai-setup-status" id="aiSetupStatus">No key loaded. Load a key here before turning AI on.</span>
             </div>
+          </div>
+          <div class="ai-setup-bar key-manager" id="openaiKeyPanel">
+            <div class="ai-setup-copy">
+              <div class="mono">Step 1 / writing assistant setup</div>
+              <strong>Load your own API key before enabling AI</strong>
+              <span class="small">Session storage is recommended. Loading a key does not turn AI on, and keys are never exported with the manuscript.</span>
+            </div>
+            <label class="ai-key-input"><span class="mono">OpenAI API key</span><input id="openaiKey" type="password" autocomplete="off" placeholder="Paste key, then load" /></label>
+            <label><span class="mono">Storage</span>
+              <select id="openaiKeyMode">
+                <option value="session">Session only</option>
+                <option value="local">Remember on this browser</option>
+              </select>
+            </label>
+            <button class="primary" id="loadOpenAiKey" type="button">Load key</button>
+            <button id="clearOpenAiKey" type="button">Clear</button>
+            <span class="key-status" id="openaiKeyStatus">No key loaded</span>
           </div>
           <div class="tabs" aria-label="Publication workspace sections">
             <button class="tab active" data-pane="manuscript">Manuscript</button>
@@ -880,23 +936,8 @@
               <strong>Use AI as a drafting assistant, not as the author.</strong>
               <span class="small" id="aiModeNote">AI is off. You can still build and copy prompts, search literature, save sources, preview the manuscript, and export. Nothing will be sent to an external model.</span>
             </div>
-            <div class="panel pad key-manager" id="openaiKeyPanel">
-              <div class="key-head">
-                <div>
-                  <div class="mono">Writing assistant setup</div>
-                  <h2 style="margin:2px 0 0">Load your own API key before enabling AI</h2>
-                  <p class="small" style="margin:4px 0 0">Loading a key does not turn AI on. Keys are never exported with the manuscript. Session storage is the safest default.</p>
-                </div>
-                <span class="key-status" id="openaiKeyStatus">No key loaded</span>
-              </div>
-              <div class="three">
-                <label><span class="mono">OpenAI API key</span><input id="openaiKey" type="password" autocomplete="off" placeholder="Paste key, then load" /></label>
-                <label><span class="mono">Storage mode</span>
-                  <select id="openaiKeyMode">
-                    <option value="session">Session only</option>
-                    <option value="local">Remember on this browser</option>
-                  </select>
-                </label>
+            <div class="assistant-tools">
+              <div class="prompt-options">
                 <label><span class="mono">Writing voice</span>
                   <select id="aiPersona">
                     <option value="frontiers-methodologist">Frontiers methods author</option>
@@ -906,14 +947,6 @@
                     <option value="plain-language-editor">Plain-language scientific editor</option>
                   </select>
                 </label>
-              </div>
-              <div class="button-row">
-                <button class="primary" id="loadOpenAiKey" type="button">Load key</button>
-                <button id="clearOpenAiKey" type="button">Clear key</button>
-              </div>
-            </div>
-            <div class="assistant-tools">
-              <div class="prompt-options">
                 <label><span class="mono">Task</span>
                   <select id="aiTask">
                     <option value="abstract">Improve abstract</option>
@@ -1852,7 +1885,7 @@ ${$("sourceEditor").value.slice(0, 5000)}
         if ($("aiSetupStatus")) {
           $("aiSetupStatus").textContent = key
             ? `Key loaded for ${mode}. AI is still off until you turn it on.`
-            : "No key loaded. Load a key in AI Assistant before turning AI on.";
+            : "No key loaded. Load a key here before turning AI on.";
         }
       }
 
