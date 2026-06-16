@@ -301,6 +301,11 @@
       .workspace-nav-title strong {
         font-size: 16px;
       }
+      .ai-control {
+        display: grid;
+        gap: 5px;
+        justify-items: end;
+      }
       .ai-switch {
         display: inline-flex;
         align-items: center;
@@ -320,6 +325,10 @@
         border-color: rgba(117, 139, 96, .55);
         color: #526a3d;
         background: rgba(117, 139, 96, .12);
+      }
+      .ai-setup-status {
+        max-width: 360px;
+        text-align: right;
       }
       .section-list, .source-list, .status-list {
         display: grid;
@@ -616,7 +625,9 @@
         .toolbar-menu summary { width: 100%; justify-content: space-between; }
         .menu-panel { left: 0; right: auto; width: min(280px, 90vw); }
         .workspace-nav-head { align-items: stretch; flex-direction: column; }
+        .ai-control { justify-items: stretch; }
         .ai-switch { justify-content: space-between; }
+        .ai-setup-status { text-align: left; max-width: none; }
         .mobile-tabs { display: flex; flex-wrap: wrap; }
         .workspace {
           display: block;
@@ -744,10 +755,14 @@
               <div class="mono">AI writing assistant workspace</div>
               <strong>Write, search, cite, preview, and export from one bench</strong>
             </div>
-            <label class="ai-switch" id="aiSwitchLabel">
-              <input id="aiAssistanceEnabled" type="checkbox" />
-              <span id="aiSwitchText">AI assistance off</span>
-            </label>
+            <div class="ai-control">
+              <div class="mono">Writing assistant setup</div>
+              <label class="ai-switch" id="aiSwitchLabel">
+                <input id="aiAssistanceEnabled" type="checkbox" />
+                <span id="aiSwitchText">AI assistance off</span>
+              </label>
+              <span class="small ai-setup-status" id="aiSetupStatus">No key loaded. Load a key in AI Assistant before turning AI on.</span>
+            </div>
           </div>
           <div class="tabs" aria-label="Publication workspace sections">
             <button class="tab active" data-pane="manuscript">Manuscript</button>
@@ -865,14 +880,14 @@
               <strong>Use AI as a drafting assistant, not as the author.</strong>
               <span class="small" id="aiModeNote">AI is off. You can still build and copy prompts, search literature, save sources, preview the manuscript, and export. Nothing will be sent to an external model.</span>
             </div>
-            <div class="panel pad key-manager hidden" id="openaiKeyPanel">
+            <div class="panel pad key-manager" id="openaiKeyPanel">
               <div class="key-head">
                 <div>
-                  <div class="mono">OpenAI key manager</div>
-                  <h2 style="margin:2px 0 0">Bring your own key</h2>
-                  <p class="small" style="margin:4px 0 0">Keys are not exported with the manuscript. Session storage is the safest default.</p>
+                  <div class="mono">Writing assistant setup</div>
+                  <h2 style="margin:2px 0 0">Load your own API key before enabling AI</h2>
+                  <p class="small" style="margin:4px 0 0">Loading a key does not turn AI on. Keys are never exported with the manuscript. Session storage is the safest default.</p>
                 </div>
-                <span class="key-status" id="openaiKeyStatus">not loaded</span>
+                <span class="key-status" id="openaiKeyStatus">No key loaded</span>
               </div>
               <div class="three">
                 <label><span class="mono">OpenAI API key</span><input id="openaiKey" type="password" autocomplete="off" placeholder="Paste key, then load" /></label>
@@ -1821,12 +1836,24 @@ ${$("sourceEditor").value.slice(0, 5000)}
         return sessionStorage.getItem(OPENAI_KEY_SESSION) || localStorage.getItem(OPENAI_KEY_LOCAL) || "";
       }
 
+      function currentOpenAiKeyMode() {
+        if (sessionStorage.getItem(OPENAI_KEY_SESSION)) return "session";
+        if (localStorage.getItem(OPENAI_KEY_LOCAL)) return "browser";
+        return "";
+      }
+
       function updateOpenAiKeyStatus() {
         const status = $("openaiKeyStatus");
         if (!status) return;
         const key = currentOpenAiKey();
+        const mode = currentOpenAiKeyMode();
         status.classList.toggle("loaded", Boolean(key));
-        status.textContent = key ? `loaded ...${key.slice(-4)}` : "not loaded";
+        status.textContent = key ? `Key loaded for ${mode} ...${key.slice(-4)}` : "No key loaded";
+        if ($("aiSetupStatus")) {
+          $("aiSetupStatus").textContent = key
+            ? `Key loaded for ${mode}. AI is still off until you turn it on.`
+            : "No key loaded. Load a key in AI Assistant before turning AI on.";
+        }
       }
 
       function aiEnabled() {
@@ -1834,7 +1861,15 @@ ${$("sourceEditor").value.slice(0, 5000)}
       }
 
       function updateAiMode() {
-        const enabled = aiEnabled();
+        const requested = aiEnabled();
+        const hasKey = Boolean(currentOpenAiKey());
+        const enabled = requested && hasKey;
+        if (requested && !hasKey) {
+          $("aiAssistanceEnabled").checked = false;
+          if ($("aiOutput")) {
+            $("aiOutput").value = "Load your own API key first, then turn AI assistance on. You can still build and copy prompts while AI is off.";
+          }
+        }
         localStorage.setItem(AI_MODE_KEY, enabled ? "1" : "0");
         $("aiSwitchLabel")?.classList.toggle("on", enabled);
         if ($("aiSwitchText")) $("aiSwitchText").textContent = enabled ? "AI assistance on" : "AI assistance off";
@@ -1842,10 +1877,12 @@ ${$("sourceEditor").value.slice(0, 5000)}
         if ($("aiModeNote")) {
           $("aiModeNote").textContent = enabled
             ? "AI is on. Only the prepared prompt is sent, and only after you click Draft with loaded key and confirm."
-            : "AI is off. You can still build and copy prompts, search literature, save sources, preview the manuscript, and export. Nothing is sent to an external model.";
+            : hasKey
+              ? "A key is loaded, but AI is still off. You can turn AI on when you are ready; nothing is sent until you click Draft with loaded key and confirm."
+              : "AI is off. Load a key only if you want model-assisted drafting. You can still build and copy prompts, search literature, save sources, preview the manuscript, and export.";
         }
-        $("openaiKeyPanel")?.classList.toggle("hidden", !enabled);
         if ($("runOpenAi")) $("runOpenAi").disabled = !enabled;
+        updateOpenAiKeyStatus();
       }
 
       function restoreAiMode() {
@@ -1868,16 +1905,19 @@ ${$("sourceEditor").value.slice(0, 5000)}
           localStorage.removeItem(OPENAI_KEY_LOCAL);
         }
         $("openaiKey").value = "";
-        $("aiOutput").value = "OpenAI key loaded for this browser context. The key is not written into the manuscript exports.";
+        $("aiOutput").value = "Key loaded. AI assistance is still off until you turn it on. The key is not written into manuscript exports.";
         updateOpenAiKeyStatus();
+        updateAiMode();
       }
 
       function clearOpenAiKey() {
         sessionStorage.removeItem(OPENAI_KEY_SESSION);
         localStorage.removeItem(OPENAI_KEY_LOCAL);
+        if ($("aiAssistanceEnabled")) $("aiAssistanceEnabled").checked = false;
         $("openaiKey").value = "";
-        $("aiOutput").value = "OpenAI key cleared from this browser context.";
+        $("aiOutput").value = "Key cleared. AI assistance is off. You can still copy prompts and export locally.";
         updateOpenAiKeyStatus();
+        updateAiMode();
       }
 
       function buildAiPrompt() {
