@@ -25,19 +25,24 @@
         --font-data: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
         --font-serif: Georgia, "Times New Roman", serif;
       }
+      /* Dark mode favors high-contrast neutral surfaces so manuscript tools remain readable for long editing sessions. */
       body.dark {
-        --paper: #11100d;
-        --panel: #1b1712;
-        --wash: #262016;
-        --ink: #f8f1e7;
-        --muted: #d8c9b5;
-        --soft: #b6a88f;
-        --line: #4a3f31;
-        --accent: #f6efe4;
-        --shadow: 0 20px 70px rgba(0, 0, 0, .34);
+        --paper: #0b0f17;
+        --panel: #111827;
+        --wash: #1f2937;
+        --ink: #f8fafc;
+        --muted: #d1d5db;
+        --soft: #9ca3af;
+        --line: #374151;
+        --accent: #f8fafc;
+        --green: #86efac;
+        --amber: #fbbf24;
+        --red: #fca5a5;
+        --blue: #93c5fd;
+        --shadow: 0 20px 70px rgba(0, 0, 0, .46);
         background:
-          radial-gradient(circle at 12% 8%, rgba(255, 255, 255, .06), transparent 30%),
-          linear-gradient(135deg, #11100d, #1b1712 72%, #11100d);
+          radial-gradient(circle at 12% 8%, rgba(147, 197, 253, .08), transparent 30%),
+          linear-gradient(135deg, #0b0f17, #111827 72%, #0b0f17);
       }
       * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
@@ -68,8 +73,8 @@
       button:hover, .button:hover { border-color: var(--accent); }
       .primary { background: var(--accent); border-color: var(--accent); color: white; }
       .primary:hover { color: white; background: #2a241f; }
-      body.dark .primary { color: #11100d; background: #f6efe4; border-color: #f6efe4; }
-      body.dark .primary:hover { color: #11100d; background: #fffaf0; }
+      body.dark .primary { color: #fff; background: #030712; border-color: #e5e7eb; }
+      body.dark .primary:hover { color: #fff; background: #1f2937; border-color: #f8fafc; }
       .danger { border-color: rgba(159, 73, 61, .45); color: var(--red); }
       .icon-button {
         display: inline-grid;
@@ -205,6 +210,25 @@
         background-color: var(--panel);
         color: var(--ink);
       }
+      body.dark .topbar { background: rgba(11, 15, 23, .94); }
+      body.dark .toolbar-group { background: rgba(17, 24, 39, .76); }
+      body.dark .menu-panel { background: #111827; box-shadow: 0 18px 60px rgba(0, 0, 0, .48); }
+      body.dark .mono, body.dark .small { color: var(--soft); }
+      body.dark a { color: #bfdbfe; }
+      body.dark input::placeholder,
+      body.dark textarea::placeholder { color: #94a3b8; opacity: 1; }
+      body.dark .source-card,
+      body.dark .status-row,
+      body.dark .history-row,
+      body.dark .log-row,
+      body.dark .author-chip,
+      body.dark .ai-permissions,
+      body.dark .assistant-suggestion {
+        background: #0f172a;
+        color: var(--ink);
+      }
+      body.dark .warn { color: #fbbf24; }
+      body.dark .ok { color: #86efac; }
       body.dark .publication-page { background: #fff; color: #23201b; }
       .workspace {
         display: grid;
@@ -768,7 +792,7 @@
         color: white;
         box-shadow: 0 22px 64px rgba(18, 16, 13, .24);
       }
-      body.dark .assistant-fab { color: #11100d; }
+      body.dark .assistant-fab { color: #fff; border-color: #e5e7eb; }
       .assistant-dock {
         position: fixed;
         right: 20px;
@@ -918,8 +942,8 @@
         <details class="toolbar-menu" id="exportMenu">
           <summary>Export</summary>
           <div class="menu-panel">
-            <button id="exportPdf" type="button">Export PDF</button>
-            <button id="exportDocx" type="button">Export DOCX</button>
+            <button id="exportPdf" type="button">Download PDF</button>
+            <button id="exportDocx" type="button">Download DOCX</button>
             <button id="exportTex" type="button">Export .tex</button>
             <button id="exportBib" type="button">Export .bib</button>
             <button id="exportHtml" type="button">Export HTML</button>
@@ -2213,46 +2237,154 @@ ER  -`).join("\n\n");
       }
 
       function exportJournalPdf() {
-        createSnapshot("PDF export");
-        const doc = buildJournalHtmlDocument();
-        const win = window.open("", "_blank", "noopener,noreferrer");
-        if (!win) {
-          downloadBlob(fileSlug("html"), doc, "text/html");
-          alert("Popup was blocked. I downloaded a journal-formatted HTML file; open it and use Print to PDF.");
-          return;
+        try {
+          createSnapshot("PDF export");
+          const pdfBytes = buildPdfBytes();
+          downloadBlob(fileSlug("pdf"), new Blob([pdfBytes], { type: "application/pdf" }));
+          logEdit("PDF export downloaded", "Downloaded a formatted PDF manuscript file without app controls.", "export");
+        } catch (error) {
+          alert(`PDF export failed. Please save your draft and try again. ${error.message}`);
         }
-        win.document.open();
-        win.document.write(doc);
-        win.document.close();
-        setTimeout(() => win.print(), 650);
-        logEdit("PDF export opened", "Opened a journal-formatted print/PDF view in a new tab.", "export");
+      }
+
+      function plainExportText(value) {
+        return stripTex(String(value || "")
+          .replace(/\\\[/g, "\nEquation: ")
+          .replace(/\\\]/g, "\n")
+          .replace(/\\begin\{aligned\}/g, "")
+          .replace(/\\end\{aligned\}/g, "")
+          .replace(/\\\\/g, "; ")
+          .replace(/&=/g, "=")
+          .replace(/&/g, " "));
+      }
+
+      function manuscriptBlocks() {
+        const parsed = parseSource($("sourceEditor").value);
+        const blocks = [
+          { type: "title", text: plainExportText(parsed.title || $("title").value) },
+          { type: "meta", text: `Authors: ${authorLine() || "To be completed"}` },
+          ...(affiliationLine() ? [{ type: "meta", text: `Affiliations: ${affiliationLine()}` }] : []),
+          { type: "meta", text: `Keywords: ${plainExportText(parsed.keywords || $("keywords").value)}` },
+          { type: "heading", text: "Abstract" },
+          { type: "paragraph", text: plainExportText(parsed.abstract) },
+          ...parsed.sections.flatMap((section) => [
+            { type: "heading", text: plainExportText(section.title) },
+            ...plainExportText(section.body).split(/\n{2,}/).map((text) => ({ type: "paragraph", text }))
+          ]),
+          { type: "heading", text: "References" },
+          ...(savedSources.length
+            ? savedSources.map((source, index) => ({ type: "reference", text: `${index + 1}. ${citationLine(source)}` }))
+            : [{ type: "paragraph", text: "No saved references yet." }])
+        ];
+        return blocks.filter((block) => String(block.text || "").trim());
+      }
+
+      function wrapText(text, maxChars) {
+        const words = String(text || "").replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+        const lines = [];
+        let line = "";
+        words.forEach((word) => {
+          const next = line ? `${line} ${word}` : word;
+          if (next.length > maxChars && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = next;
+          }
+        });
+        if (line) lines.push(line);
+        return lines.length ? lines : [""];
+      }
+
+      function pdfEscape(value) {
+        return String(value || "").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/[^\x09\x0a\x0d\x20-\x7e]/g, "?");
+      }
+
+      function buildPdfBytes() {
+        const pageWidth = 612;
+        const pageHeight = 792;
+        const margin = 54;
+        const bottom = 54;
+        const blocks = manuscriptBlocks();
+        const pages = [];
+        let current = [];
+        let y = pageHeight - margin;
+
+        function addPage() {
+          if (current.length) pages.push(current);
+          current = [];
+          y = pageHeight - margin;
+        }
+
+        function addTextLine(text, size, bold = false, leading = 14) {
+          if (y < bottom + leading) addPage();
+          current.push({ text, size, bold, x: margin, y });
+          y -= leading;
+        }
+
+        blocks.forEach((block) => {
+          const size = block.type === "title" ? 18 : block.type === "heading" ? 14 : block.type === "meta" ? 10 : 11;
+          const leading = block.type === "title" ? 23 : block.type === "heading" ? 19 : 15;
+          const maxChars = block.type === "title" ? 58 : block.type === "heading" ? 66 : 88;
+          if (block.type === "heading") y -= 5;
+          wrapText(block.text, maxChars).forEach((line) => addTextLine(line, size, block.type === "title" || block.type === "heading", leading));
+          y -= block.type === "title" ? 8 : block.type === "heading" ? 3 : 5;
+        });
+        if (current.length) pages.push(current);
+
+        const objects = [];
+        objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+        objects[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>";
+        const pageRefs = [];
+        pages.forEach((lines) => {
+          const content = lines.map((line) => `BT /${line.bold ? "F2" : "F1"} ${line.size} Tf ${line.x} ${line.y.toFixed(2)} Td (${pdfEscape(line.text)}) Tj ET`).join("\n");
+          const contentObj = objects.length;
+          objects[contentObj] = `<< /Length ${bytes(content).length} >>\nstream\n${content}\nendstream`;
+          const pageObj = objects.length;
+          objects[pageObj] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObj} 0 R >>`;
+          pageRefs.push(`${pageObj} 0 R`);
+        });
+        objects[2] = `<< /Type /Pages /Kids [${pageRefs.join(" ")}] /Count ${pageRefs.length} >>`;
+
+        let pdf = "%PDF-1.4\n";
+        const offsets = [0];
+        for (let i = 1; i < objects.length; i++) {
+          offsets[i] = bytes(pdf).length;
+          pdf += `${i} 0 obj\n${objects[i]}\nendobj\n`;
+        }
+        const xref = bytes(pdf).length;
+        pdf += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+        for (let i = 1; i < objects.length; i++) pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+        pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+        return bytes(pdf);
       }
 
       function xmlEscape(value) {
         return String(value || "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[ch]));
       }
 
-      function docxParagraph(text, style = "") {
-        const safe = xmlEscape(stripTex(text)).split(/\n+/).filter(Boolean);
-        return (safe.length ? safe : [""]).map((line) => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ""}<w:r><w:t xml:space="preserve">${line}</w:t></w:r></w:p>`).join("");
+      function docxParagraph(text, style = "Normal") {
+        const safe = xmlEscape(plainExportText(text)).split(/\n+/).map((line) => line.trim()).filter(Boolean);
+        return (safe.length ? safe : [""]).map((line) => `<w:p><w:pPr><w:pStyle w:val="${style}"/></w:pPr><w:r><w:t xml:space="preserve">${line}</w:t></w:r></w:p>`).join("");
       }
 
       function buildDocumentXml() {
         const parsed = parseSource($("sourceEditor").value);
         const refs = savedSources.length ? savedSources.map((source, index) => `${index + 1}. ${citationLine(source)}`).join("\n") : "No saved references yet.";
-        const sectionXml = parsed.sections.map((section) => docxParagraph(section.title, "Heading1") + docxParagraph(section.body)).join("");
+        const sectionXml = parsed.sections.map((section) => docxParagraph(section.title, "Heading1") + plainExportText(section.body).split(/\n{2,}/).map((text) => docxParagraph(text, "Normal")).join("")).join("");
         return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
-    ${docxParagraph(stripTex(parsed.title || $("title").value), "Title")}
-    ${docxParagraph(`Authors: ${authorLine() || "To be completed"}`)}
-    ${affiliationLine() ? docxParagraph(`Affiliations: ${affiliationLine()}`) : ""}
-    ${docxParagraph(`Keywords: ${stripTex(parsed.keywords || $("keywords").value)}`)}
+    ${docxParagraph(parsed.title || $("title").value, "Title")}
+    ${docxParagraph(authorLine() || "To be completed", "AuthorLine")}
+    ${affiliationLine() ? docxParagraph(affiliationLine(), "Affiliation") : ""}
+    ${docxParagraph(`Keywords: ${plainExportText(parsed.keywords || $("keywords").value)}`, "Meta")}
     ${docxParagraph("Abstract", "Heading1")}
-    ${docxParagraph(parsed.abstract)}
+    ${docxParagraph(parsed.abstract, "AbstractText")}
     ${sectionXml}
     ${docxParagraph("References", "Heading1")}
-    ${docxParagraph(refs)}
+    ${docxParagraph(refs, "Reference")}
     <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>
   </w:body>
 </w:document>`;
@@ -2310,15 +2442,68 @@ ER  -`).join("\n\n");
       }
 
       function exportDocx() {
-        createSnapshot("DOCX export");
-        const files = [
-          { name: "[Content_Types].xml", data: `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>` },
-          { name: "_rels/.rels", data: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>` },
-          { name: "word/styles.xml", data: `<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:rPr><w:b/><w:sz w:val="36"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:rPr><w:b/><w:sz w:val="28"/></w:rPr></w:style></w:styles>` },
-          { name: "word/document.xml", data: buildDocumentXml() }
-        ];
-        downloadBlob(fileSlug("docx"), new Blob([makeZip(files)], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
-        logEdit("DOCX export downloaded", "Downloaded a Word-compatible manuscript draft with title, authors, sections, and references.", "export");
+        try {
+          createSnapshot("DOCX export");
+          const files = [
+            { name: "[Content_Types].xml", data: `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>` },
+            { name: "_rels/.rels", data: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>` },
+            { name: "word/_rels/document.xml.rels", data: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rStyle1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+            { name: "word/styles.xml", data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+    <w:name w:val="Normal"/>
+    <w:pPr><w:spacing w:after="160" w:line="276" w:lineRule="auto"/></w:pPr>
+    <w:rPr><w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/><w:sz w:val="23"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Title">
+    <w:name w:val="Title"/>
+    <w:basedOn w:val="Normal"/>
+    <w:pPr><w:spacing w:after="220"/><w:keepNext/></w:pPr>
+    <w:rPr><w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/><w:b/><w:sz w:val="38"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="AuthorLine">
+    <w:name w:val="Author Line"/>
+    <w:basedOn w:val="Normal"/>
+    <w:pPr><w:spacing w:after="100"/></w:pPr>
+    <w:rPr><w:b/><w:sz w:val="22"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Affiliation">
+    <w:name w:val="Affiliation"/>
+    <w:basedOn w:val="Normal"/>
+    <w:rPr><w:i/><w:color w:val="4B5563"/><w:sz w:val="20"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Meta">
+    <w:name w:val="Manuscript Metadata"/>
+    <w:basedOn w:val="Normal"/>
+    <w:pPr><w:spacing w:after="180"/></w:pPr>
+    <w:rPr><w:color w:val="4B5563"/><w:sz w:val="20"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Heading1">
+    <w:name w:val="heading 1"/>
+    <w:basedOn w:val="Normal"/>
+    <w:pPr><w:spacing w:before="260" w:after="120"/><w:keepNext/></w:pPr>
+    <w:rPr><w:b/><w:sz w:val="29"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="AbstractText">
+    <w:name w:val="Abstract Text"/>
+    <w:basedOn w:val="Normal"/>
+    <w:pPr><w:ind w:left="360" w:right="360"/><w:spacing w:after="180"/></w:pPr>
+    <w:rPr><w:sz w:val="22"/></w:rPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="Reference">
+    <w:name w:val="Reference"/>
+    <w:basedOn w:val="Normal"/>
+    <w:pPr><w:ind w:hanging="360"/><w:spacing w:after="120"/></w:pPr>
+    <w:rPr><w:sz w:val="20"/></w:rPr>
+  </w:style>
+</w:styles>` },
+            { name: "word/document.xml", data: buildDocumentXml() }
+          ];
+          downloadBlob(fileSlug("docx"), new Blob([makeZip(files)], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
+          logEdit("DOCX export downloaded", "Downloaded a formatted Word-compatible manuscript draft with title, authors, sections, and references.", "export");
+        } catch (error) {
+          alert(`DOCX export failed. Please save your draft and try again. ${error.message}`);
+        }
       }
 
       function buildAuditLogExport() {
