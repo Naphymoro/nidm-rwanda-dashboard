@@ -25,6 +25,20 @@
         --font-data: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
         --font-serif: Georgia, "Times New Roman", serif;
       }
+      body.dark {
+        --paper: #11100d;
+        --panel: #1b1712;
+        --wash: #262016;
+        --ink: #f8f1e7;
+        --muted: #d8c9b5;
+        --soft: #b6a88f;
+        --line: #4a3f31;
+        --accent: #f6efe4;
+        --shadow: 0 20px 70px rgba(0, 0, 0, .34);
+        background:
+          radial-gradient(circle at 12% 8%, rgba(255, 255, 255, .06), transparent 30%),
+          linear-gradient(135deg, #11100d, #1b1712 72%, #11100d);
+      }
       * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
       body {
@@ -54,7 +68,17 @@
       button:hover, .button:hover { border-color: var(--accent); }
       .primary { background: var(--accent); border-color: var(--accent); color: white; }
       .primary:hover { color: white; background: #2a241f; }
+      body.dark .primary { color: #11100d; background: #f6efe4; border-color: #f6efe4; }
+      body.dark .primary:hover { color: #11100d; background: #fffaf0; }
       .danger { border-color: rgba(159, 73, 61, .45); color: var(--red); }
+      .icon-button {
+        display: inline-grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border-radius: 999px;
+      }
       .topbar {
         position: sticky;
         top: 0;
@@ -161,6 +185,27 @@
         width: 100%;
         text-align: left;
       }
+      body.dark .topbar,
+      body.dark .workspace-nav,
+      body.dark .editor-pane,
+      body.dark .preview-pane,
+      body.dark .side,
+      body.dark .panel,
+      body.dark .menu-panel,
+      body.dark .toolbar-group,
+      body.dark .toolbar-menu summary,
+      body.dark button,
+      body.dark .button,
+      body.dark input,
+      body.dark select,
+      body.dark textarea,
+      body.dark .ai-setup-bar,
+      body.dark .assistant-dock,
+      body.dark .modal-card {
+        background-color: var(--panel);
+        color: var(--ink);
+      }
+      body.dark .publication-page { background: #fff; color: #23201b; }
       .workspace {
         display: grid;
         grid-template-columns: minmax(420px, var(--editor-width, 52%)) 12px minmax(380px, 1fr);
@@ -338,6 +383,24 @@
         flex: 1 1 140px;
         text-align: left;
       }
+      .ai-permissions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        flex: 1 1 100%;
+      }
+      .ai-permissions label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 253, 249, .64);
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .ai-permissions input { width: auto; }
       .ai-switch {
         display: inline-flex;
         align-items: center;
@@ -402,6 +465,13 @@
         gap: 14px;
         padding: 16px;
       }
+      .source-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .source-head .button-row { flex-wrap: nowrap; }
       label {
         display: grid;
         gap: 6px;
@@ -426,6 +496,38 @@
         color: #f8f0e4;
         background: #17130f;
         border-color: #17130f;
+      }
+      .author-manager {
+        display: grid;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: rgba(255, 253, 249, .74);
+      }
+      .author-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .author-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 10px;
+        background: var(--panel);
+        font-weight: 850;
+      }
+      .author-chip small {
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .author-chip button {
+        min-height: 24px;
+        padding: 2px 6px;
+        border-radius: 999px;
       }
       .two {
         display: grid;
@@ -495,6 +597,21 @@
       .compile-controls input {
         width: auto;
       }
+      .history-list, .log-list {
+        display: grid;
+        gap: 8px;
+        max-height: 260px;
+        overflow: auto;
+      }
+      .history-row, .log-row {
+        display: grid;
+        gap: 4px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        background: rgba(255, 253, 249, .74);
+      }
+      .history-row .button-row { justify-content: flex-start; }
       .preview-tools {
         display: flex;
         align-items: center;
@@ -636,6 +753,72 @@
         letter-spacing: .08em;
         text-transform: uppercase;
       }
+      .assistant-fab {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 90;
+        display: grid;
+        place-items: center;
+        width: 58px;
+        height: 58px;
+        border-radius: 999px;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 22px 64px rgba(18, 16, 13, .24);
+      }
+      body.dark .assistant-fab { color: #11100d; }
+      .assistant-dock {
+        position: fixed;
+        right: 20px;
+        bottom: 90px;
+        z-index: 90;
+        display: none;
+        width: min(420px, calc(100vw - 32px));
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255, 253, 249, .98);
+        box-shadow: 0 25px 80px rgba(70, 55, 30, .22);
+        padding: 14px;
+      }
+      .assistant-dock.open {
+        display: grid;
+        gap: 10px;
+      }
+      .assistant-suggestion {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        background: rgba(251, 250, 247, .75);
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 110;
+        display: none;
+        place-items: center;
+        padding: 18px;
+        background: rgba(18, 16, 13, .34);
+      }
+      .modal-backdrop.open { display: grid; }
+      .modal-card {
+        width: min(760px, 100%);
+        max-height: min(86vh, 820px);
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: 0 28px 90px rgba(18, 16, 13, .28);
+        padding: 18px;
+      }
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 14px;
+      }
       .mobile-tabs {
         display: none;
         position: sticky;
@@ -694,6 +877,8 @@
       @media (max-width: 640px) {
         .ai-setup-bar.key-manager { display: grid; grid-template-columns: 1fr; }
         .ai-setup-bar .key-status { text-align: left; }
+        .source-head { display: grid; }
+        .source-head .button-row { flex-wrap: wrap; }
       }
       @media print {
         .topbar, .side, .editor-pane, .preview-tools, .mobile-tabs { display: none !important; }
@@ -730,13 +915,15 @@
         <div class="toolbar-group" aria-label="NDIM source commands">
           <button id="loadNdim" type="button">Load NDIM results</button>
         </div>
-        <details class="toolbar-menu">
+        <details class="toolbar-menu" id="exportMenu">
           <summary>Export</summary>
           <div class="menu-panel">
+            <button id="exportPdf" type="button">Export PDF</button>
+            <button id="exportDocx" type="button">Export DOCX</button>
             <button id="exportTex" type="button">Export .tex</button>
             <button id="exportBib" type="button">Export .bib</button>
             <button id="exportHtml" type="button">Export HTML</button>
-            <button id="printPdf" type="button">Print / PDF</button>
+            <button id="exportAuditLog" type="button">Export edit log</button>
           </div>
         </details>
         <details class="toolbar-menu">
@@ -747,6 +934,7 @@
             <a class="button" href="./index.html">Back to tool</a>
           </div>
         </details>
+        <button class="icon-button" id="themeToggle" type="button" title="Toggle light or dark mode" aria-label="Toggle light or dark mode">◐</button>
       </div>
     </header>
 
@@ -816,9 +1004,18 @@
                 <option value="local">Remember on this browser</option>
               </select>
             </label>
+            <label><span class="mono">Editor name</span><input id="editorName" placeholder="e.g., Cecil Ouma" /></label>
             <button class="primary" id="loadOpenAiKey" type="button">Load key</button>
             <button id="clearOpenAiKey" type="button">Clear</button>
             <span class="key-status" id="openaiKeyStatus">No key loaded</span>
+            <div class="ai-permissions" aria-label="AI assistant permissions">
+              <label><input data-ai-power="clarity" type="checkbox" checked /> grammar and clarity</label>
+              <label><input data-ai-power="science" type="checkbox" checked /> scientific tone</label>
+              <label><input data-ai-power="literature" type="checkbox" /> literature synthesis</label>
+              <label><input data-ai-power="citations" type="checkbox" /> citation suggestions</label>
+              <label><input data-ai-power="rewrite" type="checkbox" /> rewrite selected section</label>
+              <label><input data-ai-power="methods" type="checkbox" /> critique methods</label>
+            </div>
           </div>
           <div class="tabs" aria-label="Publication workspace sections">
             <button class="tab active" data-pane="manuscript">Manuscript</button>
@@ -849,8 +1046,22 @@
                 </select>
               </label>
             </div>
-            <div class="three">
-              <label><span class="mono">Authors</span><input id="authors" /></label>
+            <input id="authors" type="hidden" />
+            <div class="author-manager">
+              <div class="source-head">
+                <div>
+                  <div class="mono">Authors and affiliations</div>
+                  <strong>Structured author list</strong>
+                  <p class="small" style="margin:3px 0 0">Add authors, ORCID, affiliations, and contribution roles for journal-ready exports.</p>
+                </div>
+                <div class="button-row">
+                  <button class="primary" id="openAuthorModal" type="button">Add author</button>
+                  <button id="syncAuthors" type="button">Refresh author line</button>
+                </div>
+              </div>
+              <div class="author-list" id="authorList"></div>
+            </div>
+            <div class="two">
               <label><span class="mono">Keywords</span><input id="keywords" /></label>
               <label><span class="mono">Journal section</span>
                 <select id="journalSection">
@@ -865,10 +1076,18 @@
             <div class="notice">
               Structured for Frontiers-style preparation. Final submission still requires author review, ethics review where applicable, and the current official journal template.
             </div>
-            <label>
-              <span class="mono">Manuscript source</span>
+            <div>
+              <div class="source-head">
+                <label style="flex:1">
+                  <span class="mono">Manuscript source</span>
+                </label>
+                <div class="button-row">
+                  <button class="primary" id="compileNearEditor" type="button">Compile preview</button>
+                  <button id="saveSnapshotNearEditor" type="button">Save version</button>
+                </div>
+              </div>
               <textarea id="sourceEditor" spellcheck="false"></textarea>
-            </label>
+            </div>
           </div>
         </div>
 
@@ -1006,6 +1225,16 @@
               <h2>Privacy rule</h2>
               <p class="small">The publication workspace keeps drafts in your browser local storage. OpenAI calls require your explicit click and your key. Literature search only crawls legal metadata/open sources.</p>
             </div>
+            <div class="panel pad">
+              <h2>Manuscript versions</h2>
+              <p class="small">Every compile and export can be traced. Restore a previous version when a draft moves in the wrong direction.</p>
+              <div class="history-list" id="versionHistory"></div>
+            </div>
+            <div class="panel pad">
+              <h2>Editing log</h2>
+              <p class="small">Human-readable provenance for collaborative writing: editor, action, source, and short summary.</p>
+              <div class="log-list" id="editLog"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -1027,6 +1256,65 @@
       </section>
     </main>
 
+    <button class="assistant-fab" id="assistantFab" type="button" aria-label="Open AI writing assistant">✦</button>
+    <section class="assistant-dock" id="assistantDock" aria-label="Contextual writing assistant">
+      <div class="source-head">
+        <div>
+          <div class="mono">Contextual assistant</div>
+          <strong>Scientific editor beside the manuscript</strong>
+        </div>
+        <button class="icon-button" id="closeAssistantDock" type="button" aria-label="Close assistant">&times;</button>
+      </div>
+      <div class="assistant-suggestion" id="assistantSuggestion">
+        Select a section or place the cursor in the manuscript. I can help improve clarity, structure, citations, or methodological caution after AI is enabled.
+      </div>
+      <div class="button-row">
+        <button id="dockBuildPrompt" type="button">Build suggestion prompt</button>
+        <button id="dockOpenAssistant" type="button">Open assistant tab</button>
+      </div>
+    </section>
+
+    <div class="modal-backdrop" id="authorModal" aria-hidden="true">
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authorModalTitle">
+        <div class="modal-head">
+          <div>
+            <div class="mono">Author manager</div>
+            <h2 id="authorModalTitle" style="margin:4px 0 0">Add or edit author</h2>
+            <p class="small" style="margin:4px 0 0">Search ORCID when online, or enter author and affiliation details manually.</p>
+          </div>
+          <button class="drawer-close" id="closeAuthorModal" type="button" aria-label="Close author manager">&times;</button>
+        </div>
+        <div class="editor-grid" style="padding:0">
+          <div class="two">
+            <label><span class="mono">ORCID or author search</span><input id="orcidQuery" placeholder="Name, ORCID iD, or institution" /></label>
+            <label><span class="mono">Search status</span><input id="orcidStatus" value="Manual entry is available offline." readonly /></label>
+          </div>
+          <div class="button-row">
+            <button id="searchOrcid" type="button">Search ORCID</button>
+            <button id="clearAuthorForm" type="button">Clear form</button>
+          </div>
+          <div id="orcidResults" class="results" style="max-height:180px"></div>
+          <div class="two">
+            <label><span class="mono">Full name</span><input id="authorName" /></label>
+            <label><span class="mono">ORCID iD</span><input id="authorOrcid" placeholder="0000-0000-0000-0000" /></label>
+          </div>
+          <div class="two">
+            <label><span class="mono">Email</span><input id="authorEmail" type="email" /></label>
+            <label><span class="mono">Country</span><input id="authorCountry" /></label>
+          </div>
+          <div class="two">
+            <label><span class="mono">Institution</span><input id="authorInstitution" /></label>
+            <label><span class="mono">Department / unit</span><input id="authorDepartment" /></label>
+          </div>
+          <label><span class="mono">Contribution role</span><input id="authorRole" placeholder="Conceptualization, methodology, software, writing..." /></label>
+          <div class="button-row">
+            <button class="primary" id="saveAuthor" type="button">Save author</button>
+            <button id="cancelAuthor" type="button">Cancel</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <script>
       const $ = (id) => document.getElementById(id);
       const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -1035,6 +1323,7 @@
       const OPENAI_KEY_LOCAL = "ndim-publication-openai-key";
       const OPENAI_KEY_SESSION = "ndim-publication-openai-key-session";
       const AI_MODE_KEY = "ndim-publication-ai-enabled";
+      const THEME_KEY = "ndim-publication-theme";
 
       const seed = {
         title: "The Narrative Diffusion and Inoculation Model: A Governed Evidence-to-Policy Engine for Public-Interest Technology Narratives",
@@ -1252,6 +1541,10 @@ To be completed by the author team.
 
       let savedSources = [];
       let latestResults = [];
+      let authors = [];
+      let versions = [];
+      let editLog = [];
+      let editingAuthorIndex = null;
 
       const sections = [
         ["abstract", "Abstract", "What the paper says in one page"],
@@ -1276,6 +1569,222 @@ To be completed by the author team.
 
       function escapeHtml(value) {
         return String(value || "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
+      }
+
+      function editorName() {
+        return $("editorName")?.value.trim() || "Publication editor";
+      }
+
+      function authorLine() {
+        if (!authors.length) return $("authors")?.value || seed.authors;
+        return authors.map((author) => author.orcid ? `${author.name} (${author.orcid})` : author.name).join("; ");
+      }
+
+      function affiliationLine() {
+        const rows = authors
+          .map((author) => [author.institution, author.department, author.country].filter(Boolean).join(", "))
+          .filter(Boolean);
+        return [...new Set(rows)].join("; ");
+      }
+
+      function syncAuthorInput() {
+        if ($("authors")) $("authors").value = authorLine();
+      }
+
+      function logEdit(action, summary, source = "manual") {
+        editLog.unshift({
+          id: `log-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          time: new Date().toISOString(),
+          editor: editorName(),
+          action,
+          source,
+          summary
+        });
+        editLog = editLog.slice(0, 80);
+        renderEditLog();
+        persist();
+      }
+
+      function createSnapshot(reason = "Compile preview") {
+        syncAuthorInput();
+        const parsed = parseSource($("sourceEditor").value);
+        const snapshot = {
+          id: `v${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
+          time: new Date().toISOString(),
+          editor: editorName(),
+          reason,
+          title: $("title").value,
+          source: $("sourceEditor").value,
+          authors: JSON.parse(JSON.stringify(authors)),
+          authorLine: authorLine(),
+          abstract: parsed.abstract.slice(0, 220)
+        };
+        versions.unshift(snapshot);
+        versions = versions.slice(0, 30);
+        renderVersionHistory();
+        logEdit(reason, `Saved ${snapshot.id}: ${snapshot.title}`, reason.toLowerCase().includes("export") ? "export" : "compile");
+        return snapshot;
+      }
+
+      function restoreVersion(id) {
+        const version = versions.find((item) => item.id === id);
+        if (!version) return;
+        $("title").value = version.title || $("title").value;
+        $("sourceEditor").value = version.source || $("sourceEditor").value;
+        authors = Array.isArray(version.authors) ? version.authors : authors;
+        renderAuthors();
+        renderPreview(false);
+        logEdit("Restore version", `Restored ${version.id} from ${new Date(version.time).toLocaleString()}.`, "version history");
+        persist();
+      }
+
+      function renderVersionHistory() {
+        const node = $("versionHistory");
+        if (!node) return;
+        node.innerHTML = versions.length ? versions.map((version) => `
+          <div class="history-row">
+            <strong>${escapeHtml(version.id)} - ${escapeHtml(version.reason)}</strong>
+            <span class="small">${escapeHtml(version.editor)} | ${new Date(version.time).toLocaleString()}</span>
+            <span class="small">${escapeHtml(version.abstract || "No abstract captured.")}</span>
+            <div class="button-row"><button data-restore-version="${escapeHtml(version.id)}" type="button">Restore this version</button></div>
+          </div>`).join("") : `<div class="history-row"><strong>No versions yet</strong><span class="small">Compile preview or export to create the first manuscript snapshot.</span></div>`;
+        $$("[data-restore-version]").forEach((button) => button.addEventListener("click", () => restoreVersion(button.dataset.restoreVersion)));
+      }
+
+      function renderEditLog() {
+        const node = $("editLog");
+        if (!node) return;
+        node.innerHTML = editLog.length ? editLog.map((entry) => `
+          <div class="log-row">
+            <strong>${escapeHtml(entry.action)}</strong>
+            <span class="small">${escapeHtml(entry.editor)} | ${new Date(entry.time).toLocaleString()} | ${escapeHtml(entry.source)}</span>
+            <span>${escapeHtml(entry.summary)}</span>
+          </div>`).join("") : `<div class="log-row"><strong>No editing events yet</strong><span class="small">Saves, compiles, exports, AI actions, literature inserts, and restores will appear here.</span></div>`;
+      }
+
+      function renderAuthors() {
+        syncAuthorInput();
+        const node = $("authorList");
+        if (!node) return;
+        node.innerHTML = authors.length ? authors.map((author, index) => `
+          <div class="author-chip">
+            <strong>${escapeHtml(author.name || "Unnamed author")}</strong>
+            <span>${escapeHtml([author.role, author.institution, author.country].filter(Boolean).join(" | ") || "Affiliation not yet added")}</span>
+            ${author.orcid ? `<a href="https://orcid.org/${escapeHtml(author.orcid.replace(/^https?:\/\/orcid\.org\//, ""))}" target="_blank" rel="noreferrer">${escapeHtml(author.orcid)}</a>` : ""}
+            <div class="button-row">
+              <button data-edit-author="${index}" type="button">Edit</button>
+              <button data-remove-author="${index}" type="button">Remove</button>
+            </div>
+          </div>`).join("") : `<div class="author-chip"><strong>No structured authors yet</strong><span>Add authors with ORCID, affiliation, country, and contribution role. The old author text remains available until replaced.</span></div>`;
+        $$("[data-edit-author]").forEach((button) => button.addEventListener("click", () => openAuthorModal(Number(button.dataset.editAuthor))));
+        $$("[data-remove-author]").forEach((button) => button.addEventListener("click", () => {
+          const author = authors.splice(Number(button.dataset.removeAuthor), 1)[0];
+          renderAuthors();
+          renderPreview(false);
+          logEdit("Author removed", `Removed ${author?.name || "an author"} from the structured author list.`, "author manager");
+        }));
+      }
+
+      function openAuthorModal(index = null) {
+        editingAuthorIndex = Number.isInteger(index) ? index : null;
+        const author = editingAuthorIndex === null ? {} : authors[editingAuthorIndex] || {};
+        $("authorName").value = author.name || "";
+        $("authorOrcid").value = author.orcid || "";
+        $("authorEmail").value = author.email || "";
+        $("authorCountry").value = author.country || "";
+        $("authorInstitution").value = author.institution || "";
+        $("authorDepartment").value = author.department || "";
+        $("authorRole").value = author.role || "";
+        $("orcidQuery").value = author.name || "";
+        $("orcidResults").innerHTML = "";
+        $("orcidStatus").textContent = "Search ORCID when online, or type details directly.";
+        $("authorModal").classList.add("open");
+        $("authorModal").setAttribute("aria-hidden", "false");
+        setTimeout(() => $("authorName").focus(), 50);
+      }
+
+      function closeAuthorModal() {
+        $("authorModal").classList.remove("open");
+        $("authorModal").setAttribute("aria-hidden", "true");
+        editingAuthorIndex = null;
+      }
+
+      function clearAuthorForm() {
+        ["authorName", "authorOrcid", "authorEmail", "authorCountry", "authorInstitution", "authorDepartment", "authorRole", "orcidQuery"].forEach((id) => {
+          if ($(id)) $(id).value = "";
+        });
+        $("orcidResults").innerHTML = "";
+        $("orcidStatus").textContent = "Form cleared.";
+      }
+
+      function saveAuthorFromForm() {
+        const author = {
+          name: $("authorName").value.trim(),
+          orcid: $("authorOrcid").value.trim().replace(/^https?:\/\/orcid\.org\//, ""),
+          email: $("authorEmail").value.trim(),
+          country: $("authorCountry").value.trim(),
+          institution: $("authorInstitution").value.trim(),
+          department: $("authorDepartment").value.trim(),
+          role: $("authorRole").value.trim()
+        };
+        if (!author.name) {
+          $("orcidStatus").textContent = "Add at least the author name before saving.";
+          return;
+        }
+        if (editingAuthorIndex === null) {
+          authors.push(author);
+          logEdit("Author added", `Added ${author.name} to the manuscript author list.`, "author manager");
+        } else {
+          authors[editingAuthorIndex] = author;
+          logEdit("Author updated", `Updated ${author.name} in the manuscript author list.`, "author manager");
+        }
+        renderAuthors();
+        renderPreview(false);
+        persist();
+        closeAuthorModal();
+      }
+
+      function applyOrcidResult(record) {
+        const given = record["given-names"]?.value || "";
+        const family = record["family-name"]?.value || record["family-names"]?.value || "";
+        const name = [given, family].filter(Boolean).join(" ") || record.name || "";
+        $("authorName").value = name;
+        $("authorOrcid").value = record["orcid-identifier"]?.path || record.orcid || "";
+        $("orcidStatus").textContent = `Loaded ORCID result for ${name || "selected author"}. Add affiliation details before saving.`;
+      }
+
+      async function searchOrcid() {
+        const query = $("orcidQuery").value.trim() || $("authorName").value.trim();
+        if (!query) {
+          $("orcidStatus").textContent = "Type an author name or ORCID search term first.";
+          return;
+        }
+        $("orcidStatus").textContent = "Searching ORCID...";
+        $("orcidResults").innerHTML = "";
+        try {
+          const response = await fetch(`https://pub.orcid.org/v3.0/search/?q=${encodeURIComponent(query)}&rows=5`, { headers: { accept: "application/json" } });
+          if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+          const data = await response.json();
+          const records = (data.result || []).map((item) => item["orcid-identifier"]?.path).filter(Boolean);
+          if (!records.length) {
+            $("orcidStatus").textContent = "No ORCID records found. You can still enter the author manually.";
+            return;
+          }
+          const details = await Promise.all(records.map((orcid) => fetch(`https://pub.orcid.org/v3.0/${orcid}/person`, { headers: { accept: "application/json" } }).then((r) => r.ok ? r.json() : { orcid }).catch(() => ({ orcid }))));
+          $("orcidResults").innerHTML = details.map((record, index) => {
+            const given = record.name?.["given-names"]?.value || "";
+            const family = record.name?.["family-name"]?.value || "";
+            const name = [given, family].filter(Boolean).join(" ") || records[index];
+            return `<button data-orcid-index="${index}" type="button">${escapeHtml(name)} <span>${escapeHtml(records[index])}</span></button>`;
+          }).join("");
+          $$("[data-orcid-index]").forEach((button) => button.addEventListener("click", () => applyOrcidResult({
+            ...details[Number(button.dataset.orcidIndex)].name,
+            "orcid-identifier": { path: records[Number(button.dataset.orcidIndex)] }
+          })));
+          $("orcidStatus").textContent = "Choose a result, then add affiliation details.";
+        } catch (error) {
+          $("orcidStatus").textContent = `ORCID lookup is unavailable here. Enter author details manually. ${error.message}`;
+        }
       }
 
       function stripTex(value) {
@@ -1374,7 +1883,8 @@ To be completed by the author team.
         }
       }
 
-      function renderPreview() {
+      function renderPreview(recordSnapshot = false, reason = "Compile preview") {
+        syncAuthorInput();
         const parsed = parseSource($("sourceEditor").value);
         const meta = articleMeta();
         const sectionHtml = parsed.sections.map((section) => {
@@ -1383,7 +1893,8 @@ To be completed by the author team.
         }).join("");
         $("previewPage").innerHTML = `
           <h1>${escapeHtml(stripTex(parsed.title))}</h1>
-          <p><strong>Authors:</strong> ${escapeHtml($("authors").value || "To be completed")}</p>
+          <p><strong>Authors:</strong> ${escapeHtml(authorLine() || "To be completed")}</p>
+          ${affiliationLine() ? `<p><strong>Affiliations:</strong> ${escapeHtml(affiliationLine())}</p>` : ""}
           <p><strong>Article preparation:</strong> ${escapeHtml(meta.label)}; ${escapeHtml($("journalSection").value)}</p>
           <p><strong>Keywords:</strong> ${escapeHtml(stripTex(parsed.keywords || $("keywords").value))}</p>
           <h2 id="abstract">Abstract</h2>
@@ -1398,6 +1909,7 @@ To be completed by the author team.
         $("draftStatus").textContent = "preview current";
         updateChecklist();
         renderSectionList();
+        if (recordSnapshot) createSnapshot(reason);
       }
 
       function articleMeta() {
@@ -1453,14 +1965,19 @@ To be completed by the author team.
       }
 
       function persist() {
+        syncAuthorInput();
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           title: $("title").value,
           authors: $("authors").value,
+          authorRecords: authors,
           keywords: $("keywords").value,
           articleType: $("articleType").value,
           journalSection: $("journalSection").value,
           source: $("sourceEditor").value,
-          savedSources
+          savedSources,
+          versions,
+          editLog,
+          editorName: $("editorName")?.value || ""
         }));
         $("draftStatus").textContent = "saved locally";
       }
@@ -1470,11 +1987,20 @@ To be completed by the author team.
         const data = raw ? JSON.parse(raw) : seed;
         $("title").value = data.title || seed.title;
         $("authors").value = data.authors || seed.authors;
+        authors = Array.isArray(data.authorRecords) && data.authorRecords.length
+          ? data.authorRecords
+          : String(data.authors || seed.authors).split(";").map((name) => ({ name: name.trim() })).filter((author) => author.name);
         $("keywords").value = data.keywords || seed.keywords;
         $("articleType").value = data.articleType || seed.articleType;
         $("journalSection").value = data.journalSection || seed.journalSection;
         $("sourceEditor").value = data.source || seed.source;
         savedSources = Array.isArray(data.savedSources) ? data.savedSources : [];
+        versions = Array.isArray(data.versions) ? data.versions : [];
+        editLog = Array.isArray(data.editLog) ? data.editLog : [];
+        if ($("editorName")) $("editorName").value = data.editorName || "";
+        renderAuthors();
+        renderVersionHistory();
+        renderEditLog();
       }
 
       function markDraftChanged() {
@@ -1642,6 +2168,173 @@ ER  -`).join("\n\n");
 
       function buildHtmlExport() {
         return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml($("title").value)}</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><style>body{font-family:Georgia,serif;max-width:850px;margin:40px auto;line-height:1.6}.equation{padding:12px 14px;background:#fff;border:1px solid #d3c7b5;border-left:4px solid #385c8f;border-radius:8px;overflow-x:auto}.katex-display{text-align:left}</style></head><body>${$("previewPage").innerHTML}</body></html>`;
+      }
+
+      function buildJournalHtmlDocument() {
+        renderPreview(false);
+        const preview = $("previewPage").cloneNode(true);
+        preview.querySelector("h1")?.remove();
+        preview.querySelectorAll(":scope > p").forEach((paragraph, index) => {
+          if (index < 3) paragraph.remove();
+        });
+        return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml($("title").value)}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <style>
+    @page { size: A4; margin: 22mm 20mm; }
+    body { font-family: Georgia, "Times New Roman", serif; color:#111; line-height:1.58; font-size:11.5pt; }
+    main { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 21pt; line-height:1.18; margin: 0 0 12pt; }
+    h2 { font-size: 14pt; margin: 20pt 0 8pt; border-bottom: 1px solid #ddd; padding-bottom: 4pt; }
+    p { margin: 0 0 9pt; }
+    .front-matter { border-bottom: 2px solid #222; padding-bottom: 14pt; margin-bottom: 18pt; }
+    .meta { font-size: 10pt; color:#444; }
+    .equation { margin: 10pt 0; padding: 8pt 10pt; border-left: 3pt solid #385c8f; background: #f8f8f8; overflow-x: auto; }
+    ol { padding-left: 20pt; }
+    @media print { .no-print { display:none; } body { margin:0; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="front-matter">
+      <h1>${escapeHtml(stripTex(parseSource($("sourceEditor").value).title || $("title").value))}</h1>
+      <p><strong>Authors:</strong> ${escapeHtml(authorLine() || "To be completed")}</p>
+      ${affiliationLine() ? `<p class="meta"><strong>Affiliations:</strong> ${escapeHtml(affiliationLine())}</p>` : ""}
+      <p class="meta"><strong>Keywords:</strong> ${escapeHtml($("keywords").value)}</p>
+      <p class="meta"><strong>Prepared for:</strong> ${escapeHtml($("articleType").selectedOptions?.[0]?.textContent || $("articleType").value)}; ${escapeHtml($("journalSection").value)}</p>
+    </div>
+    ${preview.innerHTML}
+  </main>
+</body>
+</html>`;
+      }
+
+      function exportJournalPdf() {
+        createSnapshot("PDF export");
+        const doc = buildJournalHtmlDocument();
+        const win = window.open("", "_blank", "noopener,noreferrer");
+        if (!win) {
+          downloadBlob(fileSlug("html"), doc, "text/html");
+          alert("Popup was blocked. I downloaded a journal-formatted HTML file; open it and use Print to PDF.");
+          return;
+        }
+        win.document.open();
+        win.document.write(doc);
+        win.document.close();
+        setTimeout(() => win.print(), 650);
+        logEdit("PDF export opened", "Opened a journal-formatted print/PDF view in a new tab.", "export");
+      }
+
+      function xmlEscape(value) {
+        return String(value || "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[ch]));
+      }
+
+      function docxParagraph(text, style = "") {
+        const safe = xmlEscape(stripTex(text)).split(/\n+/).filter(Boolean);
+        return (safe.length ? safe : [""]).map((line) => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ""}<w:r><w:t xml:space="preserve">${line}</w:t></w:r></w:p>`).join("");
+      }
+
+      function buildDocumentXml() {
+        const parsed = parseSource($("sourceEditor").value);
+        const refs = savedSources.length ? savedSources.map((source, index) => `${index + 1}. ${citationLine(source)}`).join("\n") : "No saved references yet.";
+        const sectionXml = parsed.sections.map((section) => docxParagraph(section.title, "Heading1") + docxParagraph(section.body)).join("");
+        return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${docxParagraph(stripTex(parsed.title || $("title").value), "Title")}
+    ${docxParagraph(`Authors: ${authorLine() || "To be completed"}`)}
+    ${affiliationLine() ? docxParagraph(`Affiliations: ${affiliationLine()}`) : ""}
+    ${docxParagraph(`Keywords: ${stripTex(parsed.keywords || $("keywords").value)}`)}
+    ${docxParagraph("Abstract", "Heading1")}
+    ${docxParagraph(parsed.abstract)}
+    ${sectionXml}
+    ${docxParagraph("References", "Heading1")}
+    ${docxParagraph(refs)}
+    <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>
+  </w:body>
+</w:document>`;
+      }
+
+      function crc32(bytes) {
+        let table = crc32.table;
+        if (!table) {
+          table = crc32.table = Array.from({ length: 256 }, (_, n) => {
+            let c = n;
+            for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+            return c >>> 0;
+          });
+        }
+        let crc = -1;
+        for (const byte of bytes) crc = (crc >>> 8) ^ table[(crc ^ byte) & 0xff];
+        return (crc ^ -1) >>> 0;
+      }
+
+      function u16(value) { return [value & 255, (value >>> 8) & 255]; }
+      function u32(value) { return [value & 255, (value >>> 8) & 255, (value >>> 16) & 255, (value >>> 24) & 255]; }
+      function bytes(value) { return new TextEncoder().encode(value); }
+      function concatBytes(parts) {
+        const length = parts.reduce((sum, part) => sum + part.length, 0);
+        const out = new Uint8Array(length);
+        let offset = 0;
+        parts.forEach((part) => { out.set(part, offset); offset += part.length; });
+        return out;
+      }
+
+      function makeZip(files) {
+        const locals = [];
+        const centrals = [];
+        let offset = 0;
+        files.forEach((file) => {
+          const name = bytes(file.name);
+          const data = file.data instanceof Uint8Array ? file.data : bytes(file.data);
+          const crc = crc32(data);
+          const local = concatBytes([
+            new Uint8Array([0x50,0x4b,0x03,0x04, 20,0, 0,0, 0,0, 0,0, 0,0, ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), 0,0]),
+            name,
+            data
+          ]);
+          locals.push(local);
+          centrals.push(concatBytes([
+            new Uint8Array([0x50,0x4b,0x01,0x02, 20,0, 20,0, 0,0, 0,0, 0,0, 0,0, ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), 0,0, 0,0, 0,0, 0,0, ...u32(0), ...u32(offset)]),
+            name
+          ]));
+          offset += local.length;
+        });
+        const centralStart = offset;
+        const central = concatBytes(centrals);
+        const end = new Uint8Array([0x50,0x4b,0x05,0x06, 0,0, 0,0, ...u16(files.length), ...u16(files.length), ...u32(central.length), ...u32(centralStart), 0,0]);
+        return concatBytes([...locals, central, end]);
+      }
+
+      function exportDocx() {
+        createSnapshot("DOCX export");
+        const files = [
+          { name: "[Content_Types].xml", data: `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>` },
+          { name: "_rels/.rels", data: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>` },
+          { name: "word/styles.xml", data: `<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:rPr><w:b/><w:sz w:val="36"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:rPr><w:b/><w:sz w:val="28"/></w:rPr></w:style></w:styles>` },
+          { name: "word/document.xml", data: buildDocumentXml() }
+        ];
+        downloadBlob(fileSlug("docx"), new Blob([makeZip(files)], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
+        logEdit("DOCX export downloaded", "Downloaded a Word-compatible manuscript draft with title, authors, sections, and references.", "export");
+      }
+
+      function buildAuditLogExport() {
+        const rows = [
+          `NDIM publication workspace edit log`,
+          `Title: ${$("title").value}`,
+          `Exported: ${new Date().toISOString()}`,
+          `Editor: ${editorName()}`,
+          ``,
+          `Versions`,
+          ...versions.map((version) => `- ${version.id} | ${version.time} | ${version.editor} | ${version.reason} | ${version.title}`),
+          ``,
+          `Editing events`,
+          ...editLog.map((entry) => `- ${entry.time} | ${entry.editor} | ${entry.action} | ${entry.source} | ${entry.summary}`)
+        ];
+        return rows.join("\n");
       }
 
       function domainQuery(query) {
@@ -1865,6 +2558,80 @@ ${$("sourceEditor").value.slice(0, 5000)}
         $("pane-assistant").classList.add("active");
       }
 
+      function selectedAiPowers() {
+        return $$("[data-ai-power]:checked").map((item) => item.dataset.aiPower);
+      }
+
+      function activePaneName() {
+        return document.querySelector("[data-pane].active")?.dataset?.pane || "manuscript";
+      }
+
+      function contextualAssistantSuggestion() {
+        const pane = activePaneName();
+        const selection = $("sourceEditor").value.slice($("sourceEditor").selectionStart || 0, $("sourceEditor").selectionEnd || 0).trim();
+        const map = {
+          manuscript: selection
+            ? "I can help rewrite the selected passage for clarity, scientific caution, or journal style."
+            : "I can help strengthen a section, check unsupported claims, or make the methods easier to read.",
+          literature: "I can turn saved sources into a thesis, antithesis, and synthesis paragraph without inventing citations.",
+          assistant: "Build a prompt, review the selected permissions, then draft only after you confirm with your loaded key.",
+          exports: "I can help prepare the manuscript for a clean DOCX, PDF, TeX, or HTML export and explain what each format is best for."
+        };
+        return map[pane] || map.manuscript;
+      }
+
+      function renderAssistantDock() {
+        const node = $("assistantSuggestion");
+        if (node) node.textContent = contextualAssistantSuggestion();
+      }
+
+      function openAssistantDock() {
+        renderAssistantDock();
+        $("assistantDock").classList.add("open");
+      }
+
+      function closeAssistantDock() {
+        $("assistantDock").classList.remove("open");
+      }
+
+      function openAssistantPane() {
+        $$("[data-pane]").forEach((item) => item.classList.toggle("active", item.dataset.pane === "assistant"));
+        $$(".editor-pane-mode").forEach((pane) => pane.classList.remove("active"));
+        $("pane-assistant").classList.add("active");
+        buildAiPrompt();
+        closeAssistantDock();
+      }
+
+      function applyTheme() {
+        const theme = localStorage.getItem(THEME_KEY) || "light";
+        document.body.classList.toggle("dark", theme === "dark");
+        $("themeToggle").textContent = theme === "dark" ? "☾" : "◐";
+        $("themeToggle").setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+      }
+
+      function toggleTheme() {
+        const next = document.body.classList.contains("dark") ? "light" : "dark";
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme();
+      }
+
+      function closeMenus() {
+        document.querySelectorAll(".toolbar-menu[open]").forEach((menu) => menu.removeAttribute("open"));
+      }
+
+      function wireMenus() {
+        let menuCloseTimer = null;
+        document.querySelectorAll(".toolbar-menu").forEach((menu) => {
+          menu.addEventListener("mouseenter", () => clearTimeout(menuCloseTimer));
+          menu.addEventListener("mouseleave", () => {
+            menuCloseTimer = setTimeout(() => menu.removeAttribute("open"), 500);
+          });
+        });
+        document.addEventListener("click", (event) => {
+          if (!event.target.closest(".toolbar-menu")) closeMenus();
+        });
+      }
+
       function currentOpenAiKey() {
         return sessionStorage.getItem(OPENAI_KEY_SESSION) || localStorage.getItem(OPENAI_KEY_LOCAL) || "";
       }
@@ -1966,6 +2733,7 @@ ${$("sourceEditor").value.slice(0, 5000)}
         }[$("aiPersona")?.value || "frontiers-methodologist"];
         const sourceSummary = useSources ? savedSources.slice(0, 12).map(citationLine).join("\n") : "";
         const task = $("aiTask").value;
+        const powers = selectedAiPowers();
         const taskText = {
           abstract: "Improve the abstract for clarity, scientific caution, and Frontiers-style readability.",
           introduction: "Draft a stronger introduction that starts from the practical policy problem, then introduces NDIM as the method.",
@@ -2001,6 +2769,7 @@ Rules:
 - Avoid overclaiming novelty. Describe NDIM as a distinctive research/software innovation whose validation is still in progress.
 - If using Soft Systems Methodology, show how it complements NDIM instead of replacing the mathematical model.
 - ${equationInstruction}
+- Assistant permissions granted in this workspace: ${powers.length ? powers.join(", ") : "none; provide advice only and do not rewrite sections"}.
 - Mark any text as draft requiring author review.
 
 Saved sources:
@@ -2112,43 +2881,85 @@ ${$("sourceEditor").value.slice(0, 9000)}
         restoreAiMode();
         wireTabs();
         wireSplitter();
-        ["title", "authors", "keywords", "articleType", "journalSection", "sourceEditor"].forEach((id) => {
+        wireMenus();
+        applyTheme();
+        ["title", "authors", "keywords", "articleType", "journalSection", "sourceEditor", "editorName"].forEach((id) => {
           $(id).addEventListener("input", () => {
             markDraftChanged();
           });
           $(id).addEventListener("change", markDraftChanged);
         });
-        $("saveDraft").addEventListener("click", persist);
-        $("compilePreview").addEventListener("click", renderPreview);
+        $$("[data-ai-power]").forEach((item) => item.addEventListener("change", () => {
+          persist();
+          buildAiPrompt();
+        }));
+        $("saveDraft").addEventListener("click", () => {
+          persist();
+          logEdit("Draft saved", "Saved the manuscript workspace locally in this browser.", "manual");
+        });
+        $("compilePreview").addEventListener("click", () => renderPreview(true, "Compile preview"));
+        $("compileNearEditor").addEventListener("click", () => renderPreview(true, "Compile from source editor"));
+        $("saveSnapshotNearEditor").addEventListener("click", () => createSnapshot("Manual version save"));
         $("livePreview").addEventListener("change", () => {
           if ($("livePreview").checked) renderPreview();
         });
+        $("themeToggle").addEventListener("click", toggleTheme);
         $("toggleOutline").addEventListener("click", openOutlineDrawer);
         $("closeOutline").addEventListener("click", closeOutlineDrawer);
         $("outlineBackdrop").addEventListener("click", closeOutlineDrawer);
         document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape") closeOutlineDrawer();
+          if (event.key === "Escape") {
+            closeOutlineDrawer();
+            closeMenus();
+            closeAssistantDock();
+            closeAuthorModal();
+          }
         });
         $("loadNdim").addEventListener("click", loadNdimResults);
-        $("exportTex").addEventListener("click", () => downloadBlob(fileSlug("tex"), buildTex(), "application/x-tex"));
-        $("exportBib").addEventListener("click", () => downloadBlob("ndim-sources.bib", buildBib(), "application/x-bibtex"));
-        $("exportHtml").addEventListener("click", () => downloadBlob(fileSlug("html"), buildHtmlExport(), "text/html"));
-        $("printPdf").addEventListener("click", () => window.print());
+        $("exportTex").addEventListener("click", () => { createSnapshot("TeX export"); downloadBlob(fileSlug("tex"), buildTex(), "application/x-tex"); closeMenus(); });
+        $("exportBib").addEventListener("click", () => { createSnapshot("BibTeX export"); downloadBlob("ndim-sources.bib", buildBib(), "application/x-bibtex"); closeMenus(); });
+        $("exportHtml").addEventListener("click", () => { createSnapshot("HTML export"); downloadBlob(fileSlug("html"), buildJournalHtmlDocument(), "text/html"); closeMenus(); });
+        $("exportPdf").addEventListener("click", () => { exportJournalPdf(); closeMenus(); });
+        $("exportDocx").addEventListener("click", () => { exportDocx(); closeMenus(); });
+        $("exportAuditLog").addEventListener("click", () => { downloadBlob("ndim-publication-edit-log.txt", buildAuditLogExport(), "text/plain"); closeMenus(); });
         $("runLitSearch").addEventListener("click", searchLiterature);
         $("buildLiteratureMap").addEventListener("click", buildLiteratureMap);
         $("insertSavedReferences").addEventListener("click", insertSavedReferences);
         $("generateAnnotatedBibliography").addEventListener("click", generateAnnotatedBibliography);
         $("buildSynthesisPrompt").addEventListener("click", buildSynthesisPromptFromSources);
-        $("exportRis").addEventListener("click", () => downloadBlob("ndim-sources.ris", buildRis(), "application/x-research-info-systems"));
-        $("exportCsv").addEventListener("click", () => downloadBlob("ndim-sources.csv", buildCsv(), "text/csv"));
+        $("exportRis").addEventListener("click", () => { downloadBlob("ndim-sources.ris", buildRis(), "application/x-research-info-systems"); closeMenus(); });
+        $("exportCsv").addEventListener("click", () => { downloadBlob("ndim-sources.csv", buildCsv(), "text/csv"); closeMenus(); });
         $("aiAssistanceEnabled").addEventListener("change", updateAiMode);
         $("loadOpenAiKey").addEventListener("click", loadOpenAiKey);
         $("clearOpenAiKey").addEventListener("click", clearOpenAiKey);
         $("buildAiPrompt").addEventListener("click", buildAiPrompt);
         $("copyAiPrompt").addEventListener("click", () => copyText($("aiPrompt").value, $("copyAiPrompt"), "Copy prompt"));
         $("runOpenAi").addEventListener("click", runOpenAi);
+        $("openAuthorModal").addEventListener("click", () => openAuthorModal());
+        $("syncAuthors").addEventListener("click", () => {
+          renderAuthors();
+          renderPreview(false);
+          logEdit("Author line refreshed", "Refreshed the author line used by preview and exports.", "author manager");
+        });
+        $("closeAuthorModal").addEventListener("click", closeAuthorModal);
+        $("cancelAuthor").addEventListener("click", closeAuthorModal);
+        $("clearAuthorForm").addEventListener("click", clearAuthorForm);
+        $("saveAuthor").addEventListener("click", saveAuthorFromForm);
+        $("searchOrcid").addEventListener("click", searchOrcid);
+        $("authorModal").addEventListener("click", (event) => {
+          if (event.target.id === "authorModal") closeAuthorModal();
+        });
+        $("assistantFab").addEventListener("click", () => {
+          $("assistantDock").classList.contains("open") ? closeAssistantDock() : openAssistantDock();
+        });
+        $("closeAssistantDock").addEventListener("click", closeAssistantDock);
+        $("dockBuildPrompt").addEventListener("click", () => {
+          buildAiPrompt();
+          openAssistantPane();
+        });
+        $("dockOpenAssistant").addEventListener("click", openAssistantPane);
         window.addEventListener("load", renderMathInPreview);
-        window.ndimPublicationWorkspace = { buildTex, buildBib, buildRis, buildCsv, searchLiterature, renderPreview, markDraftChanged };
+        window.ndimPublicationWorkspace = { buildTex, buildBib, buildRis, buildCsv, searchLiterature, renderPreview, markDraftChanged, exportDocx, exportJournalPdf, renderAuthors };
       }
 
       init();
