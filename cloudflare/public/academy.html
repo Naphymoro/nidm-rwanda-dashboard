@@ -309,9 +309,209 @@
           text-transform: uppercase;
         }
       }
+      body {
+        background:
+          radial-gradient(circle at 8% 4%, rgba(255, 255, 255, .75), transparent 28rem),
+          linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(214, 202, 183, .34) calc(100% - 1px)),
+          linear-gradient(135deg, #fbfaf7, #f7f0e7 70%, #fbfaf7);
+        background-size: auto, 82px 82px, auto;
+      }
+      .app-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px clamp(14px, 3vw, 34px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(251, 250, 247, .94);
+        backdrop-filter: blur(16px);
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 240px;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .brand .mark {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+        font: 900 12px "Cascadia Mono", Consolas, monospace;
+      }
+      .brand strong, .brand span { display: block; line-height: 1.1; }
+      .brand span {
+        color: var(--muted);
+        font: 850 10px "Cascadia Mono", Consolas, monospace;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+      }
+      .app-nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .app-nav a,
+      .small-link-row a,
+      .lesson-actions a,
+      .back-top,
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 253, 249, .82);
+        color: var(--ink);
+        padding: 8px 12px;
+        font-weight: 850;
+        text-decoration: none;
+      }
+      .app-nav a:first-child,
+      .small-link-row a:first-child {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .theme-toggle {
+        min-width: 62px;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+      main {
+        width: min(1180px, calc(100% - 32px));
+      }
+      header,
+      .story-panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 253, 249, .78);
+        box-shadow: 0 20px 70px rgba(70, 55, 30, .08);
+        padding: clamp(20px, 4vw, 36px);
+      }
+      header {
+        margin-bottom: 18px;
+      }
+      header .mono,
+      summary,
+      th {
+        letter-spacing: .13em;
+      }
+      details:not(.lesson) {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 253, 249, .78);
+        margin: 12px 0;
+        overflow: hidden;
+        box-shadow: 0 14px 44px rgba(70, 55, 30, .045);
+      }
+      details:not(.lesson):last-of-type { border-bottom: 1px solid var(--line); }
+      details:not(.lesson) > summary {
+        padding: 16px 18px;
+      }
+      details:not(.lesson) > .section-body {
+        border-top: 1px solid var(--line);
+        padding: 16px 18px 24px 46px;
+      }
+      details.lesson,
+      .card,
+      .lesson-box,
+      .map-node,
+      .math-display,
+      table {
+        background: rgba(255, 253, 249, .9);
+        box-shadow: 0 12px 36px rgba(70, 55, 30, .04);
+      }
+      .note,
+      .conservation-note {
+        border-radius: 14px;
+        border-left-width: 4px;
+      }
+      .back-top {
+        background: var(--ink);
+        color: #fff;
+      }
+      body.dark {
+        --ink:#f8fafc;
+        --body:#d1d5db;
+        --muted:#9ca3af;
+        --paper:#0b0f17;
+        --line:#374151;
+        --soft:#1f2937;
+        --white:#111827;
+        background:
+          radial-gradient(circle at 8% 4%, rgba(147, 197, 253, .08), transparent 28rem),
+          linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(55, 65, 81, .38) calc(100% - 1px)),
+          linear-gradient(135deg, #0b0f17, #111827 72%, #0b0f17);
+        background-size: auto, 82px 82px, auto;
+      }
+      body.dark .app-topbar,
+      body.dark header,
+      body.dark .story-panel,
+      body.dark details,
+      body.dark .card,
+      body.dark .lesson-box,
+      body.dark .map-node,
+      body.dark .math-display,
+      body.dark table,
+      body.dark .app-nav a,
+      body.dark .small-link-row a,
+      body.dark .lesson-actions a,
+      body.dark .theme-toggle {
+        background-color: #111827;
+        color: var(--ink);
+        border-color: var(--line);
+      }
+      body.dark .brand .mark,
+      body.dark .app-nav a:first-child,
+      body.dark .small-link-row a:first-child,
+      body.dark .back-top {
+        background: #030712;
+        color: #fff;
+        border-color: #e5e7eb;
+      }
+      body.dark th,
+      body.dark .note,
+      body.dark .conservation-note {
+        background: #0f172a;
+        color: var(--ink);
+      }
+      body.dark a { color: #bfdbfe; }
+      @media (max-width: 760px) {
+        .app-topbar { align-items: flex-start; flex-direction: column; }
+        .brand { min-width: 0; }
+        .app-nav { width: 100%; justify-content: flex-start; }
+        details:not(.lesson) > .section-body { padding-left: 18px; }
+      }
     </style>
   </head>
   <body id="top">
+    <nav class="app-topbar" aria-label="NDIM learning navigation">
+      <a class="brand" href="./index.html">
+        <span class="mark">ND</span>
+        <span>
+          <strong>NDIM Engine</strong>
+          <span>Narrative Diffusion and Inoculation Model</span>
+        </span>
+      </a>
+      <div class="app-nav">
+        <a href="./index.html">Tool</a>
+        <a href="./manual.html">Manual</a>
+        <a href="./publication.html">Publication</a>
+        <a href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light or dark mode">Dark</button>
+      </div>
+    </nav>
     <main>
       <header>
         <p class="mono">NDIM ACADEMY</p>
@@ -818,6 +1018,19 @@
         });
       }
       window.addEventListener("load", function () {
+        const savedTheme = localStorage.getItem("ndim-doc-theme") || localStorage.getItem("ndim_theme") || "light";
+        document.body.classList.toggle("dark", savedTheme === "dark");
+        const themeToggle = document.getElementById("themeToggle");
+        if (themeToggle) {
+          themeToggle.textContent = savedTheme === "dark" ? "Light" : "Dark";
+          themeToggle.addEventListener("click", () => {
+            const next = document.body.classList.contains("dark") ? "light" : "dark";
+            document.body.classList.toggle("dark", next === "dark");
+            localStorage.setItem("ndim-doc-theme", next);
+            localStorage.setItem("ndim_theme", next);
+            themeToggle.textContent = next === "dark" ? "Light" : "Dark";
+          });
+        }
         renderAcademyMath();
         if (window.location.hash) {
           const target = document.querySelector(window.location.hash);

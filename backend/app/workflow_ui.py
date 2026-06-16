@@ -12390,20 +12390,206 @@ MANUAL_HTML = r"""<!doctype html>
           text-transform: uppercase;
         }
       }
+      body {
+        background:
+          radial-gradient(circle at 8% 4%, rgba(255, 255, 255, .75), transparent 28rem),
+          linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(214, 202, 183, .34) calc(100% - 1px)),
+          linear-gradient(135deg, #fbfaf7, #f7f0e7 70%, #fbfaf7);
+        background-size: auto, 82px 82px, auto;
+      }
+      .app-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px clamp(14px, 3vw, 34px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(251, 250, 247, .94);
+        backdrop-filter: blur(16px);
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 240px;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .brand .mark {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+        font: 900 12px "Cascadia Mono", Consolas, monospace;
+      }
+      .brand strong, .brand span { display: block; line-height: 1.1; }
+      .brand span {
+        color: var(--muted);
+        font: 850 10px "Cascadia Mono", Consolas, monospace;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+      }
+      .app-nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .app-nav a,
+      .small-link-row a,
+      #backTop,
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 253, 249, .82);
+        color: var(--ink);
+        padding: 8px 12px;
+        font-weight: 850;
+        text-decoration: none;
+      }
+      .app-nav a:first-child,
+      .small-link-row a:first-child {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .theme-toggle {
+        min-width: 62px;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+      main {
+        width: min(1120px, calc(100% - 32px));
+      }
+      header {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 253, 249, .78);
+        box-shadow: 0 20px 70px rgba(70, 55, 30, .08);
+        padding: clamp(20px, 4vw, 36px);
+      }
+      header .mono,
+      summary,
+      th {
+        letter-spacing: .13em;
+      }
+      details {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 253, 249, .78);
+        margin: 12px 0;
+        overflow: hidden;
+        box-shadow: 0 14px 44px rgba(70, 55, 30, .045);
+      }
+      details:last-of-type { border-bottom: 1px solid var(--line); }
+      summary {
+        padding: 16px 18px;
+      }
+      .section-body {
+        border-top: 1px solid var(--line);
+        padding: 16px 18px 24px 46px;
+      }
+      table, .callout, .exercise-card, .math-display {
+        background: rgba(255, 253, 249, .9);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .note {
+        border-radius: 14px;
+        border-left-width: 4px;
+      }
+      #backTop {
+        background: var(--ink);
+        color: #fff;
+      }
+      body.dark {
+        --ink:#f8fafc;
+        --body:#d1d5db;
+        --muted:#9ca3af;
+        --paper:#0b0f17;
+        --line:#374151;
+        --soft:#1f2937;
+        background:
+          radial-gradient(circle at 8% 4%, rgba(147, 197, 253, .08), transparent 28rem),
+          linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(55, 65, 81, .38) calc(100% - 1px)),
+          linear-gradient(135deg, #0b0f17, #111827 72%, #0b0f17);
+        background-size: auto, 82px 82px, auto;
+      }
+      body.dark .app-topbar,
+      body.dark header,
+      body.dark details,
+      body.dark table,
+      body.dark .callout,
+      body.dark .exercise-card,
+      body.dark .math-display,
+      body.dark .app-nav a,
+      body.dark .small-link-row a,
+      body.dark .theme-toggle {
+        background-color: #111827;
+        color: var(--ink);
+        border-color: var(--line);
+      }
+      body.dark .brand .mark,
+      body.dark .app-nav a:first-child,
+      body.dark .small-link-row a:first-child,
+      body.dark #backTop {
+        background: #030712;
+        color: #fff;
+        border-color: #e5e7eb;
+      }
+      body.dark th,
+      body.dark .note,
+      body.dark pre {
+        background: #0f172a;
+        color: var(--ink);
+      }
+      body.dark a { color: #bfdbfe; }
+      @media (max-width: 720px) {
+        .app-topbar { align-items: flex-start; flex-direction: column; }
+        .brand { min-width: 0; }
+        .app-nav { width: 100%; justify-content: flex-start; }
+        .section-body { padding-left: 18px; }
+      }
     </style>
   </head>
   <body id="top">
+    <nav class="app-topbar" aria-label="NDIM learning navigation">
+      <a class="brand" href="./index.html">
+        <span class="mark">ND</span>
+        <span>
+          <strong>NDIM Engine</strong>
+          <span>Narrative Diffusion and Inoculation Model</span>
+        </span>
+      </a>
+      <div class="app-nav">
+        <a href="./index.html">Tool</a>
+        <a href="./academy.html">Academy</a>
+        <a href="./publication.html">Publication</a>
+        <a href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light or dark mode">Dark</button>
+      </div>
+    </nav>
     <main>
       <header>
         <p class="mono">NDIM ENGINE MANUAL</p>
         <h1>Narrative Diffusion and Inoculation Model</h1>
         <p>NDIM is a local-first scientific and policy tool for turning governed narrative evidence into model inputs, uncertainty-aware simulations, intervention tests, and a human-reviewed policy brief.</p>
         <p class="small-link-row">
-          <a href="/">Back to tool</a>
-          <a href="/academy">NDIM Academy</a>
-          <a href="/publication">Scientific Publication</a>
-          <a href="/academy#modules">Academy modules</a>
-          <a href="/academy#practice">Academy exercises</a>
+          <a href="./index.html">Back to tool</a>
+          <a href="./academy.html">NDIM Academy</a>
+          <a href="./publication.html">Scientific Publication</a>
+          <a href="./academy.html#modules">Academy modules</a>
+          <a href="./academy.html#practice">Academy exercises</a>
           <a href="#installation">Installation</a>
           <a href="#source-access">Source access</a>
           <a href="#workspaces">Workspaces</a>
@@ -12419,15 +12605,15 @@ MANUAL_HTML = r"""<!doctype html>
       <details id="academy-learning-path" open>
         <summary>Academy learning path</summary>
         <div class="section-body">
-          <p>The manual is the operating reference. <a href="/academy">NDIM Academy</a> is the guided course. Use Academy when a research team needs plain-language lessons, worked examples, exercises, and interpretation support. Use this manual when a user needs exact operating instructions.</p>
+          <p>The manual is the operating reference. <a href="./academy.html">NDIM Academy</a> is the guided course. Use Academy when a research team needs plain-language lessons, worked examples, exercises, and interpretation support. Use this manual when a user needs exact operating instructions.</p>
           <table>
             <thead><tr><th>User need</th><th>Best place</th><th>What the user gets</th></tr></thead>
             <tbody>
-              <tr><td data-label="User need">Learn NDIM from scratch</td><td data-label="Best place"><a href="/academy#modules">Academy modules</a></td><td data-label="What the user gets">Full lessons with objectives, key terms, examples, exercises, observations, interpretations, and common mistakes.</td></tr>
-              <tr><td data-label="User need">Practise with ClimateTales Rwanda</td><td data-label="Best place"><a href="/academy#module-climatetales">ClimateTales module</a></td><td data-label="What the user gets">A route-by-route synthetic evidence exercise from intake to policy brief.</td></tr>
-              <tr><td data-label="User need">Prepare a scientific manuscript</td><td data-label="Best place"><a href="/publication">Scientific Publication workspace</a></td><td data-label="What the user gets">An Overleaf-style editor with live preview, LaTeX/BibTeX export, legal literature search, and optional OpenAI writing support.</td></tr>
+              <tr><td data-label="User need">Learn NDIM from scratch</td><td data-label="Best place"><a href="./academy.html#modules">Academy modules</a></td><td data-label="What the user gets">Full lessons with objectives, key terms, examples, exercises, observations, interpretations, and common mistakes.</td></tr>
+              <tr><td data-label="User need">Practise with ClimateTales Rwanda</td><td data-label="Best place"><a href="./academy.html#module-climatetales">ClimateTales module</a></td><td data-label="What the user gets">A route-by-route synthetic evidence exercise from intake to policy brief.</td></tr>
+              <tr><td data-label="User need">Prepare a scientific manuscript</td><td data-label="Best place"><a href="./publication.html">Scientific Publication workspace</a></td><td data-label="What the user gets">An Overleaf-style editor with live preview, LaTeX/BibTeX export, legal literature search, and optional OpenAI writing support.</td></tr>
               <tr><td data-label="User need">Operate the tool quickly</td><td data-label="Best place"><a href="#workflow">Manual workflow section</a></td><td data-label="What the user gets">Concise stage instructions and output expectations.</td></tr>
-              <tr><td data-label="User need">Explain equations simply</td><td data-label="Best place"><a href="/academy#equations">Academy equations</a></td><td data-label="What the user gets">Plain-language explanation of the compartmental model, agent model, digital twin, Bayesian update, and optimizer.</td></tr>
+              <tr><td data-label="User need">Explain equations simply</td><td data-label="Best place"><a href="./academy.html#equations">Academy equations</a></td><td data-label="What the user gets">Plain-language explanation of the compartmental model, agent model, digital twin, Bayesian update, and optimizer.</td></tr>
             </tbody>
           </table>
         </div>
@@ -12807,6 +12993,19 @@ posterior &= Beta(\alpha + successes,\beta + failures)
         });
       }
       window.addEventListener("load", () => {
+        const savedTheme = localStorage.getItem("ndim-doc-theme") || localStorage.getItem("ndim_theme") || "light";
+        document.body.classList.toggle("dark", savedTheme === "dark");
+        const themeToggle = document.getElementById("themeToggle");
+        if (themeToggle) {
+          themeToggle.textContent = savedTheme === "dark" ? "Light" : "Dark";
+          themeToggle.addEventListener("click", () => {
+            const next = document.body.classList.contains("dark") ? "light" : "dark";
+            document.body.classList.toggle("dark", next === "dark");
+            localStorage.setItem("ndim-doc-theme", next);
+            localStorage.setItem("ndim_theme", next);
+            themeToggle.textContent = next === "dark" ? "Light" : "Dark";
+          });
+        }
         renderManualMath();
         if (window.location.hash) {
           const target = document.querySelector(window.location.hash);
@@ -13129,18 +13328,218 @@ ACADEMY_HTML = r"""<!doctype html>
           text-transform: uppercase;
         }
       }
+      body {
+        background:
+          radial-gradient(circle at 8% 4%, rgba(255, 255, 255, .75), transparent 28rem),
+          linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(214, 202, 183, .34) calc(100% - 1px)),
+          linear-gradient(135deg, #fbfaf7, #f7f0e7 70%, #fbfaf7);
+        background-size: auto, 82px 82px, auto;
+      }
+      .app-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px clamp(14px, 3vw, 34px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(251, 250, 247, .94);
+        backdrop-filter: blur(16px);
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 240px;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .brand .mark {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+        font: 900 12px "Cascadia Mono", Consolas, monospace;
+      }
+      .brand strong, .brand span { display: block; line-height: 1.1; }
+      .brand span {
+        color: var(--muted);
+        font: 850 10px "Cascadia Mono", Consolas, monospace;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+      }
+      .app-nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .app-nav a,
+      .small-link-row a,
+      .lesson-actions a,
+      .back-top,
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 253, 249, .82);
+        color: var(--ink);
+        padding: 8px 12px;
+        font-weight: 850;
+        text-decoration: none;
+      }
+      .app-nav a:first-child,
+      .small-link-row a:first-child {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .theme-toggle {
+        min-width: 62px;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+      main {
+        width: min(1180px, calc(100% - 32px));
+      }
+      header,
+      .story-panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 253, 249, .78);
+        box-shadow: 0 20px 70px rgba(70, 55, 30, .08);
+        padding: clamp(20px, 4vw, 36px);
+      }
+      header {
+        margin-bottom: 18px;
+      }
+      header .mono,
+      summary,
+      th {
+        letter-spacing: .13em;
+      }
+      details:not(.lesson) {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 253, 249, .78);
+        margin: 12px 0;
+        overflow: hidden;
+        box-shadow: 0 14px 44px rgba(70, 55, 30, .045);
+      }
+      details:not(.lesson):last-of-type { border-bottom: 1px solid var(--line); }
+      details:not(.lesson) > summary {
+        padding: 16px 18px;
+      }
+      details:not(.lesson) > .section-body {
+        border-top: 1px solid var(--line);
+        padding: 16px 18px 24px 46px;
+      }
+      details.lesson,
+      .card,
+      .lesson-box,
+      .map-node,
+      .math-display,
+      table {
+        background: rgba(255, 253, 249, .9);
+        box-shadow: 0 12px 36px rgba(70, 55, 30, .04);
+      }
+      .note,
+      .conservation-note {
+        border-radius: 14px;
+        border-left-width: 4px;
+      }
+      .back-top {
+        background: var(--ink);
+        color: #fff;
+      }
+      body.dark {
+        --ink:#f8fafc;
+        --body:#d1d5db;
+        --muted:#9ca3af;
+        --paper:#0b0f17;
+        --line:#374151;
+        --soft:#1f2937;
+        --white:#111827;
+        background:
+          radial-gradient(circle at 8% 4%, rgba(147, 197, 253, .08), transparent 28rem),
+          linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(55, 65, 81, .38) calc(100% - 1px)),
+          linear-gradient(135deg, #0b0f17, #111827 72%, #0b0f17);
+        background-size: auto, 82px 82px, auto;
+      }
+      body.dark .app-topbar,
+      body.dark header,
+      body.dark .story-panel,
+      body.dark details,
+      body.dark .card,
+      body.dark .lesson-box,
+      body.dark .map-node,
+      body.dark .math-display,
+      body.dark table,
+      body.dark .app-nav a,
+      body.dark .small-link-row a,
+      body.dark .lesson-actions a,
+      body.dark .theme-toggle {
+        background-color: #111827;
+        color: var(--ink);
+        border-color: var(--line);
+      }
+      body.dark .brand .mark,
+      body.dark .app-nav a:first-child,
+      body.dark .small-link-row a:first-child,
+      body.dark .back-top {
+        background: #030712;
+        color: #fff;
+        border-color: #e5e7eb;
+      }
+      body.dark th,
+      body.dark .note,
+      body.dark .conservation-note {
+        background: #0f172a;
+        color: var(--ink);
+      }
+      body.dark a { color: #bfdbfe; }
+      @media (max-width: 760px) {
+        .app-topbar { align-items: flex-start; flex-direction: column; }
+        .brand { min-width: 0; }
+        .app-nav { width: 100%; justify-content: flex-start; }
+        details:not(.lesson) > .section-body { padding-left: 18px; }
+      }
     </style>
   </head>
   <body id="top">
+    <nav class="app-topbar" aria-label="NDIM learning navigation">
+      <a class="brand" href="./index.html">
+        <span class="mark">ND</span>
+        <span>
+          <strong>NDIM Engine</strong>
+          <span>Narrative Diffusion and Inoculation Model</span>
+        </span>
+      </a>
+      <div class="app-nav">
+        <a href="./index.html">Tool</a>
+        <a href="./manual.html">Manual</a>
+        <a href="./publication.html">Publication</a>
+        <a href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light or dark mode">Dark</button>
+      </div>
+    </nav>
     <main>
       <header>
         <p class="mono">NDIM ACADEMY</p>
         <h1>Learn the Narrative Diffusion and Inoculation Model.</h1>
         <p class="lede">NDIM is a learning and research space for understanding how stories shape decisions. It helps a researcher move carefully from lived experience to evidence, from evidence to models, and from models to a policy brief that still shows its source trail.</p>
         <p class="small-link-row">
-          <a href="/">Back to tool</a>
-          <a href="/manual">Tool manual</a>
-          <a href="/publication">Scientific Publication</a>
+          <a href="./index.html">Back to tool</a>
+          <a href="./manual.html">Tool manual</a>
+          <a href="./publication.html">Scientific Publication</a>
           <a href="#difference">What makes NDIM different</a>
           <a href="#cloud-repository">Shared Google repository</a>
           <a href="#glossary">Glossary</a>
@@ -13149,7 +13548,7 @@ ACADEMY_HTML = r"""<!doctype html>
           <a href="#practice">Practice with NDIM</a>
           <a href="#references">References</a>
         </p>
-        <p class="lede">When a team is ready to turn NDIM work into a paper, the <a href="/publication">Scientific Publication workspace</a> provides a split editor and preview, legal literature search, BibTeX export, and optional OpenAI writing support.</p>
+        <p class="lede">When a team is ready to turn NDIM work into a paper, the <a href="./publication.html">Scientific Publication workspace</a> provides a split editor and preview, legal literature search, BibTeX export, and optional OpenAI writing support.</p>
       </header>
 
       <section class="story-panel" aria-label="Opening story">
@@ -13309,36 +13708,38 @@ ACADEMY_HTML = r"""<!doctype html>
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
 \frac{dR}{dt} &= \gamma I + \eta T
 \end{aligned}</div>
-          <p><strong>What the derivative means:</strong> each line asks, "How fast is this group changing?" If misinformation contact is strong, more people move into M. If trusted truth narratives and inoculation are strong, more people move toward T, I, and R.</p>
-          <p><strong>Policy implication:</strong> if misinformation pressure is high, only distributing devices may fail. The intervention may need trusted messengers, demonstrations, and prebunking before adoption can accelerate.</p>
+          <p><strong>What a derivative means here:</strong> it is simply the speed of change. The line for S asks how quickly the susceptible group is shrinking. The line for M asks whether misinformation exposure is growing or declining. The line for I asks whether inoculation is reaching people fast enough.</p>
+          <p><strong>What increases or decreases the flows:</strong> misinformation contact increases movement into M. Trusted evidence increases movement into T. Inoculation messages increase movement into I. Recovery, correction, and stable adoption move people toward R.</p>
+          <p><strong>What the user should look for in the chart:</strong> if M rises quickly, harmful stories are winning attention. If T and I rise, trusted evidence and inoculation are working. If R rises, the system is becoming more stable.</p>
+          <p><strong>Policy meaning:</strong> if misinformation pressure is high, a programme may need trusted messengers and prebunking before technology distribution can succeed.</p>
 
           <h3>3. Agent-based model: the household-level story</h3>
-          <p>The agent model asks: what if each household behaves a little differently? One household may trust a neighbour. Another may worry about cost. Another may wait until a community health worker explains the issue. This is why the agent model is useful: it can show local bottlenecks that a smooth population curve may hide.</p>
+          <p>The agent-based model asks: what happens if households are different from each other? One household may trust a community health worker. Another may trust a neighbour. Another may face cost, distance, or habit barriers.</p>
           <div class="math-display">P(adopt_i) = logistic(trust_i + peer_i + evidence_i - barrier_i - misinformation_i)</div>
-          <p><strong>Plain meaning:</strong> adoption becomes more likely when trust, peer support, and evidence are strong. It becomes less likely when barriers and misinformation are strong.</p>
-          <p><strong>What the user should look for:</strong> if the ODE model looks optimistic but the agent model is slow, ask what local barrier is holding households back.</p>
-          <p><strong>Policy meaning:</strong> a district-wide message may not be enough. The model may point to household demonstrations, trusted messengers, repair support, or targeted follow-up.</p>
+          <p><strong>Plain meaning:</strong> household i becomes more likely to adopt when trust, peer support, and evidence are strong. It becomes less likely to adopt when barriers and misinformation are strong.</p>
+          <p><strong>What the user should look for:</strong> if the agent model is lower than the population curve, local household barriers may be slowing adoption. If it is higher, peer effects or trusted messengers may be doing useful work.</p>
+          <p><strong>Policy meaning:</strong> a national message may not be enough if the household-level bottleneck is repair access, social proof, trust, or fear.</p>
 
-          <h3>4. Digital twin feedback</h3>
+          <h3>4. Digital twin feedback: learning from the field</h3>
           <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
-          <p><strong>Plain meaning:</strong> the digital twin is a living model of the project system. It compares what the model expected with what field evidence says happened.</p>
-          <p><strong>How the models feed it:</strong> the compartmental model gives the broad population pathway. The agent-based model gives the household pathway. Approved field feedback tells the twin whether those pathways were too optimistic, too cautious, or close to reality.</p>
-          <p><strong>Example:</strong> suppose the model predicts fast adoption, but field officers report that many households still fear a safety rumour. The twin treats the earlier prediction as too optimistic. It lowers the trust pathway, raises the barrier pressure, and reruns the forecast.</p>
-          <p><strong>Policy meaning:</strong> the twin helps users learn from evidence. It should not be treated as a national truth machine unless the observations are repeated, validated, and representative.</p>
+          <p><strong>Plain meaning:</strong> the digital twin compares what the model predicted with what the field observed. If the two differ, the twin adjusts the assumptions and reruns the scenario.</p>
+          <p><strong>How the models feed it:</strong> the compartmental model gives the broad population pathway. The agent-based model gives the household and peer-effect pathway. The twin compares those outputs with field feedback: observed adoption, trust change, barrier change, and inoculation effects.</p>
+          <p><strong>Example:</strong> suppose the model predicts fast adoption, but field officers report that many households still fear pressure-cooker safety. The twin treats the earlier prediction as too optimistic. It lowers the trust pathway, raises the barrier pressure, and reruns the forecast.</p>
+          <p><strong>Policy meaning:</strong> the twin is useful for scenario learning. It is not a national truth machine unless the observations are repeated, validated, and representative.</p>
 
-          <h3>5. Bayesian update: learning without pretending certainty</h3>
+          <h3>5. Bayesian update: changing confidence responsibly</h3>
           <div class="math-display">posterior = Beta(\alpha + successes,\beta + failures)</div>
           <p><strong>What a prior is:</strong> it is the model's starting belief before the new evidence is added. A prior is not a guess pulled from nowhere. It should come from earlier studies, expert judgment, pilot data, or an explicit assumption.</p>
           <p><strong>What a posterior is:</strong> it is the updated belief after the evidence is added. The posterior should not only give one number. It should also show how uncertain the model remains.</p>
           <p><strong>Example:</strong> before fieldwork, NDIM may assume medium trust in demonstrations. After twenty approved stories from Musanze, the model may learn that trust is higher among households who saw a neighbour use the cooker, but lower where safety rumours are repeated. The posterior captures that update.</p>
-          <p><strong>Policy implication:</strong> wide uncertainty means more evidence is needed. It should produce caution, not overconfidence.</p>
+          <p><strong>Policy meaning:</strong> wide uncertainty means more evidence is needed. It should produce caution, not overconfidence.</p>
 
           <h3>6. Policy optimizer: comparing possible actions</h3>
           <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
-          <p><strong>What it does:</strong> the optimizer compares possible actions. It asks which action is likely to improve adoption while keeping cost, risk, and uncertainty under control.</p>
+          <p><strong>Plain meaning:</strong> the optimizer compares possible actions. It asks which action is likely to improve adoption while keeping cost, risk, and uncertainty under control.</p>
           <p><strong>Example actions:</strong> a peer demonstration, a health-worker message, a radio correction, a repair-support package, a subsidy, or an inoculation message that prebunks a safety rumour.</p>
           <p><strong>What reward means:</strong> reward is a score for usefulness. It is not a moral judgment and it is not a final decision. It is a way to rank options for review.</p>
-          <p><strong>Policy implication:</strong> the best reward is a shortlist for human review, not an automatic ministry decision. A low-cost action with strong trust gains may beat a costly action that looks impressive but does not address the local narrative barrier.</p>
+          <p><strong>Policy meaning:</strong> the best reward is a shortlist for human review, not an automatic ministry decision. A low-cost action with strong trust gains may beat a costly action that looks impressive but does not address the local narrative barrier.</p>
         </div>
       </details>
 
@@ -13359,7 +13760,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the intake form asks for country, location, language, period, source, and route. These fields prevent the story from becoming anonymous text.</p>
               <p><strong>Interpretation:</strong> a story becomes useful for policy only when the user can explain where it came from, why it matters, and what action it suggests.</p>
               <p><strong>Common mistake:</strong> treating one emotional story as national evidence. NDIM keeps the story valuable, but still asks for governance, approval, and uncertainty.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual#narrative-intake">Read manual intake section</a><a href="#module-inoculation">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#narrative-intake">Read manual intake section</a><a href="#module-inoculation">Next module</a></div>
             </div>
           </details>
 
@@ -13375,7 +13776,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the lab should produce a proposed counter-narrative, a messenger fit, a booster need, and an intervention strength. These outputs should be reviewed before field use.</p>
               <p><strong>Interpretation:</strong> an inoculation message is not generic myth-busting. It should prepare people to recognise the misleading claim and resist it respectfully.</p>
               <p><strong>Common mistake:</strong> using a scolding tone. A message that embarrasses people can increase resistance instead of reducing misinformation.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual#workflow">See workflow tutorial</a><a href="#module-governance">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#workflow">See workflow tutorial</a><a href="#module-governance">Next module</a></div>
             </div>
           </details>
 
@@ -13391,7 +13792,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> approved records move to the Accepted repository. Rejected records move to the Rejected repository. The active queue should shrink.</p>
               <p><strong>Interpretation:</strong> governance is not bureaucracy. It is the difference between evidence that can responsibly influence a model and material that should remain audit-only.</p>
               <p><strong>Common mistake:</strong> approving every record because it imported successfully. Import success is not evidence approval.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual#repository">Read repository section</a><a href="#module-encoding">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#repository">Read repository section</a><a href="#module-encoding">Next module</a></div>
             </div>
           </details>
 
@@ -13407,7 +13808,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> manual, AI, and hybrid results should be stored separately and appear in the repository as comparison columns.</p>
               <p><strong>Interpretation:</strong> the model needs numbers, but the researcher needs reasons. A score without a short justification is weak evidence.</p>
               <p><strong>Common mistake:</strong> batch-encoding everything without inspecting outliers. Use story-by-story review for validation.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual#workflow">Read Stage 03 tutorial</a><a href="#module-ode">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#workflow">Read Stage 03 tutorial</a><a href="#module-ode">Next module</a></div>
             </div>
           </details>
 
@@ -13423,7 +13824,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the x-axis should show time. The y-axis should show simulated population share. The result is a scenario, not a measured survey statistic.</p>
               <p><strong>Interpretation:</strong> the model asks how fast population groups may move between narrative states under current assumptions.</p>
               <p><strong>Common mistake:</strong> reading a final percentage as real adoption. It is projected adoption-aligned share under model assumptions.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="#equations">Review equations</a><a href="#module-abm">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="#equations">Review equations</a><a href="#module-abm">Next module</a></div>
             </div>
           </details>
 
@@ -13439,7 +13840,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> disagreement between ODE and ABM is useful. It may reveal household-level bottlenecks hidden by aggregate averages.</p>
               <p><strong>Interpretation:</strong> if ABM adoption is lower, the policy may need peer demonstrations, repair support, or local champions rather than only broad messaging.</p>
               <p><strong>Common mistake:</strong> treating ODE and ABM disagreement as a bug. It can be a scientific warning.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="#module-twin">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="#module-twin">Next module</a></div>
             </div>
           </details>
 
@@ -13455,7 +13856,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the twin should show which inputs changed: trust, resistance, misinformation decay, adoption transition, or household-level behaviour.</p>
               <p><strong>Interpretation:</strong> a feedback-adjusted twin is a learning device. It helps the user ask whether field evidence materially changes the model.</p>
               <p><strong>Common mistake:</strong> assuming the twin is automatically correct. It is only as strong as the evidence, calibration rule, and validation checks.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual#workflow">Read Digital Twin tutorial</a><a href="#module-bayes">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#workflow">Read Digital Twin tutorial</a><a href="#module-bayes">Next module</a></div>
             </div>
           </details>
 
@@ -13471,7 +13872,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> thin evidence should produce caution. Stronger evidence should narrow uncertainty only when it is consistent and approved.</p>
               <p><strong>Interpretation:</strong> a posterior is an updated belief with uncertainty. It is not a final truth statement.</p>
               <p><strong>Common mistake:</strong> reporting only the average and ignoring the interval or warning label.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="#equations">Review Bayesian equation</a><a href="#module-rl">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="#equations">Review Bayesian equation</a><a href="#module-rl">Next module</a></div>
             </div>
           </details>
 
@@ -13487,7 +13888,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> reward curves can improve over episodes, but the final policy should still include confidence and limitations.</p>
               <p><strong>Interpretation:</strong> the optimizer creates a shortlist for review. It does not issue a command to government.</p>
               <p><strong>Common mistake:</strong> choosing the highest reward without checking cost, fairness, or evidence grade.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="#module-regional">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="#module-regional">Next module</a></div>
             </div>
           </details>
 
@@ -13503,7 +13904,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> regional analysis is optional. It is valuable only when the evidence has enough place variation.</p>
               <p><strong>Interpretation:</strong> place-specific evidence can justify different messengers, demonstrations, or financing approaches.</p>
               <p><strong>Common mistake:</strong> making district-specific claims from one or two stories.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="#module-graph">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="#module-graph">Next module</a></div>
             </div>
           </details>
 
@@ -13519,7 +13920,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> graph size means connection, not truth. A large rumour node may be important because it repeats, not because it is correct.</p>
               <p><strong>Interpretation:</strong> the graph helps discover where interventions should focus and which claims should be validated.</p>
               <p><strong>Common mistake:</strong> reading the graph like a geographic map. It is a relationship map.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="#module-policy">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="#module-policy">Next module</a></div>
             </div>
           </details>
 
@@ -13535,7 +13936,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the main brief should be human-readable. JSON is for audit, hashes, and reproducibility.</p>
               <p><strong>Interpretation:</strong> a good policy brief says what to do, why, how confident the evidence is, and what must be reviewed before action.</p>
               <p><strong>Common mistake:</strong> presenting a stress-test result as real-world evidence.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual#exports">Read export section</a><a href="#module-climatetales">Next module</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#exports">Read export section</a><a href="#module-climatetales">Next module</a></div>
             </div>
           </details>
 
@@ -13551,7 +13952,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> route-specific forms should adapt, batch records should stay separate, scores should vary by narrative, and the final brief should label stress-test data as synthetic.</p>
               <p><strong>Interpretation:</strong> the practice run proves the workflow and user experience. It does not prove a Rwanda policy conclusion until real approved evidence is added.</p>
               <p><strong>Common mistake:</strong> using all stress-test files at once before learning the single-route workflow.</p>
-              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual#stress-test-corpus">Read ClimateTales tutorial</a><a href="#practice">Go to practice section</a></div>
+              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#stress-test-corpus">Read ClimateTales tutorial</a><a href="#practice">Go to practice section</a></div>
             </div>
           </details>
 
@@ -13636,6 +14037,19 @@ ACADEMY_HTML = r"""<!doctype html>
         });
       }
       window.addEventListener("load", function () {
+        const savedTheme = localStorage.getItem("ndim-doc-theme") || localStorage.getItem("ndim_theme") || "light";
+        document.body.classList.toggle("dark", savedTheme === "dark");
+        const themeToggle = document.getElementById("themeToggle");
+        if (themeToggle) {
+          themeToggle.textContent = savedTheme === "dark" ? "Light" : "Dark";
+          themeToggle.addEventListener("click", () => {
+            const next = document.body.classList.contains("dark") ? "light" : "dark";
+            document.body.classList.toggle("dark", next === "dark");
+            localStorage.setItem("ndim-doc-theme", next);
+            localStorage.setItem("ndim_theme", next);
+            themeToggle.textContent = next === "dark" ? "Light" : "Dark";
+          });
+        }
         renderAcademyMath();
         if (window.location.hash) {
           const target = document.querySelector(window.location.hash);
