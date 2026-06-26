@@ -4002,6 +4002,140 @@
         return response.json();
       }
 
+      const LOCAL_WORKSPACES_KEY = "ndim_local_workspaces_v1";
+      const LOCAL_ACTIVE_WORKSPACE_KEY = "ndim_local_active_workspace_v1";
+
+      function slugifyWorkspace(value) {
+        return String(value || "workspace")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "") || "workspace";
+      }
+
+      function localWorkspaceSettings(country = "Rwanda", domain = "general narrative evidence") {
+        const language = country === "Rwanda" ? "rw" : "en";
+        return {
+          countries: [country || "Rwanda"],
+          admin_unit_mode: "country_schema",
+          domain: domain || "general narrative evidence",
+          enabled_evidence_routes: evidenceModes.map((mode) => mode.id),
+          default_evidence_route: "structured_interview",
+          default_language: language,
+          default_source_type: "interview",
+          default_period: "2026",
+          consent_defaults: {
+            visibility: "private",
+            consent: "restricted_research",
+            repository_mode: "local_project"
+          },
+          llm_defaults: {
+            provider: "deterministic",
+            note: "Remote providers are optional and user supplied."
+          },
+          bayesian_priors: { trustA: 6, trustB: 4, barrierA: 4, barrierB: 6 },
+          stage_labels: {}
+        };
+      }
+
+      function localWorkspaceRecord(payload) {
+        const workspaceId = payload.workspace_id || slugifyWorkspace(payload.name);
+        const country = payload.country || "Rwanda";
+        const domain = payload.domain || "general narrative evidence";
+        return {
+          schema: "ndim-workspace-v1",
+          id: workspaceId,
+          workspace_id: workspaceId,
+          name: payload.name || "Untitled NDIM Workspace",
+          description: payload.description || `${payload.name || "Untitled NDIM Workspace"} NDIM workspace.`,
+          domain,
+          countries: [country],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          version: 1,
+          settings: localWorkspaceSettings(country, domain)
+        };
+      }
+
+      function builtInLocalWorkspaces() {
+        return [
+          localWorkspaceRecord({
+            workspace_id: "ndim-core",
+            name: "NDIM Core",
+            description: "Generic local-first Narrative Diffusion and Inoculation Model workspace.",
+            country: "Rwanda",
+            domain: "clean cooking"
+          }),
+          localWorkspaceRecord({
+            workspace_id: "climatetales-rwanda",
+            name: "ClimateTales Rwanda",
+            description: "AIMS-Imperial clean climate technology adoption workspace for social insight mining, digital listening, behavioural design labs, story activation pilots, influencer training, and gamified influence simulation.",
+            country: "Rwanda",
+            domain: "clean climate technology adoption"
+          })
+        ];
+      }
+
+      function readLocalWorkspaces() {
+        let stored = [];
+        try {
+          stored = JSON.parse(window.localStorage?.getItem(LOCAL_WORKSPACES_KEY) || "[]");
+        } catch (_) {
+          stored = [];
+        }
+        const byId = new Map();
+        [...builtInLocalWorkspaces(), ...stored].forEach((workspace) => {
+          if (workspace?.workspace_id) byId.set(workspace.workspace_id, workspace);
+        });
+        return [...byId.values()];
+      }
+
+      function writeLocalWorkspaces(workspaces) {
+        const byId = new Map();
+        workspaces.forEach((workspace) => {
+          if (workspace?.workspace_id) byId.set(workspace.workspace_id, {
+            ...workspace,
+            id: workspace.workspace_id,
+            countries: workspace.countries || workspace.settings?.countries || [],
+            domain: workspace.domain || workspace.settings?.domain || "",
+            updated_at: new Date().toISOString()
+          });
+        });
+        window.localStorage?.setItem(LOCAL_WORKSPACES_KEY, JSON.stringify([...byId.values()]));
+      }
+
+      function upsertLocalWorkspace(workspace) {
+        const workspaces = readLocalWorkspaces().filter((item) => item.workspace_id !== workspace.workspace_id);
+        workspaces.push(workspace);
+        writeLocalWorkspaces(workspaces);
+        return workspace;
+      }
+
+      function createLocalWorkspace(payload) {
+        const existingIds = new Set(readLocalWorkspaces().map((workspace) => workspace.workspace_id));
+        const base = slugifyWorkspace(payload.name);
+        let workspaceId = base;
+        let suffix = 2;
+        while (existingIds.has(workspaceId)) {
+          workspaceId = `${base}-${suffix}`;
+          suffix += 1;
+        }
+        const workspace = localWorkspaceRecord({ ...payload, workspace_id: workspaceId });
+        upsertLocalWorkspace(workspace);
+        window.localStorage?.setItem(LOCAL_ACTIVE_WORKSPACE_KEY, workspace.workspace_id);
+        return workspace;
+      }
+
+      function setLocalActiveWorkspace(workspaceId) {
+        const workspaces = readLocalWorkspaces();
+        const workspace = workspaces.find((item) => item.workspace_id === workspaceId);
+        if (!workspace) throw new Error("Workspace not found");
+        window.localStorage?.setItem(LOCAL_ACTIVE_WORKSPACE_KEY, workspace.workspace_id);
+        state.workspace.active = workspace;
+        state.workspace.list = workspaces;
+        applyWorkspaceDefaults(workspace);
+        return workspace;
+      }
+
       function workspaceSettings() {
         return state.workspace.active?.settings || {};
       }
@@ -4083,25 +4217,32 @@
           applyWorkspaceDefaults(active);
           trace("workspace", "Workspace loaded", `${workspaceName()} is active. Evidence, templates, model defaults, repository behavior, and assistant guidance now follow this workspace.`);
         } catch (error) {
-          state.workspace.active = {
-            workspace_id: "ndim-core",
-            name: "NDIM Core",
-            description: "Fallback local workspace.",
-            settings: {}
-          };
-          trace("workspace", "Workspace service unavailable", error.message || "Using local fallback workspace.");
+          const workspaces = readLocalWorkspaces();
+          const savedActive = window.localStorage?.getItem(LOCAL_ACTIVE_WORKSPACE_KEY) || "ndim-core";
+          const active = workspaces.find((workspace) => workspace.workspace_id === savedActive) || workspaces[0];
+          state.workspace.active = active;
+          state.workspace.list = workspaces;
+          applyWorkspaceDefaults(active);
+          trace("workspace", "Browser-local workspace mode", "The backend workspace service is unavailable, so NDIM is using the browser-local workspace list for this session.");
         }
       }
 
-      async function setActiveWorkspace(workspaceId) {
-        const active = await apiJson(`/workspaces/${encodeURIComponent(workspaceId)}/set-active`, { method: "POST" });
-        const list = await apiJson("/workspaces");
-        state.workspace.active = active;
-        state.workspace.list = list.workspaces || [];
-        applyWorkspaceDefaults(active);
+      async function setActiveWorkspace(workspaceId, options = {}) {
+        const { renderAfter = true } = options;
+        try {
+          const active = await apiJson(`/workspaces/${encodeURIComponent(workspaceId)}/set-active`, { method: "POST" });
+          const list = await apiJson("/workspaces");
+          state.workspace.active = active;
+          state.workspace.list = list.workspaces || [];
+          applyWorkspaceDefaults(active);
+        } catch (error) {
+          setLocalActiveWorkspace(workspaceId);
+          trace("workspace", "Browser-local workspace selected", `${workspaceName()} is active in local browser storage.`);
+        }
         trace("workspace", "Workspace switched", `${workspaceName()} is now active. New evidence will use this workspace's defaults.`);
         toast("Workspace switched");
-        render();
+        if (renderAfter) render();
+        return state.workspace.active;
       }
 
       async function createWorkspaceFromManager() {
@@ -4121,20 +4262,42 @@
           country,
           domain: $("workspaceNewDomain")?.value?.trim() || "general narrative evidence"
         };
-        const workspace = await apiJson("/workspaces", { method: "POST", body: JSON.stringify(payload) });
-        await setActiveWorkspace(workspace.workspace_id);
+        let workspace;
+        try {
+          workspace = await apiJson("/workspaces", { method: "POST", body: JSON.stringify(payload) });
+        } catch (error) {
+          workspace = createLocalWorkspace(payload);
+          trace("workspace", "Workspace created locally", "The backend workspace endpoint was not available, so the workspace was saved in browser-local storage.");
+        }
+        await setActiveWorkspace(workspace.workspace_id, { renderAfter: false });
         startWorkspaceSession(`${workspace.name} was created and loaded.`);
         state.workspace.managerOpen = false;
+        state.workspace.startOpen = false;
+        state.workspace.startMode = "menu";
+        state.step = 0;
+        state.stageWorkspace.open = true;
+        toast(`${workspace.name} opened`);
       }
 
       async function duplicateWorkspaceById(sourceId) {
         const source = (state.workspace.list || []).find((item) => item.workspace_id === sourceId);
         const defaultName = `${source?.name || "Workspace"} Copy`;
-        const workspace = await apiJson(`/workspaces/${encodeURIComponent(sourceId)}/duplicate`, {
-          method: "POST",
-          body: JSON.stringify({ name: defaultName })
-        });
-        await setActiveWorkspace(workspace.workspace_id);
+        let workspace;
+        try {
+          workspace = await apiJson(`/workspaces/${encodeURIComponent(sourceId)}/duplicate`, {
+            method: "POST",
+            body: JSON.stringify({ name: defaultName })
+          });
+        } catch (error) {
+          const base = (readLocalWorkspaces().find((item) => item.workspace_id === sourceId) || source || state.workspace.active || {});
+          workspace = createLocalWorkspace({
+            name: defaultName,
+            description: base.description || `Copy of ${source?.name || sourceId}.`,
+            country: (base.settings?.countries || base.countries || ["Rwanda"])[0],
+            domain: base.settings?.domain || base.domain || "general narrative evidence"
+          });
+        }
+        await setActiveWorkspace(workspace.workspace_id, { renderAfter: false });
         startWorkspaceSession(`${workspace.name} was duplicated from ${source?.name || sourceId} and loaded.`);
         trace("workspace", "Workspace duplicated", `${source?.name || sourceId} was copied into ${workspace.name}.`);
       }
@@ -6799,7 +6962,7 @@
               return;
             }
             try {
-              await setActiveWorkspace(target);
+              await setActiveWorkspace(target, { renderAfter: false });
               startWorkspaceSession(`${workspaceName()} is now the active project workspace.`);
               render();
             } catch (error) {
@@ -7121,10 +7284,11 @@
         document.querySelectorAll("[data-workspace-open]").forEach((button) => {
           button.addEventListener("click", async () => {
             if (button.dataset.workspaceOpen !== activeId) {
-              await setActiveWorkspace(button.dataset.workspaceOpen);
+              await setActiveWorkspace(button.dataset.workspaceOpen, { renderAfter: false });
             }
             startWorkspaceSession(`${workspaceName()} is now the active project workspace.`);
             state.workspace.managerOpen = false;
+            state.workspace.startOpen = false;
             render();
           });
         });
@@ -7140,6 +7304,8 @@
             try {
               await duplicateWorkspaceById(button.dataset.workspaceDuplicate);
               state.workspace.managerOpen = false;
+              state.workspace.startOpen = false;
+              state.step = 0;
               render();
             } catch (error) {
               toast(error.message || "Workspace not duplicated");
