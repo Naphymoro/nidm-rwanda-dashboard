@@ -668,6 +668,14 @@
         line-height: .94;
         letter-spacing: -.04em;
       }
+      .science-os .workspace-title-row .workspace-subtitle {
+        max-width: 780px;
+        color: var(--text);
+        font-weight: 850;
+        font-size: clamp(18px, 2vw, 28px);
+        line-height: 1.16;
+        letter-spacing: -.02em;
+      }
       .science-os .workspace-title-row p {
         max-width: 780px;
         margin-top: 14px;
@@ -5658,7 +5666,11 @@
         const activeId = workspaceId();
         const workspaces = (state.workspace.list || []).slice(0, 3);
         const title = "NDIM Engine";
-        const summary = "NDIM Engine is a local-first scientific workbench for studying how narratives, misinformation, trust, social influence, and intervention messages shape adoption decisions in communities. It turns field stories into governed evidence, encodes narrative mechanisms, simulates diffusion with compartmental and agent-based models, updates uncertainty through Bayesian learning, tests inoculation strategies in a digital twin, and produces human-reviewed policy briefs.";
+        const subtitle = "A Scientific Platform for Understanding Narratives and Social Influence";
+        const summary = "NDIM Engine turns community narratives into scientific evidence for designing better interventions. It helps researchers and decision-makers understand how trust, lived experience, social influence, and public messages shape adoption, resistance, and behaviour change across communities.";
+        const modelText = "It brings together field evidence, social data, modelling, uncertainty analysis, and digital twin simulations to show how narratives move through communities and how they may influence behaviour.";
+        const scopeText = "NDIM Engine is designed for work in health, climate, agriculture, energy, and public policy. It helps users turn community narratives into structured evidence, test different intervention messages before using them in the real world, and produce transparent outputs that support policy and programme decisions.";
+        const pathway = "Evidence \u2192 Models \u2192 Intervention Testing \u2192 Decision Support";
         return `
           <div class="workspace-launchpad workspace-os" aria-label="Workspace launchpad">
             <section class="workspace-prime">
@@ -5666,8 +5678,11 @@
                 <div>
                   <p class="eyebrow">Narrative Diffusion and Inoculation Model</p>
                   <h2>${escapeHtml(title)}</h2>
+                  <p class="workspace-subtitle">${escapeHtml(subtitle)}</p>
                   <p>${escapeHtml(summary)}</p>
-                  <p class="workspace-support-line">From field narratives to traceable model evidence, intervention testing, and policy-ready decision support.</p>
+                  <p>${escapeHtml(modelText)}</p>
+                  <p>${escapeHtml(scopeText)}</p>
+                  <p class="workspace-support-line">${escapeHtml(pathway)}</p>
                 </div>
                 <span class="workspace-badge">local-first research tool</span>
               </div>
@@ -7184,8 +7199,8 @@
       function render() {
         const step = currentStep();
         $("appShell")?.classList.toggle("workspace-start-mode", !state.workspace.started);
-        $("topTitle").textContent = state.workspace.started ? workspaceStageLabel(step) : "Start NDIM workspace";
-        $("topCopy").textContent = state.workspace.started ? workspaceStageSub(step) : "Choose or create the project container that NDIM will run.";
+        $("topTitle").textContent = state.workspace.started ? workspaceStageLabel(step) : "NDIM Engine";
+        $("topCopy").textContent = state.workspace.started ? workspaceStageSub(step) : "A Scientific Platform for Understanding Narratives and Social Influence.";
         if ($("workspaceName")) $("workspaceName").textContent = workspaceName();
         if ($("assistantEyebrow")) $("assistantEyebrow").textContent = workspaceSettings().assistant?.name || "Research Assistant";
         renderStepList();
