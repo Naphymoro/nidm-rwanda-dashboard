@@ -3966,9 +3966,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           <button class="nav-item" data-flow-step="4" type="button">Model</button>
           <button class="nav-item" data-flow-step="6" type="button">Digital twin</button>
           <button class="nav-item" data-flow-step="11" type="button">Strategy Lab</button>
-          <a class="nav-item" href="/publication" target="_blank" rel="noreferrer">Publication Workspace</a>
-          <a class="nav-item" href="/academy" target="_blank" rel="noreferrer">Academy</a>
-          <a class="nav-item" href="/manual" target="_blank" rel="noreferrer">Manual</a>
+          <a class="nav-item" href="/publication/" target="_blank" rel="noreferrer">Publication Workspace</a>
+          <a class="nav-item" href="/academy/" target="_blank" rel="noreferrer">Academy</a>
+          <a class="nav-item" href="/manual/" target="_blank" rel="noreferrer">Manual</a>
         </nav>
         <div class="stepper">
           <p class="section-label">Workflow stages</p>
@@ -3977,10 +3977,10 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         </div>
         <div class="sidebar-footer">
           <p class="eyebrow">0.9.0-alpha.8</p>
-          <a class="button" href="/academy" target="_blank" rel="noreferrer">NDIM Academy</a>
-          <a class="button" href="/publication" target="_blank" rel="noreferrer">Scientific Publication</a>
-          <a class="button" href="/manual" target="_blank" rel="noreferrer">Tool manual</a>
-          <a class="button" href="/manual#source-access" target="_blank" rel="noreferrer">Source access</a>
+          <a class="button" href="/academy/" target="_blank" rel="noreferrer">NDIM Academy</a>
+          <a class="button" href="/publication/" target="_blank" rel="noreferrer">Scientific Publication</a>
+          <a class="button" href="/manual/" target="_blank" rel="noreferrer">Tool manual</a>
+          <a class="button" href="/manual/#source-access" target="_blank" rel="noreferrer">Source access</a>
         </div>
       </aside>
 
@@ -6332,7 +6332,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <h3>Expert agents available in this workspace</h3>
                 <p>Each skill supports a specific part of the NDIM chain while keeping the main screen focused.</p>
               </div>
-              <a class="button" href="/academy#equations" target="_blank" rel="noreferrer">Model guide</a>
+              <a class="button" href="/academy/#equations" target="_blank" rel="noreferrer">Model guide</a>
             </div>
             <div class="skill-grid">
               ${ndimSkills.map((skill) => `
@@ -6393,7 +6393,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="workspace-quick-actions">
                     <button class="button" data-open-workspace-manager type="button">${icon("folder")} Workspace manager</button>
                     <button class="button" data-flow-step="11" type="button">${icon("graph")} Strategy Lab</button>
-                    <a class="button" href="/publication" target="_blank" rel="noreferrer">${icon("export")} Publication</a>
+                    <a class="button" href="/publication/" target="_blank" rel="noreferrer">${icon("export")} Publication</a>
                   </div>
                 </div>
                 <div class="workspace-signal-row" aria-label="Workspace evidence routes">
@@ -6444,7 +6444,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                 <div class="workspace-quick-actions">
                   <button class="button" data-open-workspace-manager type="button">${icon("folder")} Workspace manager</button>
                   <button class="button" data-start-action="create" type="button">${icon("plus")} New workspace</button>
-                  <a class="button" href="/manual#workspaces" target="_blank" rel="noreferrer">${icon("manual")} Workspace guide</a>
+                  <a class="button" href="/manual/#workspaces" target="_blank" rel="noreferrer">${icon("manual")} Workspace guide</a>
                 </div>
               </div>
               <div class="workspace-signal-row" aria-label="Workspace evidence routes">
@@ -8102,7 +8102,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             <h2>Ingest narratives with context</h2>
             <p class="copy">Choose the evidence route, attach SDMX context, then stage records into the governed narrative ledger.</p>
             <div class="reference-links" style="margin-bottom: 14px;">
-              <a class="button" href="/manual" target="_blank" rel="noreferrer">Open tool manual</a>
+              <a class="button" href="/manual/" target="_blank" rel="noreferrer">Open tool manual</a>
               <a class="button" href="#narrativeRepository" data-jump-repository>Open narrative repository</a>
               <button class="button" data-open-full-repository type="button">Open full repository</button>
             </div>
@@ -12611,20 +12611,20 @@ MANUAL_HTML = r"""<!doctype html>
   <body>
     <main>
       <h1>NDIM Engine Manual</h1>
-      <p><a href="/">Back to tool</a> | <a href="/academy">Open NDIM Academy</a> | <a href="/publication">Scientific Publication</a> | <a href="/academy#modules">Academy modules</a> | <a href="/academy#practice">Practice exercises</a></p>
+      <p><a href="/">Back to tool</a> | <a href="/academy/">Open NDIM Academy</a> | <a href="/publication/">Scientific Publication</a> | <a href="/academy/#modules">Academy modules</a> | <a href="/academy/#practice">Practice exercises</a></p>
       <p><strong>NDIM</strong> means <strong>Narrative Diffusion and Inoculation Model</strong>. The engine turns field narratives into traceable model inputs, runs population and household simulations, updates beliefs with evidence, and produces a policy recommendation with an audit trail.</p>
       <div class="callout"><p><strong>Simple reading:</strong> the tool asks, "What are people saying, how should we encode it, how does that narrative change adoption dynamics, what did the field data correct, and which policy action is most robust?"</p></div>
 
       <h2 id="academy-learning-path">Academy learning path</h2>
-      <p>The manual is the reference guide. <a href="/academy">NDIM Academy</a> is the guided learning path. Use Academy when a research team needs a full lesson, worked example, and exercise. Use this manual when the user already knows the workflow and needs exact operating instructions.</p>
+      <p>The manual is the reference guide. <a href="/academy/">NDIM Academy</a> is the guided learning path. Use Academy when a research team needs a full lesson, worked example, and exercise. Use this manual when the user already knows the workflow and needs exact operating instructions.</p>
       <table>
         <thead><tr><th>Need</th><th>Use</th><th>Where to go</th></tr></thead>
         <tbody>
-          <tr><td>Learn NDIM from scratch</td><td>Academy story, innovation case, glossary, equations, and learning modules.</td><td><a href="/academy#modules">Academy modules</a></td></tr>
-          <tr><td>Frame NDIM for journal publication</td><td>Use the Overleaf-style publication workspace for manuscript editing, live preview, LaTeX/BibTeX export, legal literature search, optional OpenAI writing support, validation roadmap, ethics, and article-type fit.</td><td><a href="/publication">Scientific Publication</a></td></tr>
-          <tr><td>Practise with ClimateTales Rwanda</td><td>Academy practice workflow and manual stress-test steps.</td><td><a href="/academy#module-climatetales">ClimateTales module</a></td></tr>
+          <tr><td>Learn NDIM from scratch</td><td>Academy story, innovation case, glossary, equations, and learning modules.</td><td><a href="/academy/#modules">Academy modules</a></td></tr>
+          <tr><td>Frame NDIM for journal publication</td><td>Use the Overleaf-style publication workspace for manuscript editing, live preview, LaTeX/BibTeX export, legal literature search, optional OpenAI writing support, validation roadmap, ethics, and article-type fit.</td><td><a href="/publication/">Scientific Publication</a></td></tr>
+          <tr><td>Practise with ClimateTales Rwanda</td><td>Academy practice workflow and manual stress-test steps.</td><td><a href="/academy/#module-climatetales">ClimateTales module</a></td></tr>
           <tr><td>Run the tool correctly</td><td>Manual stage-by-stage operating guide.</td><td><a href="#stage-tutorial">Workflow tutorial</a></td></tr>
-          <tr><td>Explain equations to a non-technical reader</td><td>Academy equation map and plain-language interpretation.</td><td><a href="/academy#equations">Academy equations</a></td></tr>
+          <tr><td>Explain equations to a non-technical reader</td><td>Academy equation map and plain-language interpretation.</td><td><a href="/academy/#equations">Academy equations</a></td></tr>
         </tbody>
       </table>
 
@@ -13342,8 +13342,8 @@ MANUAL_HTML = r"""<!doctype html>
       </a>
       <div class="app-nav">
         <a href="./index.html">Tool</a>
-        <a href="./academy.html">Academy</a>
-        <a href="./publication.html">Publication</a>
+        <a href="/academy/">Academy</a>
+        <a href="/publication/">Publication</a>
         <a href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub</a>
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light or dark mode">Dark</button>
       </div>
@@ -13355,10 +13355,10 @@ MANUAL_HTML = r"""<!doctype html>
         <p>NDIM is a local-first scientific and policy tool for turning governed narrative evidence into model inputs, uncertainty-aware simulations, intervention tests, and a human-reviewed policy brief.</p>
         <p class="small-link-row">
           <a href="./index.html">Back to tool</a>
-          <a href="./academy.html">NDIM Academy</a>
-          <a href="./publication.html">Scientific Publication</a>
-          <a href="./academy.html#modules">Academy modules</a>
-          <a href="./academy.html#practice">Academy exercises</a>
+          <a href="/academy/">NDIM Academy</a>
+          <a href="/publication/">Scientific Publication</a>
+          <a href="/academy/#modules">Academy modules</a>
+          <a href="/academy/#practice">Academy exercises</a>
           <a href="#installation">Installation</a>
           <a href="#source-access">Source access</a>
           <a href="#workspaces">Workspaces</a>
@@ -13374,15 +13374,15 @@ MANUAL_HTML = r"""<!doctype html>
       <details id="academy-learning-path" open>
         <summary>Academy learning path</summary>
         <div class="section-body">
-          <p>The manual is the operating reference. <a href="./academy.html">NDIM Academy</a> is the guided course. Use Academy when a research team needs plain-language lessons, worked examples, exercises, and interpretation support. Use this manual when a user needs exact operating instructions.</p>
+          <p>The manual is the operating reference. <a href="/academy/">NDIM Academy</a> is the guided course. Use Academy when a research team needs plain-language lessons, worked examples, exercises, and interpretation support. Use this manual when a user needs exact operating instructions.</p>
           <table>
             <thead><tr><th>User need</th><th>Best place</th><th>What the user gets</th></tr></thead>
             <tbody>
-              <tr><td data-label="User need">Learn NDIM from scratch</td><td data-label="Best place"><a href="./academy.html#modules">Academy modules</a></td><td data-label="What the user gets">Full lessons with objectives, key terms, examples, exercises, observations, interpretations, and common mistakes.</td></tr>
-              <tr><td data-label="User need">Practise with ClimateTales Rwanda</td><td data-label="Best place"><a href="./academy.html#module-climatetales">ClimateTales module</a></td><td data-label="What the user gets">A route-by-route synthetic evidence exercise from intake to policy brief.</td></tr>
-              <tr><td data-label="User need">Prepare a scientific manuscript</td><td data-label="Best place"><a href="./publication.html">Scientific Publication workspace</a></td><td data-label="What the user gets">An Overleaf-style editor with live preview, LaTeX/BibTeX export, legal literature search, and optional OpenAI writing support.</td></tr>
+              <tr><td data-label="User need">Learn NDIM from scratch</td><td data-label="Best place"><a href="/academy/#modules">Academy modules</a></td><td data-label="What the user gets">Full lessons with objectives, key terms, examples, exercises, observations, interpretations, and common mistakes.</td></tr>
+              <tr><td data-label="User need">Practise with ClimateTales Rwanda</td><td data-label="Best place"><a href="/academy/#module-climatetales">ClimateTales module</a></td><td data-label="What the user gets">A route-by-route synthetic evidence exercise from intake to policy brief.</td></tr>
+              <tr><td data-label="User need">Prepare a scientific manuscript</td><td data-label="Best place"><a href="/publication/">Scientific Publication workspace</a></td><td data-label="What the user gets">An Overleaf-style editor with live preview, LaTeX/BibTeX export, legal literature search, and optional OpenAI writing support.</td></tr>
               <tr><td data-label="User need">Operate the tool quickly</td><td data-label="Best place"><a href="#workflow">Manual workflow section</a></td><td data-label="What the user gets">Concise stage instructions and output expectations.</td></tr>
-              <tr><td data-label="User need">Explain equations simply</td><td data-label="Best place"><a href="./academy.html#equations">Academy equations</a></td><td data-label="What the user gets">Plain-language explanation of the compartmental model, agent model, digital twin, Bayesian update, and optimizer.</td></tr>
+              <tr><td data-label="User need">Explain equations simply</td><td data-label="Best place"><a href="/academy/#equations">Academy equations</a></td><td data-label="What the user gets">Plain-language explanation of the compartmental model, agent model, digital twin, Bayesian update, and optimizer.</td></tr>
             </tbody>
           </table>
         </div>
@@ -14294,8 +14294,8 @@ ACADEMY_HTML = r"""<!doctype html>
       </a>
       <div class="app-nav">
         <a href="./index.html">Tool</a>
-        <a href="./manual.html">Manual</a>
-        <a href="./publication.html">Publication</a>
+        <a href="/manual/">Manual</a>
+        <a href="/publication/">Publication</a>
         <a href="https://github.com/Naphymoro/nidm-rwanda-dashboard" target="_blank" rel="noreferrer">GitHub</a>
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light or dark mode">Dark</button>
       </div>
@@ -14307,8 +14307,8 @@ ACADEMY_HTML = r"""<!doctype html>
         <p class="lede">NDIM is a learning and research space for understanding how stories shape decisions. It helps a researcher move carefully from lived experience to evidence, from evidence to models, and from models to a policy brief that still shows its source trail.</p>
         <p class="small-link-row">
           <a href="./index.html">Back to tool</a>
-          <a href="./manual.html">Tool manual</a>
-          <a href="./publication.html">Scientific Publication</a>
+          <a href="/manual/">Tool manual</a>
+          <a href="/publication/">Scientific Publication</a>
           <a href="#difference">What makes NDIM different</a>
           <a href="#cloud-repository">Shared Google repository</a>
           <a href="#glossary">Glossary</a>
@@ -14317,7 +14317,7 @@ ACADEMY_HTML = r"""<!doctype html>
           <a href="#practice">Practice with NDIM</a>
           <a href="#references">References</a>
         </p>
-        <p class="lede">When a team is ready to turn NDIM work into a paper, the <a href="./publication.html">Scientific Publication workspace</a> provides a split editor and preview, legal literature search, BibTeX export, and optional OpenAI writing support.</p>
+        <p class="lede">When a team is ready to turn NDIM work into a paper, the <a href="/publication/">Scientific Publication workspace</a> provides a split editor and preview, legal literature search, BibTeX export, and optional OpenAI writing support.</p>
       </header>
 
       <section class="story-panel" aria-label="Opening story">
@@ -14529,7 +14529,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the intake form asks for country, location, language, period, source, and route. These fields prevent the story from becoming anonymous text.</p>
               <p><strong>Interpretation:</strong> a story becomes useful for policy only when the user can explain where it came from, why it matters, and what action it suggests.</p>
               <p><strong>Common mistake:</strong> treating one emotional story as national evidence. NDIM keeps the story valuable, but still asks for governance, approval, and uncertainty.</p>
-              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#narrative-intake">Read manual intake section</a><a href="#module-inoculation">Next module</a></div>
+              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual/#narrative-intake">Read manual intake section</a><a href="#module-inoculation">Next module</a></div>
             </div>
           </details>
 
@@ -14545,7 +14545,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the lab should produce a proposed counter-narrative, a messenger fit, a booster need, and an intervention strength. These outputs should be reviewed before field use.</p>
               <p><strong>Interpretation:</strong> an inoculation message is not generic myth-busting. It should prepare people to recognise the misleading claim and resist it respectfully.</p>
               <p><strong>Common mistake:</strong> using a scolding tone. A message that embarrasses people can increase resistance instead of reducing misinformation.</p>
-              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#workflow">See workflow tutorial</a><a href="#module-governance">Next module</a></div>
+              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual/#workflow">See workflow tutorial</a><a href="#module-governance">Next module</a></div>
             </div>
           </details>
 
@@ -14561,7 +14561,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> approved records move to the Accepted repository. Rejected records move to the Rejected repository. The active queue should shrink.</p>
               <p><strong>Interpretation:</strong> governance is not bureaucracy. It is the difference between evidence that can responsibly influence a model and material that should remain audit-only.</p>
               <p><strong>Common mistake:</strong> approving every record because it imported successfully. Import success is not evidence approval.</p>
-              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#repository">Read repository section</a><a href="#module-encoding">Next module</a></div>
+              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual/#repository">Read repository section</a><a href="#module-encoding">Next module</a></div>
             </div>
           </details>
 
@@ -14577,7 +14577,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> manual, AI, and hybrid results should be stored separately and appear in the repository as comparison columns.</p>
               <p><strong>Interpretation:</strong> the model needs numbers, but the researcher needs reasons. A score without a short justification is weak evidence.</p>
               <p><strong>Common mistake:</strong> batch-encoding everything without inspecting outliers. Use story-by-story review for validation.</p>
-              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#workflow">Read Stage 03 tutorial</a><a href="#module-ode">Next module</a></div>
+              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual/#workflow">Read Stage 03 tutorial</a><a href="#module-ode">Next module</a></div>
             </div>
           </details>
 
@@ -14625,7 +14625,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the twin should show which inputs changed: trust, resistance, misinformation decay, adoption transition, or household-level behaviour.</p>
               <p><strong>Interpretation:</strong> a feedback-adjusted twin is a learning device. It helps the user ask whether field evidence materially changes the model.</p>
               <p><strong>Common mistake:</strong> assuming the twin is automatically correct. It is only as strong as the evidence, calibration rule, and validation checks.</p>
-              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#workflow">Read Digital Twin tutorial</a><a href="#module-bayes">Next module</a></div>
+              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual/#workflow">Read Digital Twin tutorial</a><a href="#module-bayes">Next module</a></div>
             </div>
           </details>
 
@@ -14705,7 +14705,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> the main brief should be human-readable. JSON is for audit, hashes, and reproducibility.</p>
               <p><strong>Interpretation:</strong> a good policy brief says what to do, why, how confident the evidence is, and what must be reviewed before action.</p>
               <p><strong>Common mistake:</strong> presenting a stress-test result as real-world evidence.</p>
-              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#exports">Read export section</a><a href="#module-climatetales">Next module</a></div>
+              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual/#exports">Read export section</a><a href="#module-climatetales">Next module</a></div>
             </div>
           </details>
 
@@ -14721,7 +14721,7 @@ ACADEMY_HTML = r"""<!doctype html>
               <p><strong>What to observe:</strong> route-specific forms should adapt, batch records should stay separate, scores should vary by narrative, and the final brief should label stress-test data as synthetic.</p>
               <p><strong>Interpretation:</strong> the practice run proves the workflow and user experience. It does not prove a Rwanda policy conclusion until real approved evidence is added.</p>
               <p><strong>Common mistake:</strong> using all stress-test files at once before learning the single-route workflow.</p>
-              <div class="lesson-actions"><a href="./index.html">Open NDIM tool</a><a href="./manual.html#stress-test-corpus">Read ClimateTales tutorial</a><a href="#practice">Go to practice section</a></div>
+              <div class="lesson-actions"><a href="/">Open NDIM tool</a><a href="/manual/#stress-test-corpus">Read ClimateTales tutorial</a><a href="#practice">Go to practice section</a></div>
             </div>
           </details>
 
