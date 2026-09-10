@@ -1,2 +1,8 @@
+/manual /manual.html 200
+/manual/ /manual.html 200
+/academy /academy.html 200
+/academy/ /academy.html 200
+/publication /publication.html 200
+/publication/ /publication.html 200
 /stress-test-corpus /manual#stress-test-corpus 302
 /source-access /manual#source-access 302

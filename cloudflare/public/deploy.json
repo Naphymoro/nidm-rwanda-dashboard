@@ -1,10 +1,11 @@
 {
   "version": "0.9.0-alpha.8",
   "target": "cloudflare-pages-git",
-  "source": "backend.app.workflow_ui original UI constants",
-  "generated_at_utc": "2026-06-15T09:55:00+00:00",
+  "source": "backend.app.workflow_ui redesigned NDIM workspace shell",
+  "generated_at_utc": "2026-09-10T00:00:00+00:00",
   "routing": "Cloudflare clean URLs used for manual, academy, publication; self-redirect loop removed",
   "manual": "synced-from-backend; access guidance updated for hosted web, local desktop, GitHub, and advanced deployment use",
   "academy": "synced-from-backend",
-  "publication": "synced-from-backend"
+  "publication": "synced-from-backend",
+  "ui": "DeerFlow-inspired scientific workbench with compact navigation, active skill harness, mathematics and epidemiology modelling skill, Strategy Lab, responsive landing, and workspace-first flow"
 }

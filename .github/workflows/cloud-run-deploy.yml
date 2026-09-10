@@ -2,15 +2,6 @@ name: Deploy NDIM Web to Cloud Run
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "backend/**"
-      - "docs/**"
-      - "stress_test_corpus/**"
-      - "VERSION"
-      - ".github/workflows/cloud-run-deploy.yml"
 
 permissions:
   contents: read

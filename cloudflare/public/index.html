@@ -3243,6 +3243,390 @@
         transition: .16s ease;
       }
       .toast.show { opacity: 1; transform: none; }
+
+      /* NDIM scientific workspace redesign: calmer shell, clearer navigation, lighter workbench. */
+      :root {
+        --bg: #eef2f4;
+        --panel: #fffdf8;
+        --panel-2: #f5f1ea;
+        --card: #ffffff;
+        --line: rgba(39, 54, 61, .14);
+        --line-strong: #2d6263;
+        --text: #182429;
+        --muted: #546269;
+        --soft: #7a858b;
+        --ink: #132326;
+        --paper: #fffdf8;
+        --blue: #2d6263;
+        --green: #4f7c58;
+        --amber: #b7833b;
+        --red: #b45a42;
+        --violet: #675a7d;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0d1215;
+        --panel: #151d22;
+        --panel-2: #10171b;
+        --card: #19242a;
+        --line: rgba(207, 218, 221, .16);
+        --line-strong: #83d0c8;
+        --text: #f2f5f2;
+        --muted: #bac6c5;
+        --soft: #8e9d9d;
+        --ink: #f2f5f2;
+        --paper: #10171b;
+        --blue: #83d0c8;
+        --green: #8dbf8d;
+        --amber: #e2be7a;
+        --red: #f29a82;
+        --violet: #c7b9f1;
+      }
+      body {
+        background:
+          radial-gradient(circle at 14% 0%, rgba(45, 98, 99, .11), transparent 28%),
+          linear-gradient(180deg, rgba(255,255,255,.54), transparent 260px),
+          var(--bg);
+      }
+      :root[data-theme="dark"] body {
+        background:
+          radial-gradient(circle at 12% 0%, rgba(131, 208, 200, .12), transparent 30%),
+          linear-gradient(180deg, rgba(255,255,255,.03), transparent 260px),
+          var(--bg);
+      }
+      .app {
+        --sidebar-w: 244px;
+        grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      }
+      .sidebar {
+        background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 96%, var(--bg)), var(--panel-2));
+      }
+      .brand {
+        height: auto;
+        min-height: 70px;
+        padding: 16px 14px;
+      }
+      .brand span,
+      .section-label,
+      .eyebrow,
+      .mini-label {
+        letter-spacing: .08em;
+      }
+      .stepper {
+        padding: 12px;
+      }
+      .stage-scroll-hint {
+        line-height: 1.45;
+      }
+      .step-list {
+        gap: 6px;
+      }
+      .step-button {
+        border-radius: 8px;
+        background: transparent;
+        min-height: 52px;
+        padding: 8px;
+      }
+      .step-button.active {
+        background: var(--card);
+        box-shadow: inset 3px 0 0 var(--line-strong);
+      }
+      .workspace-nav {
+        display: grid;
+        gap: 6px;
+        padding: 0 12px 12px;
+      }
+      .workspace-nav-title {
+        margin: 4px 0 2px;
+        color: var(--soft);
+        font: 800 10px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .nav-item {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        padding: 8px 10px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 750;
+        text-align: left;
+      }
+      .nav-item:hover,
+      .nav-item:focus-visible {
+        border-color: var(--line);
+        background: var(--card);
+        color: var(--text);
+      }
+      .nav-item.primary {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .sidebar-footer {
+        gap: 7px;
+      }
+      .sidebar-footer .button {
+        border-radius: 8px;
+      }
+      .main {
+        background: transparent;
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 44;
+        min-height: 64px;
+        padding: 10px 18px;
+        background: color-mix(in srgb, var(--panel) 92%, transparent);
+        backdrop-filter: blur(16px);
+      }
+      .topbar h1 {
+        font-size: clamp(18px, 2vw, 25px);
+        letter-spacing: 0;
+      }
+      .topbar p {
+        font-size: 12.5px;
+      }
+      .top-actions {
+        gap: 7px;
+      }
+      .top-actions .button,
+      .workspace-chip,
+      .run-status,
+      .theme-icon-button,
+      .button {
+        border-radius: 999px;
+      }
+      .reasoning,
+      .assistant-panel {
+        z-index: 98;
+      }
+      .floating-assistant {
+        z-index: 99;
+      }
+      .content {
+        --content-x: clamp(14px, 2.3vw, 28px);
+        padding: 18px var(--content-x) 28px;
+      }
+      .command-center {
+        width: 100%;
+        margin: 0 0 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: 0 18px 50px rgba(19, 35, 38, .08);
+        overflow: hidden;
+      }
+      .command-center.science-os,
+      :root[data-theme="dark"] .command-center.science-os {
+        background: var(--panel);
+      }
+      .science-os .workspace-launchpad {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(300px, .82fr);
+        gap: 14px;
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--card) 86%, transparent), color-mix(in srgb, var(--panel-2) 72%, transparent));
+      }
+      .science-os .workspace-launchpad.compact-workspace {
+        grid-template-columns: minmax(0, 1fr) minmax(380px, .92fr);
+        align-items: stretch;
+      }
+      .science-os .workspace-prime,
+      .science-os .workspace-switcher,
+      .science-os .agent-cockpit,
+      .os-stage-card,
+      .os-repository-card,
+      .os-assistant-card,
+      .os-metric,
+      .start-panel,
+      .workspace-capability,
+      .workspace-context-card,
+      .stage-card,
+      .panel,
+      .metric,
+      .record-card,
+      .question-card,
+      .payload-item {
+        border-radius: 8px;
+      }
+      .science-os .workspace-prime {
+        padding: clamp(16px, 2vw, 24px);
+      }
+      .science-os .workspace-title-row h2 {
+        max-width: 860px;
+        font-size: clamp(32px, 4vw, 52px);
+        line-height: 1.03;
+        letter-spacing: 0;
+      }
+      .science-os .workspace-title-row .workspace-subtitle {
+        max-width: 860px;
+        font-size: clamp(17px, 1.6vw, 24px);
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+      .science-os .workspace-title-row p {
+        max-width: 900px;
+        font-size: clamp(14px, 1vw, 16px);
+        line-height: 1.58;
+      }
+      .workspace-support-line {
+        font-size: clamp(13px, 1vw, 15px) !important;
+        font-weight: 850;
+      }
+      .workspace-capability-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .workspace-command-row {
+        grid-template-columns: minmax(160px, .5fr) minmax(0, 1fr);
+      }
+      .workspace-quick-actions .button,
+      .workspace-command-row .start-button {
+        min-height: 44px;
+      }
+      .workspace-signal {
+        background: var(--card);
+      }
+      .science-os .workspace-side-stack {
+        grid-template-rows: auto;
+        align-content: start;
+      }
+      .science-os .agent-cockpit {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr);
+      }
+      .science-os .agent-orb {
+        width: 58px;
+        height: 58px;
+      }
+      .os-phase-rail {
+        padding: 12px 16px;
+        background: color-mix(in srgb, var(--panel) 92%, var(--panel-2));
+      }
+      .science-os .flow-card {
+        min-height: 44px;
+        border-radius: 999px;
+      }
+      .os-workbench-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(300px, .42fr);
+        gap: 14px;
+        padding: 16px;
+      }
+      .os-stage-card {
+        padding: clamp(16px, 2vw, 24px);
+      }
+      .os-stage-card h2 {
+        font-size: clamp(28px, 3vw, 40px);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+      .os-stage-card p {
+        font-size: clamp(14px, 1vw, 16px);
+      }
+      .os-action-row .button {
+        min-height: 42px;
+      }
+      .os-stage-insight-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .os-metrics-bar {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      }
+      .os-metric strong {
+        font-size: 18px;
+      }
+      .skill-harness {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--card) 88%, var(--panel-2));
+        padding: 12px;
+      }
+      .skill-harness.compact {
+        margin-top: 14px;
+      }
+      .skill-harness-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .skill-harness-head h3 {
+        margin: 3px 0 0;
+        font-size: 16px;
+      }
+      .skill-harness-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12.8px;
+        line-height: 1.45;
+      }
+      .skill-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+        gap: 8px;
+      }
+      .skill-card {
+        display: grid;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--text);
+        padding: 11px;
+        text-align: left;
+      }
+      .skill-card:hover,
+      .skill-card:focus-visible,
+      .skill-card.active {
+        border-color: var(--line-strong);
+        box-shadow: inset 3px 0 0 var(--line-strong);
+      }
+      .skill-card span {
+        color: var(--soft);
+        font: 800 10px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .skill-card strong {
+        font-size: 13.5px;
+      }
+      .skill-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12.6px;
+        line-height: 1.42;
+      }
+      .strategy-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .strategy-chip {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-2);
+        padding: 10px;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.35;
+      }
+      .strategy-chip strong {
+        display: block;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+      .start-panels {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
       @media (max-width: 1180px) {
         .app {
           --sidebar-w: 220px;
@@ -3519,8 +3903,50 @@
           flex: 1 1 100%;
         }
       }
+      @media (max-width: 980px) {
+        .app.workspace-start-mode .sidebar {
+          display: block;
+          padding: 0;
+        }
+        .workspace-nav {
+          grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+          padding: 10px 12px;
+          border-top: 1px solid var(--line);
+        }
+        .workspace-nav-title {
+          grid-column: 1 / -1;
+        }
+        .sidebar-footer {
+          display: none;
+        }
+      }
+      @media (max-width: 760px) {
+        .command-center {
+          border-radius: 10px;
+        }
+        .science-os .workspace-launchpad,
+        .science-os .workspace-launchpad.compact-workspace,
+        .os-workbench-grid {
+          grid-template-columns: 1fr;
+        }
+        .skill-harness-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .strategy-strip {
+          grid-template-columns: 1fr;
+        }
+        .workspace-capability-row,
+        .os-stage-insight-grid {
+          grid-template-columns: 1fr;
+        }
+        .top-actions .workspace-chip,
+        .top-actions .button,
+        .run-status {
+          width: 100%;
+        }
+      }
     </style>
-      <meta name="ndim-deploy-target" content="cloudflare-pages-git-original-ui" />
   </head>
   <body>
     <div class="app" id="appShell">
@@ -3532,17 +3958,29 @@
             <span>Narrative Diffusion and Inoculation Model</span>
           </div>
         </div>
+        <nav class="workspace-nav" aria-label="NDIM workspace sections">
+          <p class="workspace-nav-title">Workspace</p>
+          <button class="nav-item primary" data-start-toggle type="button">Start workspace</button>
+          <button class="nav-item" data-flow-step="0" type="button">Evidence</button>
+          <button class="nav-item" data-flow-step="3" type="button">Encode</button>
+          <button class="nav-item" data-flow-step="4" type="button">Model</button>
+          <button class="nav-item" data-flow-step="6" type="button">Digital twin</button>
+          <button class="nav-item" data-flow-step="11" type="button">Strategy Lab</button>
+          <a class="nav-item" href="/publication" target="_blank" rel="noreferrer">Publication Workspace</a>
+          <a class="nav-item" href="/academy" target="_blank" rel="noreferrer">Academy</a>
+          <a class="nav-item" href="/manual" target="_blank" rel="noreferrer">Manual</a>
+        </nav>
         <div class="stepper">
           <p class="section-label">Workflow stages</p>
           <p class="stage-scroll-hint">Click a stage to open its focused task workspace, or use Jump to stage in the top bar.</p>
           <div class="step-list" id="stepList"></div>
         </div>
         <div class="sidebar-footer">
-          <p class="eyebrow">0.9.0-alpha.8 / Cloudflare Git</p>
-          <a class="button" href="./academy.html" target="_blank" rel="noreferrer">NDIM Academy</a>
-          <a class="button" href="./publication.html" target="_blank" rel="noreferrer">Scientific Publication</a>
-          <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Tool manual</a>
-          <a class="button" href="./manual.html#source-access" target="_blank" rel="noreferrer">Source access</a>
+          <p class="eyebrow">0.9.0-alpha.8</p>
+          <a class="button" href="/academy" target="_blank" rel="noreferrer">NDIM Academy</a>
+          <a class="button" href="/publication" target="_blank" rel="noreferrer">Scientific Publication</a>
+          <a class="button" href="/manual" target="_blank" rel="noreferrer">Tool manual</a>
+          <a class="button" href="/manual#source-access" target="_blank" rel="noreferrer">Source access</a>
         </div>
       </aside>
 
@@ -3556,9 +3994,6 @@
           </div>
           <div class="top-actions">
             <button class="workspace-chip" id="workspaceButton" type="button" title="Open Workspace Manager">Workspace: <span id="workspaceName">loading</span></button>
-            <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Manual</a>
-            <a class="button" href="./academy.html" target="_blank" rel="noreferrer">Academy</a>
-            <a class="button" href="./publication.html" target="_blank" rel="noreferrer">Publication</a>
             <select id="stageJumpSelect" class="stage-jump" aria-label="Jump to workflow stage"></select>
             <button class="button primary" id="quickRunButton" type="button">Run current stage</button>
             <button class="button" id="toggleTraceButton" type="button">Activity log</button>
@@ -3667,9 +4102,76 @@
         { icon: "EV", label: "Evidence", detail: "Narratives, SDMX gate, repository", step: 0, stages: ["intake", "gate", "repository"] },
         { icon: "EN", label: "Encode", detail: "Manual, AI, hybrid scoring", step: 3, stages: ["encoding"] },
         { icon: "MO", label: "Model", detail: "ODE and agent simulation", step: 4, stages: ["compartmental", "agents"] },
-        { icon: "LR", label: "Learn", detail: "Twin, posterior, RL loop", step: 6, stages: ["digital", "bayes", "rl"] },
-        { icon: "SY", label: "Synthesize", detail: "Regions, graph, inoculation", step: 9, stages: ["regional", "graph", "inoculation"] },
+        { icon: "TW", label: "Twin", detail: "Feedback, posterior, RL loop", step: 6, stages: ["digital", "bayes", "rl"] },
+        { icon: "ST", label: "Strategy", detail: "Regions, graph, inoculation lab", step: 9, stages: ["regional", "graph", "inoculation"] },
         { icon: "EX", label: "Export", detail: "Policy output and audit", step: 12, stages: ["policy"] }
+      ];
+
+      const ndimSkills = [
+        {
+          id: "evidence-governance",
+          label: "Evidence Governance",
+          agent: "Field evidence steward",
+          step: 0,
+          stages: ["intake", "gate", "repository"],
+          summary: "Checks source, place, consent, visibility, approvals, hashes, and readiness before a story enters the model."
+        },
+        {
+          id: "narrative-encoding",
+          label: "Narrative Encoding",
+          agent: "Human-AI encoder",
+          step: 3,
+          stages: ["encoding"],
+          summary: "Turns stories into transparent trust, barrier, exposure, and inoculation signals with manual, AI, or hybrid scoring."
+        },
+        {
+          id: "math-epidemiology",
+          label: "Mathematics & Epidemiology",
+          agent: "Epidemiology modeller",
+          step: 4,
+          stages: ["compartmental", "agents", "digital", "bayes", "rl"],
+          summary: "Helps build SI/SIS/SIR/SEIR-style, rumour, network, agent, Bayesian, and behavioural diffusion models, then explains coefficients and assumptions."
+        },
+        {
+          id: "behavioural-science",
+          label: "Behavioural Science",
+          agent: "Adoption analyst",
+          step: 3,
+          stages: ["encoding", "agents", "inoculation"],
+          summary: "Reads trust, memory, fear, habits, social proof, messenger credibility, and barriers as model inputs rather than loose commentary."
+        },
+        {
+          id: "strategic-communication",
+          label: "Strategic Communication",
+          agent: "Campaign strategist",
+          step: 11,
+          stages: ["regional", "graph", "inoculation", "policy"],
+          summary: "Designs online and local campaign strategies: message framing, audience segmentation, trusted messengers, channels, and validation."
+        },
+        {
+          id: "digital-twin",
+          label: "Digital Twin Simulation",
+          agent: "Feedback simulator",
+          step: 6,
+          stages: ["digital", "bayes", "rl"],
+          summary: "Compares predictions with field feedback, updates uncertainty, and shows what changes when trust or barriers move."
+        },
+        {
+          id: "publication",
+          label: "Publication",
+          agent: "Scientific editor",
+          step: 12,
+          stages: ["policy"],
+          summary: "Prepares methods, limitations, evidence trail, references, LaTeX, DOCX, PDF, and Frontiers-style manuscript exports."
+        },
+        {
+          id: "literature-search",
+          label: "Literature Search",
+          agent: "Open-source scholar",
+          step: 12,
+          stages: ["policy"],
+          summary: "Supports careful, legal discovery of open literature for epidemiology, misinformation, diffusion, inoculation, and policy modelling."
+        }
       ];
 
       const adminSchemas = {
@@ -5820,6 +6322,42 @@
         `;
       }
 
+      function renderSkillHarness(compact = false) {
+        const activeStage = currentStep().id;
+        return `
+          <section class="skill-harness ${compact ? "compact" : ""}" aria-label="NDIM skill harness">
+            <div class="skill-harness-head">
+              <div>
+                <p class="eyebrow">Skill harness</p>
+                <h3>Expert agents available in this workspace</h3>
+                <p>Each skill supports a specific part of the NDIM chain while keeping the main screen focused.</p>
+              </div>
+              <a class="button" href="/academy#equations" target="_blank" rel="noreferrer">Model guide</a>
+            </div>
+            <div class="skill-grid">
+              ${ndimSkills.map((skill) => `
+                <button class="skill-card ${skill.stages.includes(activeStage) ? "active" : ""}" data-flow-step="${skill.step}" type="button" title="${escapeHtml(skill.summary)}">
+                  <span>${escapeHtml(skill.agent)}</span>
+                  <strong>${escapeHtml(skill.label)}</strong>
+                  <p>${escapeHtml(skill.summary)}</p>
+                </button>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderStrategyStrip() {
+        return `
+          <div class="strategy-strip" aria-label="Strategic communication lab">
+            <div class="strategy-chip"><strong>Audience</strong>Segment by trust, exposure, barrier, place, and messenger relationship.</div>
+            <div class="strategy-chip"><strong>Message</strong>Compare framing, prebunking, reassurance, proof, and call-to-action options.</div>
+            <div class="strategy-chip"><strong>Channel</strong>Plan local meetings, radio, WhatsApp, social media, schools, clinics, markets, or extension visits.</div>
+            <div class="strategy-chip"><strong>Validation</strong>Test meaning, safety, and unintended effects before policy or campaign use.</div>
+          </div>
+        `;
+      }
+
       function renderWorkspaceLaunchpad() {
         const settings = workspaceSettings();
         const readiness = workspaceReadinessPercent();
@@ -5834,8 +6372,44 @@
         const modelText = "It brings together field evidence, social data, modelling, uncertainty analysis, and digital twin simulations to show how narratives move through communities and how they may influence behaviour.";
         const scopeText = "NDIM Engine is designed for work in health, climate, agriculture, energy, and public policy. It helps users turn community narratives into structured evidence, test different intervention messages before using them in the real world, and produce transparent outputs that support policy and programme decisions.";
         const pathway = "Evidence \u2192 Models \u2192 Intervention Testing \u2192 Decision Support";
+        if (state.workspace.started) {
+          return `
+            <div class="workspace-launchpad workspace-os compact-workspace" aria-label="Active NDIM workspace">
+              <section class="workspace-prime">
+                <div class="workspace-title-row">
+                  <div>
+                    <p class="eyebrow">Active workspace</p>
+                    <h2>${escapeHtml(workspaceName())}</h2>
+                    <p class="workspace-subtitle">${escapeHtml(workspaceSummaryText())}</p>
+                    <p class="workspace-support-line">${escapeHtml(pathway)}</p>
+                  </div>
+                  <span class="workspace-badge">${escapeHtml(evidenceGrade())}</span>
+                </div>
+                <div class="workspace-command-row">
+                  <div class="start-control">
+                    <button class="button primary start-button" data-start-toggle type="button">${icon("folder")} Switch workspace</button>
+                    ${renderStartMenu()}
+                  </div>
+                  <div class="workspace-quick-actions">
+                    <button class="button" data-open-workspace-manager type="button">${icon("folder")} Workspace manager</button>
+                    <button class="button" data-flow-step="11" type="button">${icon("graph")} Strategy Lab</button>
+                    <a class="button" href="/publication" target="_blank" rel="noreferrer">${icon("export")} Publication</a>
+                  </div>
+                </div>
+                <div class="workspace-signal-row" aria-label="Workspace evidence routes">
+                  <span class="workspace-signal"><strong>Routes</strong> ${modes.map(escapeHtml).join(" / ")}${extraModes ? ` / +${extraModes}` : ""}</span>
+                  <span class="workspace-signal"><strong>Storage</strong> local-first</span>
+                  <span class="workspace-signal"><strong>Assistant</strong> contextual</span>
+                </div>
+              </section>
+              <div class="workspace-side-stack">
+                ${renderSkillHarness(true)}
+              </div>
+            </div>
+          `;
+        }
         return `
-          <div class="workspace-launchpad workspace-os" aria-label="Workspace launchpad">
+          <div class="workspace-launchpad workspace-os landing-workspace" aria-label="Workspace launchpad">
             <section class="workspace-prime">
               <div class="workspace-title-row">
                 <div>
@@ -5854,6 +6428,7 @@
                 <div class="workspace-capability"><strong>Scientific modelling</strong>Narrative encoding, ODE flow, agent behaviour, Bayesian updating, RL optimisation, and digital-twin feedback.</div>
                 <div class="workspace-capability"><strong>Policy safety</strong>Uncertainty, assumptions, limitations, confidence level, and required human review in every policy output.</div>
               </div>
+              ${renderSkillHarness(true)}
               ${state.workspace.started ? `
                 <div class="workspace-context-card" role="status" aria-label="Active workspace context">
                   <span>Project context loaded</span>
@@ -5869,7 +6444,7 @@
                 <div class="workspace-quick-actions">
                   <button class="button" data-open-workspace-manager type="button">${icon("folder")} Workspace manager</button>
                   <button class="button" data-start-action="create" type="button">${icon("plus")} New workspace</button>
-                  <a class="button" href="./manual.html#workspaces" target="_blank" rel="noreferrer">${icon("manual")} Workspace guide</a>
+                  <a class="button" href="/manual#workspaces" target="_blank" rel="noreferrer">${icon("manual")} Workspace guide</a>
                 </div>
               </div>
               <div class="workspace-signal-row" aria-label="Workspace evidence routes">
@@ -5974,6 +6549,7 @@
                   <button class="button" data-open-stage-workspace type="button">${icon("folder")} Open focused task</button>
                   <button class="button" id="workbenchTraceButton" type="button">${icon("log")} Activity log</button>
                 </div>
+                ${["regional", "graph", "inoculation", "policy"].includes(step.id) ? renderStrategyStrip() : ""}
                 <div class="os-stage-insight-grid">
                   <div class="os-stage-insight">
                     <strong>Input</strong>
@@ -6050,8 +6626,12 @@
                 <p>NDIM turns governed narrative evidence into encoding, models, uncertainty updates, intervention tests, and policy outputs.</p>
               </div>
               <div class="start-panel">
-                <h3>${icon("assistant")} Assistant guided</h3>
-                <p>The Research Assistant stays visible, explains what to do next, and keeps scientific caution in plain language.</p>
+                <h3>${icon("model")} Mathematics and epidemiology</h3>
+                <p>The modelling skill helps choose diffusion, epidemic, agent, Bayesian, or behavioural models and explains every coefficient in plain language.</p>
+              </div>
+              <div class="start-panel">
+                <h3>${icon("graph")} Strategy Lab</h3>
+                <p>Design online and local campaign strategies with message framing, audience segmentation, trusted messengers, and validation checks.</p>
               </div>
               <div class="start-panel">
                 <h3>${icon("shield")} Local first</h3>
@@ -6890,18 +7470,18 @@
           setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
         };
         const runButton = $("workbenchRunButton");
-        if (runButton) runButton.addEventListener("click", () => openStageWorkspace(state.step));
+        if (runButton) runButton.onclick = () => openStageWorkspace(state.step);
         const traceButton = $("workbenchTraceButton");
-        if (traceButton) traceButton.addEventListener("click", () => {
+        if (traceButton) traceButton.onclick = () => {
           document.querySelector(".reasoning").classList.toggle("open");
-        });
+        };
         document.querySelectorAll("[data-start-toggle]").forEach((button) => {
-          button.addEventListener("click", () => {
+          button.onclick = () => {
             state.workspace.startOpen = !state.workspace.startOpen;
             if (state.workspace.startOpen && !state.workspace.startMode) state.workspace.startMode = "menu";
             trace("workspace", "Start workspace menu toggled", "Choose whether to continue, open, create, or import a workspace. Duplicating is available beside each existing workspace.");
             render();
-          });
+          };
         });
         document.querySelectorAll("[data-start-action]").forEach((button) => {
           button.addEventListener("click", () => {
@@ -7076,13 +7656,13 @@
           });
         });
         document.querySelectorAll("[data-flow-step]").forEach((button) => {
-          button.addEventListener("click", () => openStageWorkspace(Number(button.dataset.flowStep)));
-          button.addEventListener("keydown", (event) => {
+          button.onclick = () => openStageWorkspace(Number(button.dataset.flowStep));
+          button.onkeydown = (event) => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               openStageWorkspace(Number(button.dataset.flowStep));
             }
-          });
+          };
         });
         document.querySelectorAll("[data-ledger-record]").forEach((link) => {
           link.addEventListener("click", (event) => {
@@ -7170,11 +7750,18 @@
         const step = currentStep();
         const settings = workspaceSettings();
         const projectGuidance = settings.assistant?.project_guidance || [];
+        const activeSkills = ndimSkills.filter((skill) => skill.stages.includes(step.id));
         body.innerHTML = `
           <div class="assistant-card">
             <h3>${escapeHtml(state.workspace.started ? workspaceStageLabel(step) : "Start workspace")}</h3>
             <p><strong>Workspace:</strong> ${escapeHtml(workspaceName())}</p>
             <p>${escapeHtml(state.workspace.started ? assistantInterpretation() : "Choose, create, duplicate, or import a workspace. After that I will reveal the NDIM workflow and guide each scientific stage in plain language.")}</p>
+          </div>
+          <div class="assistant-card">
+            <h3>Active skill${activeSkills.length === 1 ? "" : "s"}</h3>
+            ${activeSkills.map((skill) => `
+              <p><strong>${escapeHtml(skill.label)}:</strong> ${escapeHtml(skill.summary)}</p>
+            `).join("") || `<p>The workspace setup skill is active. Choose or create a project container before modelling begins.</p>`}
           </div>
           <div class="assistant-card">
             <h3>Progress</h3>
@@ -7515,7 +8102,7 @@
             <h2>Ingest narratives with context</h2>
             <p class="copy">Choose the evidence route, attach SDMX context, then stage records into the governed narrative ledger.</p>
             <div class="reference-links" style="margin-bottom: 14px;">
-              <a class="button" href="./manual.html" target="_blank" rel="noreferrer">Open tool manual</a>
+              <a class="button" href="/manual" target="_blank" rel="noreferrer">Open tool manual</a>
               <a class="button" href="#narrativeRepository" data-jump-repository>Open narrative repository</a>
               <button class="button" data-open-full-repository type="button">Open full repository</button>
             </div>
@@ -10767,7 +11354,7 @@ Paste or transcribe the full story in the contributor's own words. Keep local co
           return;
         }
         if (option === "guide") {
-          openSupportPage("./manual.html#narrative-intake", "Intake guide");
+          openSupportPage("/manual#narrative-intake", "Intake guide");
           return;
         }
         if (option === "copy") {
