@@ -4637,6 +4637,550 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           padding: 0;
         }
       }
+
+      /* NDIM DeerFlow-style workbench: structural shell, not a color refresh. */
+      .df-shell.command-center {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        overflow: visible;
+      }
+      .df-workbench {
+        --df-gap: 14px;
+        display: grid;
+        grid-template-columns: minmax(238px, .78fr) minmax(520px, 1.55fr) minmax(286px, .88fr);
+        gap: var(--df-gap);
+        align-items: start;
+        min-height: calc(100vh - 112px);
+      }
+      .df-left-stack,
+      .df-main-thread,
+      .df-right-stack {
+        display: grid;
+        gap: var(--df-gap);
+        align-content: start;
+        min-width: 0;
+      }
+      .df-card,
+      .df-thread-card,
+      .df-product-strip {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--panel) 96%, transparent), color-mix(in srgb, var(--card) 88%, transparent));
+        box-shadow: 0 18px 50px rgba(20, 17, 14, .07);
+        color: var(--text);
+      }
+      .df-card {
+        padding: 14px;
+      }
+      .df-card-head,
+      .df-thread-top,
+      .df-stage-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .df-card-head h3,
+      .df-card h3,
+      .df-thread-top h2,
+      .df-active-stage h3 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+      .df-card-head h3 {
+        font-size: 16px;
+      }
+      .df-card p,
+      .df-card small,
+      .df-active-stage p {
+        color: var(--muted);
+        line-height: 1.52;
+      }
+      .df-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 30px;
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--panel) 86%, transparent);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        white-space: nowrap;
+      }
+      .df-status i {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--soft);
+        display: inline-block;
+      }
+      .df-status.ready i {
+        background: var(--green);
+      }
+      .df-product-strip {
+        display: grid;
+        grid-template-columns: 54px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        padding: 18px;
+      }
+      .df-product-mark {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: var(--ink);
+        color: #fff;
+        font-weight: 950;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+      }
+      .df-product-strip h1 {
+        margin: 4px 0 8px;
+        font-size: clamp(28px, 4vw, 48px);
+        line-height: .98;
+        letter-spacing: 0;
+      }
+      .df-product-strip p {
+        max-width: 780px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.56;
+      }
+      .df-mini-map {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 12px;
+      }
+      .df-mini-map span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel-2);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+      .df-workspace-list,
+      .df-stage-list,
+      .df-skill-list,
+      .df-trace-list {
+        display: grid;
+        gap: 8px;
+      }
+      .df-workspace-row,
+      .df-stage-row,
+      .df-skill,
+      .df-artifact,
+      .df-phase {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel-2);
+        color: var(--text);
+        cursor: pointer;
+        transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, background .16s ease;
+      }
+      .df-workspace-row:hover,
+      .df-stage-row:hover,
+      .df-skill:hover,
+      .df-artifact:hover,
+      .df-phase:hover,
+      .df-workspace-row:focus-visible,
+      .df-stage-row:focus-visible,
+      .df-skill:focus-visible,
+      .df-artifact:focus-visible,
+      .df-phase:focus-visible {
+        border-color: var(--line-strong);
+        box-shadow: 0 12px 28px rgba(20, 17, 14, .08);
+        transform: translateY(-1px);
+      }
+      .df-workspace-row {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        width: 100%;
+        min-height: 76px;
+        padding: 11px;
+        text-align: left;
+      }
+      .df-workspace-row.active,
+      .df-stage-row.active,
+      .df-skill.active,
+      .df-phase.active {
+        border-color: color-mix(in srgb, var(--blue) 60%, var(--line));
+        background: color-mix(in srgb, var(--blue) 8%, var(--panel));
+        box-shadow: inset 3px 0 0 var(--blue);
+      }
+      .df-workspace-row.new {
+        border-style: dashed;
+        background: color-mix(in srgb, var(--green) 8%, var(--panel));
+      }
+      .df-workspace-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: var(--card);
+        color: var(--muted);
+      }
+      .df-workspace-row strong,
+      .df-stage-row strong,
+      .df-skill strong,
+      .df-artifact strong,
+      .df-phase strong {
+        display: block;
+        font-size: 13px;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+      }
+      .df-workspace-row small,
+      .df-stage-row small,
+      .df-skill small,
+      .df-artifact small,
+      .df-phase small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.38;
+      }
+      .df-inline-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .df-thread-card {
+        padding: 18px;
+        background:
+          radial-gradient(circle at top left, color-mix(in srgb, var(--blue) 10%, transparent), transparent 42%),
+          linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--card) 88%, transparent));
+      }
+      .df-thread-top h2 {
+        font-size: clamp(27px, 4vw, 48px);
+        line-height: 1;
+      }
+      .df-thread-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .df-thread-actions .button,
+      .df-inline-actions .button {
+        white-space: nowrap;
+      }
+      .df-transcript {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .df-message {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel-2);
+        padding: 13px;
+      }
+      .df-message span {
+        display: block;
+        color: var(--soft);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .df-message p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+      .df-message.user {
+        background: linear-gradient(135deg, #101827, #193756);
+        border-color: rgba(255,255,255,.16);
+        color: #fff;
+      }
+      .df-message.user span,
+      .df-message.user p {
+        color: rgba(255,255,255,.88);
+      }
+      .df-message.tool {
+        border-left: 4px solid var(--green);
+      }
+      .df-composer-bar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        margin-top: 14px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+      }
+      .df-slash {
+        display: inline-grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--ink);
+        color: #fff;
+        font-weight: 950;
+      }
+      .df-composer-bar span:nth-child(2) {
+        color: var(--muted);
+        font-size: 13px;
+        min-width: 0;
+      }
+      .df-send,
+      .df-mini-button {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .df-pipeline-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+        gap: 8px;
+      }
+      .df-phase {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr);
+        gap: 9px;
+        align-items: start;
+        min-height: 74px;
+        padding: 11px;
+        text-align: left;
+      }
+      .df-phase b {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin-bottom: 0;
+        border-radius: 9px;
+        background: var(--card);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 950;
+        grid-row: 1 / span 2;
+      }
+      .df-phase > span {
+        display: grid;
+        gap: 3px;
+        grid-column: 2;
+        min-width: 0;
+      }
+      .df-phase strong,
+      .df-phase small {
+        grid-column: auto;
+        min-width: 0;
+        overflow-wrap: normal;
+        word-break: normal;
+      }
+      .df-phase strong {
+        grid-row: auto;
+      }
+      .df-phase small {
+        grid-row: auto;
+        line-height: 1.32;
+      }
+      .df-stage-row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        width: 100%;
+        min-height: 66px;
+        padding: 10px;
+        text-align: left;
+      }
+      .df-stage-row em {
+        font-style: normal;
+        color: var(--soft);
+        font-size: 11px;
+        font-weight: 900;
+      }
+      .df-skill {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        width: 100%;
+        min-height: 62px;
+        padding: 10px;
+        text-align: left;
+      }
+      .df-skill .ui-icon,
+      .df-artifact .ui-icon,
+      .df-workspace-icon .ui-icon,
+      .df-stage-row .ui-icon {
+        width: 18px;
+        height: 18px;
+      }
+      .df-artifact-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .df-artifact {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+        min-height: 64px;
+        padding: 10px;
+        text-align: left;
+        text-decoration: none;
+      }
+      .df-active-stage {
+        padding: 16px;
+      }
+      .df-active-stage h3 {
+        font-size: clamp(22px, 2.8vw, 36px);
+      }
+      .df-stage-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .df-insight-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .df-insight-grid > div,
+      .df-metric-strip > div,
+      .df-trace-line {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel-2);
+        padding: 11px;
+      }
+      .df-insight-grid span,
+      .df-metric-strip span,
+      .df-trace-line span {
+        display: block;
+        color: var(--soft);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .df-insight-grid strong,
+      .df-metric-strip strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 17px;
+      }
+      .df-metric-strip {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .df-trace-line {
+        display: grid;
+        gap: 4px;
+      }
+      .df-trace-line strong {
+        font-size: 13px;
+      }
+      :root[data-theme="dark"] .df-card,
+      :root[data-theme="dark"] .df-thread-card,
+      :root[data-theme="dark"] .df-product-strip,
+      :root[data-theme="dark"] .df-workspace-row,
+      :root[data-theme="dark"] .df-stage-row,
+      :root[data-theme="dark"] .df-skill,
+      :root[data-theme="dark"] .df-artifact,
+      :root[data-theme="dark"] .df-phase,
+      :root[data-theme="dark"] .df-message,
+      :root[data-theme="dark"] .df-composer-bar,
+      :root[data-theme="dark"] .df-insight-grid > div,
+      :root[data-theme="dark"] .df-metric-strip > div,
+      :root[data-theme="dark"] .df-trace-line {
+        background-color: color-mix(in srgb, var(--panel) 92%, #030712);
+        color: var(--text);
+      }
+      :root[data-theme="dark"] .df-message.user {
+        background: linear-gradient(135deg, #0f172a, #17324a);
+      }
+      @media (max-width: 1240px) {
+        .df-workbench {
+          grid-template-columns: minmax(240px, .82fr) minmax(0, 1.35fr);
+        }
+        .df-right-stack {
+          grid-column: 1 / -1;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .df-pipeline-grid {
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+        .df-metric-strip {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 860px) {
+        .df-workbench,
+        .df-right-stack {
+          grid-template-columns: 1fr;
+        }
+        .df-right-stack {
+          grid-column: auto;
+        }
+        .df-thread-top,
+        .df-stage-header,
+        .df-card-head {
+          display: grid;
+        }
+        .df-thread-actions,
+        .df-inline-actions,
+        .df-stage-controls {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+        .df-composer-bar,
+        .df-product-strip {
+          grid-template-columns: 1fr;
+        }
+        .df-pipeline-grid,
+        .df-artifact-grid,
+        .df-insight-grid,
+        .df-metric-strip {
+          grid-template-columns: 1fr;
+        }
+        .df-stage-row {
+          grid-template-columns: 34px minmax(0, 1fr);
+        }
+        .df-stage-row em {
+          grid-column: 2;
+        }
+      }
     </style>
   </head>
   <body>
@@ -5643,7 +6187,9 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
           assistant: '<path d="M12 3a7 7 0 0 0-7 7v3a4 4 0 0 0 4 4h1l2 3 2-3h1a4 4 0 0 0 4-4v-3a7 7 0 0 0-7-7z"></path><path d="M9 10h.01"></path><path d="M15 10h.01"></path><path d="M9.5 13a4 4 0 0 0 5 0"></path>',
           log: '<path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path>',
           manual: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path><path d="M4 5.5v16"></path><path d="M8 7h8"></path><path d="M8 11h7"></path>',
+          learn: '<path d="M12 3 2 8l10 5 10-5-10-5z"></path><path d="M6 10.5V16c2 2 10 2 12 0v-5.5"></path><path d="M22 8v6"></path>',
           evidence: '<path d="M4 4h16v16H4z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path>',
+          settings: '<path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.37a1.7 1.7 0 0 0-1 .63l-.16.26a2 2 0 0 1-3.46 0l-.16-.26a1.7 1.7 0 0 0-1-.63 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.63-1l-.26-.16a2 2 0 0 1 0-3.46l.26-.16a1.7 1.7 0 0 0 .63-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.63a1.7 1.7 0 0 0 1-.63l.16-.26a2 2 0 0 1 3.46 0l.16.26a1.7 1.7 0 0 0 1 .63 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.17.4.4.74.63 1l.26.16a2 2 0 0 1 0 3.46l-.26.16a1.7 1.7 0 0 0-.63 1z"></path>',
           shield: '<path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"></path><path d="M9 12l2 2 4-5"></path>',
           model: '<path d="M4 17l6-6 4 4 6-8"></path><path d="M4 20h16"></path>',
           policy: '<path d="M6 3h9l3 3v15H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6"></path><path d="M9 17h6"></path>',
@@ -7099,6 +7645,314 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
         `;
       }
 
+      function dfStatusPill(label, ready = false) {
+        return `<span class="df-status ${ready ? "ready" : ""}"><i></i>${escapeHtml(label)}</span>`;
+      }
+
+      function renderDfWorkspaceList() {
+        const workspaces = state.workspace.list || [];
+        return `
+          <section class="df-card df-workspace-picker" aria-label="Workspace memory and project picker">
+            <div class="df-card-head">
+              <div>
+                <p class="eyebrow">Workspace memory</p>
+                <h3>Choose where NDIM should think</h3>
+              </div>
+              ${dfStatusPill(state.workspace.started ? "loaded" : "setup", state.workspace.started)}
+            </div>
+            <div class="df-workspace-list">
+              <button class="df-workspace-row new" data-start-action="create" type="button">
+                <span class="df-workspace-icon">${icon("plus")}</span>
+                <span><strong>From scratch</strong><small>Create a clean research workspace with its own evidence, models, exports, and audit trail.</small></span>
+              </button>
+              ${workspaces.slice(0, 5).map((item) => `
+                <button class="df-workspace-row ${item.workspace_id === workspaceId() ? "active" : ""}" data-workspace-open-quick="${escapeHtml(item.workspace_id)}" type="button">
+                  <span class="df-workspace-icon">${item.workspace_id === workspaceId() ? "ON" : "GO"}</span>
+                  <span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.domain || item.description || item.workspace_id)}</small></span>
+                </button>
+              `).join("")}
+            </div>
+            <div class="df-inline-actions">
+              <button class="button primary" data-start-action="continue" type="button">${icon("start")} Continue active</button>
+              <button class="button" data-open-workspace-manager type="button">${icon("folder")} Manage</button>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfStageQueue() {
+        return `
+          <section class="df-card df-stage-queue" aria-label="NDIM workflow queue">
+            <div class="df-card-head">
+              <div>
+                <p class="eyebrow">Run queue</p>
+                <h3>Evidence to decision</h3>
+              </div>
+              ${dfStatusPill(`${workspaceReadinessPercent()}%`, workspaceReadinessPercent() > 60)}
+            </div>
+            <div class="df-stage-list">
+              ${steps.map((step, index) => `
+                <button class="df-stage-row ${index === state.step ? "active" : ""} ${state.completed.has(step.id) ? "done" : ""}" data-flow-step="${index}" type="button">
+                  <span>${escapeHtml(step.num)}</span>
+                  <strong>${escapeHtml(workspaceStageLabel(step))}</strong>
+                  <small>${escapeHtml(stageCompletionLabel(step.id))}</small>
+                </button>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfPipeline() {
+        return `
+          <section class="df-card df-pipeline" aria-label="NDIM pipeline">
+            <div class="df-card-head">
+              <div>
+                <p class="eyebrow">Scientific chain</p>
+                <h3>Evidence -> Models -> Intervention Testing -> Decision Support</h3>
+              </div>
+            </div>
+            <div class="df-pipeline-grid">
+              ${workflowPhases.map((phase) => {
+                const active = phase.stages.includes(currentStep().id);
+                const done = phase.stages.every((id) => state.completed.has(id));
+                return `
+                  <button class="df-phase ${active ? "active" : ""} ${done ? "done" : ""}" data-flow-step="${phase.step}" type="button">
+                    <b>${escapeHtml(phase.icon)}</b>
+                    <span><strong>${escapeHtml(phase.label)}</strong><small>${escapeHtml(phase.detail)}</small></span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfSkillDock(limit = 8) {
+        const activeStage = state.workspace.started ? currentStep().id : "";
+        return `
+          <section class="df-card df-skill-dock" aria-label="Specialist skill dock">
+            <div class="df-card-head">
+              <div>
+                <p class="eyebrow">Skills</p>
+                <h3>Specialist agents</h3>
+              </div>
+              ${dfStatusPill("click to open", true)}
+            </div>
+            <div class="df-skill-list">
+              ${ndimSkills.slice(0, limit).map((skill) => `
+                <button class="df-skill ${skill.stages.includes(activeStage) ? "active" : ""}" data-flow-step="${skill.step}" type="button" title="${escapeHtml(skill.summary)}">
+                  <span>${escapeHtml(skill.label.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span>
+                  <strong>${escapeHtml(skill.label)}</strong>
+                  <small>${escapeHtml(skill.agent)}</small>
+                </button>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfArtifactDock() {
+        return `
+          <section class="df-card df-artifact-dock" aria-label="Learning and output artifacts">
+            <div class="df-card-head">
+              <div>
+                <p class="eyebrow">Artifacts</p>
+                <h3>Open outputs and guides</h3>
+              </div>
+            </div>
+            <div class="df-artifact-grid">
+              <a class="df-artifact" href="/manual/" target="_blank" rel="noreferrer">${icon("manual")}<span><strong>Manual</strong><small>Use the engine</small></span></a>
+              <a class="df-artifact" href="/academy/" target="_blank" rel="noreferrer">${icon("learn")}<span><strong>Academy</strong><small>Learn NDIM</small></span></a>
+              <a class="df-artifact" href="/publication/" target="_blank" rel="noreferrer">${icon("export")}<span><strong>Publication</strong><small>Manuscript bench</small></span></a>
+              <button class="df-artifact" data-open-full-repository type="button">${icon("evidence")}<span><strong>Repository</strong><small>Evidence ledger</small></span></button>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfTraceDock() {
+        const logs = (state.trace || []).slice(-4).reverse();
+        return `
+          <section class="df-card df-trace-dock" aria-label="Recent run trace">
+            <div class="df-card-head">
+              <div>
+                <p class="eyebrow">Trace</p>
+                <h3>What just happened</h3>
+              </div>
+              <button class="df-mini-button" id="workbenchTraceButton" type="button">Open log</button>
+            </div>
+            <div class="df-trace-list">
+              ${logs.map(([kind, title, detail]) => `
+                <div class="df-trace-line">
+                  <span>${escapeHtml(kind)}</span>
+                  <strong>${escapeHtml(title)}</strong>
+                  <p>${escapeHtml(detail)}</p>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfCommandThread(started = false) {
+        const step = currentStep();
+        const lead = started
+          ? `${step.num} ${workspaceStageLabel(step)}`
+          : "Start a narrative investigation";
+        const question = started
+          ? assistantNextAction()
+          : "What behaviour, rumour, adoption barrier, trust question, or campaign pressure should this workspace investigate?";
+        const context = started
+          ? workspaceSummaryText()
+          : "NDIM turns community narratives into governed evidence, models how influence moves, tests intervention messages, and produces decision support for policy or strategic communication.";
+        return `
+          <section class="df-thread-card" aria-label="NDIM command thread">
+            <div class="df-thread-top">
+              <div>
+                <p class="eyebrow">Command thread</p>
+                <h2>${escapeHtml(lead)}</h2>
+              </div>
+              <div class="df-thread-actions">
+                ${started ? `<button class="button primary" id="workbenchRunButton" type="button">${icon("start")} Run stage</button>` : `<button class="button primary" data-start-action="create" type="button">${icon("plus")} Start from scratch</button>`}
+                <button class="button" data-open-assistant-panel type="button">${icon("assistant")} Ask assistant</button>
+              </div>
+            </div>
+            <div class="df-transcript">
+              <article class="df-message system">
+                <span>System</span>
+                <p>${escapeHtml(context)}</p>
+              </article>
+              <article class="df-message user">
+                <span>Research command</span>
+                <p>${escapeHtml(question)}</p>
+              </article>
+              <article class="df-message tool">
+                <span>NDIM plan</span>
+                <p>Capture the story, govern it, encode it, model diffusion, test intervention logic, update uncertainty, then export a human-reviewed decision artifact.</p>
+              </article>
+            </div>
+            <div class="df-composer-bar">
+              <span class="df-slash">/ndim</span>
+              <p>${escapeHtml(started ? stageInputSummary(step.id) : "Create or open a workspace to unlock the full workflow.")}</p>
+              ${started ? `<button class="df-send" data-open-stage-workspace type="button">Open task</button>` : `<button class="df-send" data-start-toggle type="button">Choose workspace</button>`}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfActiveStage() {
+        const step = currentStep();
+        return `
+          <section class="df-card df-active-stage" aria-label="Active stage control">
+            <div class="df-card-head">
+              <div>
+                <p class="eyebrow">Current task</p>
+                <h3>${escapeHtml(step.num)} ${escapeHtml(workspaceStageLabel(step))}</h3>
+              </div>
+              ${dfStatusPill(stageCompletionLabel(step.id), state.completed.has(step.id))}
+            </div>
+            <p>${escapeHtml(stageAdvice(step.id))}</p>
+            <div class="df-stage-controls">
+              <button class="button primary" data-open-stage-workspace type="button">${icon("folder")} Open focused task</button>
+              <button class="button" data-run-stage-direct type="button">${escapeHtml(stagePrimaryActionLabel(step.id))}</button>
+            </div>
+            <div class="df-insight-grid">
+              <div><strong>Input</strong><span>${escapeHtml(stageInputSummary(step.id))}</span></div>
+              <div><strong>Check</strong><span>${escapeHtml(scientificCautionText())}</span></div>
+              <div><strong>Output</strong><span>${escapeHtml(state.policy ? "Policy brief available" : "Output will appear after the task runs")}</span></div>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDfMetricStrip() {
+        const topLocation = [state.meta.country, state.meta.district || state.meta.province].filter(Boolean).join(" / ") || "not set";
+        const encodedSummary = state.encoded.length ? `${state.encoded.length}/${state.records.length || state.encoded.length}` : "0";
+        return `
+          <section class="df-metric-strip" aria-label="Workspace metrics">
+            <div><span>Observations</span><strong>${escapeHtml(state.records.length || "-")}</strong></div>
+            <div><span>Approved</span><strong>${escapeHtml(approvedRecords().length || "-")}</strong></div>
+            <div><span>Encoded</span><strong>${escapeHtml(encodedSummary)}</strong></div>
+            <div><span>Model signal</span><strong>${escapeHtml(bestAdoptionSignal())}</strong></div>
+            <div><span>Place</span><strong>${escapeHtml(topLocation)}</strong></div>
+          </section>
+        `;
+      }
+
+      function renderDfStartWorkbench() {
+        return `
+          <section class="df-workbench df-start-workbench" aria-label="NDIM agentic start workbench">
+            <aside class="df-left-stack">
+              ${renderDfWorkspaceList()}
+              ${renderDfArtifactDock()}
+            </aside>
+            <main class="df-main-thread">
+              <div class="df-product-strip">
+                <span class="df-product-mark">ND</span>
+                <div>
+                  <p class="eyebrow">Narrative Diffusion and Inoculation Model</p>
+                  <h1>NDIM Engine</h1>
+                  <p>A scientific platform for understanding narratives and social influence.</p>
+                </div>
+              </div>
+              ${renderDfCommandThread(false)}
+              ${renderDfPipeline()}
+            </main>
+            <aside class="df-right-stack">
+              ${renderDfSkillDock(10)}
+              <section class="df-card df-assistant-brief">
+                <div class="df-card-head">
+                  <div>
+                    <p class="eyebrow">Assistant</p>
+                    <h3>Setup guide</h3>
+                  </div>
+                  ${dfStatusPill(`${workspaceReadinessPercent()}%`, workspaceReadinessPercent() > 60)}
+                </div>
+                <p>Choose a workspace first. NDIM then reveals the workflow, keeps a trace of decisions, and warns when evidence is too thin for policy use.</p>
+                <button class="button" data-open-assistant-panel type="button">${icon("assistant")} Open assistant</button>
+              </section>
+            </aside>
+          </section>
+        `;
+      }
+
+      function renderDfActiveWorkbench() {
+        return `
+          <section class="df-workbench df-active-workbench" aria-label="NDIM active research workbench">
+            <aside class="df-left-stack">
+              <section class="df-card df-memory-card">
+                <div class="df-card-head">
+                  <div>
+                    <p class="eyebrow">Workspace</p>
+                    <h3>${escapeHtml(workspaceName())}</h3>
+                  </div>
+                  ${dfStatusPill("memory active", true)}
+                </div>
+                <p>${escapeHtml(workspaceSummaryText())}</p>
+                <div class="df-inline-actions">
+                  <button class="button" data-start-toggle type="button">${icon("folder")} Switch</button>
+                  <button class="button" data-open-workspace-manager type="button">${icon("settings")} Manage</button>
+                </div>
+                ${renderStartMenu()}
+              </section>
+              ${renderDfStageQueue()}
+            </aside>
+            <main class="df-main-thread">
+              ${renderDfCommandThread(true)}
+              ${renderDfActiveStage()}
+              ${renderDfPipeline()}
+              ${renderDfMetricStrip()}
+            </main>
+            <aside class="df-right-stack">
+              ${renderDfSkillDock(10)}
+              ${renderDfArtifactDock()}
+              ${renderDfTraceDock()}
+            </aside>
+          </section>
+        `;
+      }
+
       function renderStrategyStrip() {
         return `
           <div class="strategy-strip" aria-label="Strategic communication lab">
@@ -7267,129 +8121,17 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       }
 
       function renderCommandCenter() {
-        const step = currentStep();
-        const readiness = Math.round((state.completed.size / steps.length) * 100);
-        const adoption = bestAdoptionSignal();
-        const encodedSummary = state.encoded.length ? `${state.encoded.length}/${state.records.length || state.encoded.length}` : "0";
-        const topLocation = [state.meta.country, state.meta.district || state.meta.province].filter(Boolean).join(" / ") || "not set";
-        const recordSummary = state.records.length ? `${state.records.length} staged record${state.records.length === 1 ? "" : "s"}` : "No records staged yet";
-        const recordExplanation = state.records.length
-          ? "Review staged narratives, approvals, repository state, and evidence seal before sending results into the model chain."
-          : "Records appear here only after you upload or manually load evidence, then stage and validate it.";
-        const repoPreview = state.records.slice(0, 3).map((record, index) => `
-          <div class="os-repository-row">
-            <span title="${escapeHtml(record.narrative_id || `record-${index + 1}`)}">${escapeHtml(record.narrative_id || `record-${index + 1}`)}</span>
-            <span title="${escapeHtml(recordRouteLabel(record))}">${escapeHtml(recordRouteLabel(record))}</span>
-            <span title="${escapeHtml(recordStatusLabel(record))}">${escapeHtml(recordStatusLabel(record))}</span>
-          </div>
-        `).join("");
         return `
-          <section class="command-center science-os" aria-label="NDIM scientific workbench">
-            ${renderWorkspaceLaunchpad()}
-            <div class="os-phase-rail" aria-label="Evidence-to-policy phases">
-              <div class="flow-lane workbench-flow">
-                ${workflowPhases.map(renderFlowCard).join("")}
-              </div>
-            </div>
-            <div class="os-workbench-grid">
-              <section class="os-stage-card">
-                <p class="eyebrow">Active scientific task</p>
-                <h2>${escapeHtml(step.num)} ${escapeHtml(step.title)}</h2>
-                <p>${escapeHtml(assistantNextAction())}</p>
-                <div class="os-action-row">
-                  <button class="button primary" id="workbenchRunButton" type="button">${icon("start")} Run current stage</button>
-                  <button class="button" data-open-stage-workspace type="button">${icon("folder")} Open focused task</button>
-                  <button class="button" id="workbenchTraceButton" type="button">${icon("log")} Activity log</button>
-                </div>
-                ${["regional", "graph", "inoculation", "policy"].includes(step.id) ? renderStrategyStrip() : ""}
-                <div class="os-stage-insight-grid">
-                  <div class="os-stage-insight">
-                    <strong>Input</strong>
-                    <span>${escapeHtml(stageInputSummary(step.id))}</span>
-                  </div>
-                  <div class="os-stage-insight">
-                    <strong>Scientific check</strong>
-                    <span>${escapeHtml(stageAdvice(step.id))}</span>
-                  </div>
-                  <div class="os-stage-insight">
-                    <strong>Status</strong>
-                    <span>${escapeHtml(stageCompletionLabel(step.id))}</span>
-                  </div>
-                </div>
-              </section>
-              <div class="os-right-column">
-                <section class="os-assistant-card">
-                  <p class="eyebrow">Research assistant</p>
-                  <h3>What to know now</h3>
-                  <p>${escapeHtml(scientificCautionText())}</p>
-                  <div class="agent-worklist" style="margin-top: 12px;">
-                    ${assistantWorkItems().slice(0, 4).map(([label, done]) => `
-                      <div class="agent-workitem ${done ? "done" : ""}">
-                        <span class="agent-dot"></span>
-                        <strong>${escapeHtml(label)}</strong>
-                        <span>${done ? "done" : "waiting"}</span>
-                      </div>
-                    `).join("")}
-                  </div>
-                </section>
-              </div>
-              <section class="os-repository-card" id="narrativeRepository">
-                <p class="eyebrow">Narrative repository</p>
-                <h3>${escapeHtml(recordSummary)}</h3>
-                <p>${escapeHtml(recordExplanation)}</p>
-                <div class="os-repository-table" aria-label="Repository preview">
-                  <div class="os-repository-row header"><span>Narrative</span><span>Route</span><span>Status</span></div>
-                  ${repoPreview || `<div class="os-repository-row"><span>Waiting for staged records.</span><span>-</span><span>-</span></div>`}
-                </div>
-                <div class="workbench-tools" aria-label="Repository actions">
-                  <a class="button" href="#narrativeRepository" data-jump-repository>${icon("evidence")} Repository view</a>
-                  <button class="button" data-open-full-repository type="button">${icon("folder")} Full repository</button>
-                </div>
-              </section>
-            </div>
-            <div class="os-metrics-bar" aria-label="Workspace metrics">
-              <div class="os-metric"><span>Observations</span><strong>${escapeHtml(state.records.length || "-")}</strong></div>
-              <div class="os-metric"><span>Approved</span><strong>${escapeHtml(approvedRecords().length || "-")}</strong></div>
-              <div class="os-metric"><span>Encoded</span><strong>${escapeHtml(encodedSummary)}</strong></div>
-              <div class="os-metric"><span>Model signal</span><strong>${escapeHtml(adoption)}</strong></div>
-              <div class="os-metric"><span>Location</span><strong title="${escapeHtml(topLocation)}">${escapeHtml(topLocation)}</strong></div>
-              <div class="os-metric"><span>Validation</span><strong>${escapeHtml(state.validation?.status || "checking")}</strong></div>
-              <div class="os-metric"><span>Seal</span><strong>${escapeHtml(shortHash(state.governance.lastDigest))}</strong></div>
-            </div>
-            <details class="os-system-drawer">
-              <summary>View NDIM system map and feedback chain</summary>
-              <div class="os-system-drawer-body">
-                <div class="hero-side">
-                  ${renderSystemDynamicsMap()}
-                </div>
-              </div>
-            </details>
+          <section class="command-center science-os df-shell" aria-label="NDIM scientific agent workbench">
+            ${renderDfActiveWorkbench()}
           </section>
         `;
       }
 
       function renderStartExperience() {
         return `
-          <section class="command-center science-os start-only" aria-label="NDIM start workspace">
-            ${renderWorkspaceLaunchpad()}
-            <div class="start-panels">
-              <div class="start-panel">
-                <h3>${icon("evidence")} Evidence to policy</h3>
-                <p>NDIM turns governed narrative evidence into encoding, models, uncertainty updates, intervention tests, and policy outputs.</p>
-              </div>
-              <div class="start-panel">
-                <h3>${icon("model")} Mathematics and epidemiology</h3>
-                <p>The modelling skill helps choose diffusion, epidemic, agent, Bayesian, or behavioural models and explains every coefficient in plain language.</p>
-              </div>
-              <div class="start-panel">
-                <h3>${icon("graph")} Strategy Lab</h3>
-                <p>Design online and local campaign strategies with message framing, audience segmentation, trusted messengers, and validation checks.</p>
-              </div>
-              <div class="start-panel">
-                <h3>${icon("shield")} Local first</h3>
-                <p>Your workspace, repository, hashes, approvals, and exports stay local unless you deliberately export or sync them.</p>
-              </div>
-            </div>
+          <section class="command-center science-os start-only df-shell" aria-label="NDIM start workspace">
+            ${renderDfStartWorkbench()}
           </section>
         `;
       }
@@ -8113,6 +8855,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       }
 
       function renderStageLauncher() {
+        if (state.workspace.started) return "";
         const step = currentStep();
         return `
           <section class="stage-launcher" aria-label="Current stage launcher">
@@ -8253,6 +8996,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             if (action === "create" || action === "import") {
               state.workspace.managerOpen = true;
               state.workspace.startOpen = false;
+              state.workspace.startMode = action;
               trace("workspace", `${action} workspace selected`, "The workspace manager is open with existing workspace, blank workspace, duplicate, import, and export controls.");
               render();
             }
@@ -8664,6 +9408,15 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
             toast(error.message || "Workspace import failed");
           }
         });
+        if (state.workspace.startMode === "create") {
+          setTimeout(() => {
+            $("workspaceCreatePanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            $("workspaceNewName")?.focus();
+          }, 80);
+        }
+        if (state.workspace.startMode === "import") {
+          setTimeout(() => $("workspaceImportFile")?.focus(), 80);
+        }
       }
 
       function renderStageWorkspace() {
