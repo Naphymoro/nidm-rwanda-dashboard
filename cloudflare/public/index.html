@@ -3946,6 +3946,697 @@
           width: 100%;
         }
       }
+
+      /* NDIM Research OS v2: a lighter agent workbench inspired by task, tool, memory, and trace surfaces. */
+      :root {
+        --bg: #f4f7f9;
+        --panel: #ffffff;
+        --panel-2: #f7f9fc;
+        --card: #ffffff;
+        --line: rgba(15, 23, 42, .10);
+        --line-strong: #2563eb;
+        --text: #101820;
+        --muted: #51606f;
+        --soft: #7b8794;
+        --ink: #111827;
+        --paper: #ffffff;
+        --blue: #2563eb;
+        --green: #047857;
+        --amber: #b7791f;
+        --red: #b4533a;
+        --violet: #6d5bd0;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0b1220;
+        --panel: #101827;
+        --panel-2: #0d1522;
+        --card: #151f2f;
+        --line: rgba(148, 163, 184, .22);
+        --line-strong: #60a5fa;
+        --text: #edf4fb;
+        --muted: #b6c4d2;
+        --soft: #8fa1b3;
+        --ink: #eaf2ff;
+        --paper: #0b1220;
+        --blue: #60a5fa;
+        --green: #34d399;
+        --amber: #f6c453;
+        --red: #fb8f77;
+        --violet: #b7a7ff;
+      }
+      body {
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--panel-2) 78%, transparent), transparent 340px),
+          radial-gradient(circle at 78% -10%, rgba(37, 99, 235, .10), transparent 30%),
+          var(--bg);
+        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      }
+      .app {
+        --sidebar-w: 268px;
+        grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+        background: transparent;
+      }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        gap: 12px;
+        padding: 12px;
+        border-right: 1px solid var(--line);
+        background: color-mix(in srgb, var(--panel) 88%, var(--bg));
+      }
+      .brand,
+      .workspace-nav,
+      .stepper,
+      .sidebar-footer {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .045);
+      }
+      :root[data-theme="dark"] .brand,
+      :root[data-theme="dark"] .workspace-nav,
+      :root[data-theme="dark"] .stepper,
+      :root[data-theme="dark"] .sidebar-footer,
+      :root[data-theme="dark"] .science-os .workspace-prime,
+      :root[data-theme="dark"] .science-os .workspace-switcher,
+      :root[data-theme="dark"] .science-os .agent-cockpit,
+      :root[data-theme="dark"] .agent-bench,
+      :root[data-theme="dark"] .os-stage-card,
+      :root[data-theme="dark"] .os-repository-card,
+      :root[data-theme="dark"] .os-assistant-card,
+      :root[data-theme="dark"] .os-metric,
+      :root[data-theme="dark"] .start-panel {
+        box-shadow: 0 18px 44px rgba(0, 0, 0, .24);
+      }
+      .brand {
+        min-height: auto;
+        height: auto;
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .mark {
+        background: #111827;
+        color: #ffffff;
+      }
+      :root[data-theme="dark"] .mark {
+        background: #edf4fb;
+        color: #0b1220;
+      }
+      .brand strong {
+        letter-spacing: 0;
+      }
+      .brand span,
+      .section-label,
+      .eyebrow,
+      .mini-label,
+      .workspace-nav-title {
+        letter-spacing: .09em;
+      }
+      .workspace-nav {
+        padding: 10px;
+      }
+      .nav-item {
+        min-height: 40px;
+        border-radius: 12px;
+        color: var(--muted);
+      }
+      .nav-item.primary,
+      .button.primary {
+        background: #111827;
+        border-color: #111827;
+        color: #ffffff;
+      }
+      :root[data-theme="dark"] .nav-item.primary,
+      :root[data-theme="dark"] .button.primary {
+        background: #e8f1ff;
+        border-color: #e8f1ff;
+        color: #0b1220;
+      }
+      .nav-item:hover,
+      .nav-item:focus-visible {
+        background: color-mix(in srgb, var(--blue) 7%, var(--panel));
+        border-color: color-mix(in srgb, var(--blue) 28%, var(--line));
+      }
+      .stepper {
+        padding: 12px;
+        overflow: auto;
+      }
+      .step-button {
+        min-height: 48px;
+        border-radius: 12px;
+      }
+      .step-button.active {
+        background: color-mix(in srgb, var(--blue) 8%, var(--panel));
+        box-shadow: inset 3px 0 0 var(--blue);
+      }
+      .sidebar-footer {
+        margin-top: auto;
+        padding: 10px;
+      }
+      .main {
+        background: transparent;
+      }
+      .topbar {
+        margin: 12px 12px 0;
+        min-height: 72px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--panel) 90%, transparent);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .05);
+      }
+      .topbar h1 {
+        font-size: clamp(20px, 2vw, 28px);
+        letter-spacing: 0;
+      }
+      .topbar .ndim-background {
+        display: none;
+      }
+      .topbar p {
+        font-size: 12px;
+      }
+      .top-actions {
+        gap: 8px;
+      }
+      .button,
+      .workspace-chip,
+      .stage-jump,
+      .run-status,
+      .theme-icon-button {
+        border-radius: 12px;
+      }
+      .content {
+        --content-x: 12px;
+        padding: 14px var(--content-x) 28px;
+      }
+      .command-center,
+      .command-center.science-os,
+      :root[data-theme="dark"] .command-center.science-os {
+        width: 100%;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        overflow: visible;
+      }
+      .science-os .workspace-launchpad,
+      .science-os .workspace-launchpad.compact-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.18fr) minmax(340px, .72fr);
+        gap: 14px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+      }
+      .science-os .workspace-prime,
+      .science-os .workspace-switcher,
+      .science-os .agent-cockpit,
+      .agent-bench,
+      .os-stage-card,
+      .os-repository-card,
+      .os-assistant-card,
+      .os-metric,
+      .start-panel,
+      .workspace-capability,
+      .workspace-context-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 18px 44px rgba(15, 23, 42, .055);
+      }
+      .science-os .workspace-prime {
+        padding: clamp(18px, 2.5vw, 30px);
+      }
+      .science-os .workspace-title-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+      }
+      .science-os .workspace-title-row h2 {
+        max-width: 920px;
+        font-size: clamp(34px, 4.2vw, 58px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+      .science-os .workspace-title-row .workspace-subtitle {
+        max-width: 900px;
+        color: var(--text);
+        font-size: clamp(18px, 1.6vw, 24px);
+        font-weight: 760;
+        line-height: 1.24;
+        letter-spacing: 0;
+      }
+      .science-os .workspace-title-row p {
+        max-width: 960px;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: clamp(14px, 1.1vw, 16px);
+        line-height: 1.58;
+      }
+      .workspace-badge,
+      .bench-status {
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--blue) 10%, var(--panel));
+        border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--line));
+        color: var(--blue);
+        padding: 7px 10px;
+        font: 850 10px var(--font-data);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .workspace-support-line {
+        color: var(--text) !important;
+        font-size: 13px !important;
+        font-weight: 850;
+      }
+      .research-command {
+        display: grid;
+        grid-template-columns: minmax(0, 1.28fr) minmax(230px, .72fr);
+        gap: 14px;
+        margin-top: 4px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, .16);
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, #101827 0%, #183252 58%, #204a60 100%);
+        color: #edf5ff;
+        box-shadow: 0 18px 46px rgba(16, 24, 39, .20);
+      }
+      :root[data-theme="dark"] .research-command {
+        border-color: rgba(148, 163, 184, .20);
+        background: linear-gradient(135deg, #070b13 0%, #10213a 68%, #123b45 100%);
+      }
+      .research-command .eyebrow {
+        color: #9cc6ff;
+      }
+      .research-command h3 {
+        margin: 5px 0 12px;
+        color: #ffffff;
+        font-size: clamp(20px, 1.8vw, 28px);
+        line-height: 1.12;
+        letter-spacing: 0;
+      }
+      .command-composer {
+        display: grid;
+        grid-template-columns: 22px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        min-height: 76px;
+        border: 1px solid rgba(226, 232, 240, .18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, .08);
+        padding: 13px;
+      }
+      .command-composer span {
+        color: #7dd3fc;
+        font: 900 16px var(--font-data);
+      }
+      .command-composer p {
+        margin: 0;
+        color: #e5edf7;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .command-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .command-tags span {
+        border: 1px solid rgba(226, 232, 240, .22);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .08);
+        color: #dcecff;
+        padding: 6px 9px;
+        font-size: 12px;
+        font-weight: 760;
+      }
+      .research-runtime {
+        display: grid;
+        gap: 8px;
+      }
+      .runtime-item {
+        display: grid;
+        grid-template-columns: 10px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        border: 1px solid rgba(226, 232, 240, .18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, .08);
+        padding: 11px;
+      }
+      .runtime-item b {
+        width: 8px;
+        height: 8px;
+        margin-top: 6px;
+        border-radius: 999px;
+        background: #34d399;
+        box-shadow: 0 0 0 4px rgba(52, 211, 153, .14);
+      }
+      .runtime-item strong {
+        display: block;
+        color: #ffffff;
+        font-size: 12px;
+      }
+      .runtime-item span {
+        color: #d1e3f8;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .workspace-capability-row {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 10px;
+      }
+      .workspace-capability {
+        background: var(--panel-2);
+        box-shadow: none;
+        color: var(--muted);
+      }
+      .workspace-command-row {
+        grid-template-columns: minmax(180px, .5fr) minmax(0, 1fr);
+      }
+      .workspace-command-row .start-button,
+      .workspace-quick-actions .button {
+        min-height: 44px;
+      }
+      .workspace-quick-actions {
+        grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      }
+      .workspace-signal {
+        background: var(--panel-2);
+        border-radius: 999px;
+      }
+      .science-os .workspace-side-stack {
+        grid-template-rows: auto;
+        gap: 14px;
+      }
+      .agent-bench {
+        padding: 14px;
+      }
+      .agent-bench-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .agent-bench-head h3 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+      .agent-bench-head p {
+        max-width: 760px;
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+      .agent-bench-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 9px;
+        margin-top: 12px;
+      }
+      .agent-bench.compact .agent-bench-grid {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      }
+      .workspace-side-stack .agent-bench.compact .agent-bench-grid {
+        grid-template-columns: 1fr;
+      }
+      .agent-bench.compact .agent-bench-head p {
+        display: none;
+      }
+      .agent-bench.compact .agent-tile {
+        min-height: 62px;
+        grid-template-columns: 30px minmax(0, 1fr);
+        padding: 9px;
+      }
+      .agent-bench.compact .agent-glyph {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        font-size: 10px;
+      }
+      .agent-bench.compact .agent-tile p {
+        display: none;
+      }
+      .agent-tile {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        width: 100%;
+        min-height: 98px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel-2);
+        color: var(--text);
+        padding: 11px;
+        text-align: left;
+      }
+      .agent-tile:hover,
+      .agent-tile:focus-visible {
+        border-color: color-mix(in srgb, var(--blue) 34%, var(--line));
+        background: color-mix(in srgb, var(--blue) 6%, var(--panel));
+      }
+      .agent-tile.active {
+        border-color: color-mix(in srgb, var(--blue) 58%, var(--line));
+        background: color-mix(in srgb, var(--blue) 10%, var(--panel));
+        box-shadow: inset 3px 0 0 var(--blue);
+      }
+      .agent-glyph {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        background: var(--panel);
+        color: var(--blue);
+        border: 1px solid var(--line);
+        font: 900 11px var(--font-data);
+      }
+      .agent-tile em {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--soft);
+        font-style: normal;
+        font-size: 11px;
+        font-weight: 780;
+      }
+      .agent-tile strong {
+        display: block;
+        font-size: 13px;
+        line-height: 1.2;
+      }
+      .agent-tile p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 11.5px;
+        line-height: 1.38;
+      }
+      .science-os .agent-cockpit,
+      .science-os .workspace-switcher {
+        padding: 14px;
+      }
+      .os-phase-rail {
+        margin-top: 14px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 18px 44px rgba(15, 23, 42, .045);
+      }
+      .science-os .flow-card {
+        min-height: 46px;
+        border-radius: 13px;
+        background: var(--panel-2);
+      }
+      .os-workbench-grid {
+        grid-template-columns: minmax(0, 1.28fr) minmax(340px, .72fr);
+        gap: 14px;
+        padding: 0;
+        margin-top: 14px;
+        border-bottom: 0;
+      }
+      .os-stage-card {
+        padding: clamp(18px, 2.2vw, 26px);
+      }
+      .os-stage-card h2 {
+        font-size: clamp(28px, 3vw, 44px);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+      .os-stage-card p {
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      .os-stage-insight-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .os-repository-card {
+        grid-column: 1 / -1;
+      }
+      .os-metrics-bar {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+        padding: 0;
+        background: transparent;
+      }
+      .os-metric {
+        padding: 13px;
+      }
+      .os-metric strong {
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+      .start-only {
+        display: grid;
+        gap: 14px;
+      }
+      .start-panels {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .start-panel {
+        padding: 14px;
+      }
+      .floating-assistant {
+        right: 22px;
+        bottom: 22px;
+        width: auto;
+        height: 46px;
+        padding: 0 15px;
+        gap: 8px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, .20);
+      }
+      .floating-assistant span {
+        position: static;
+        width: auto;
+        height: auto;
+        clip: auto;
+        white-space: nowrap;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .app.workspace-start-mode {
+        grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      }
+      .app.workspace-start-mode .topbar {
+        display: none;
+      }
+      .app.workspace-start-mode .sidebar {
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 12px;
+        border-right: 1px solid var(--line);
+        border-bottom: 0;
+      }
+      .app.workspace-start-mode .workspace-nav {
+        display: grid;
+      }
+      .app.workspace-start-mode .sidebar-footer {
+        display: grid;
+        grid-template-columns: 1fr;
+        margin-top: auto;
+        padding: 10px;
+        border-top: 1px solid var(--line);
+      }
+      .app.workspace-start-mode .content {
+        padding-top: 18px;
+      }
+      @media (max-width: 1200px) {
+        .science-os .workspace-launchpad,
+        .science-os .workspace-launchpad.compact-workspace,
+        .os-workbench-grid {
+          grid-template-columns: 1fr;
+        }
+        .start-panels {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 900px) {
+        .app,
+        .app.workspace-start-mode {
+          --sidebar-w: 0px;
+          grid-template-columns: 1fr;
+        }
+        .sidebar,
+        .app.workspace-start-mode .sidebar {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .workspace-nav {
+          grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+        }
+        .sidebar-footer {
+          display: none !important;
+        }
+        .research-command {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 640px) {
+        .content {
+          --content-x: 10px;
+          padding: 10px var(--content-x) 22px;
+        }
+        .topbar {
+          margin: 8px 8px 0;
+          align-items: stretch;
+        }
+        .workspace-title-row,
+        .science-os .workspace-title-row {
+          grid-template-columns: 1fr;
+        }
+        .app.workspace-start-mode .workspace-nav {
+          display: none;
+        }
+        .science-os .workspace-title-row h2 {
+          font-size: clamp(32px, 11vw, 44px);
+        }
+        .science-os .workspace-title-row p {
+          font-size: 13.5px;
+          line-height: 1.48;
+        }
+        .science-os .workspace-prime,
+        .agent-bench,
+        .science-os .workspace-switcher,
+        .science-os .agent-cockpit,
+        .os-stage-card,
+        .os-repository-card,
+        .os-assistant-card {
+          border-radius: 14px;
+          padding: 14px;
+        }
+        .workspace-command-row,
+        .workspace-capability-row,
+        .os-stage-insight-grid,
+        .start-panels {
+          grid-template-columns: 1fr;
+        }
+        .agent-bench-head {
+          display: grid;
+        }
+        .floating-assistant span {
+          display: none;
+        }
+        .floating-assistant {
+          width: 52px;
+          height: 52px;
+          padding: 0;
+        }
+      }
     </style>
   </head>
   <body>
@@ -6347,6 +7038,67 @@
         `;
       }
 
+      function renderAgentBench(compact = false) {
+        const activeStage = state.workspace.started ? currentStep().id : "";
+        const visibleSkills = compact ? ndimSkills.slice(0, 5) : ndimSkills;
+        const status = state.workspace.started ? "Workspace memory active" : "Waiting for workspace";
+        return `
+          <section class="agent-bench ${compact ? "compact" : ""}" aria-label="NDIM agent and skill bench">
+            <div class="agent-bench-head">
+              <div>
+                <p class="eyebrow">Agent harness</p>
+                <h3>Specialist skills inside NDIM</h3>
+                <p>Evidence, mathematics, epidemiology, behavioural science, strategy, twin simulation, and publication support work from the same traceable workspace.</p>
+              </div>
+              <span class="bench-status">${escapeHtml(status)}</span>
+            </div>
+            <div class="agent-bench-grid">
+              ${visibleSkills.map((skill) => `
+                <button class="agent-tile ${skill.stages.includes(activeStage) ? "active" : ""}" data-flow-step="${skill.step}" type="button" title="${escapeHtml(skill.summary)}">
+                  <span class="agent-glyph">${escapeHtml(skill.label.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span>
+                  <span>
+                    <em>${escapeHtml(skill.agent)}</em>
+                    <strong>${escapeHtml(skill.label)}</strong>
+                    <p>${escapeHtml(skill.summary)}</p>
+                  </span>
+                </button>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderResearchCommand(started = false) {
+        const step = state.workspace.started ? currentStep() : null;
+        const commandText = started && step
+          ? `Continue ${step.num} ${workspaceStageLabel(step)} for ${workspaceName()}: ${assistantNextAction()}`
+          : "Describe the behaviour, rumour, adoption barrier, campaign pressure, or trust question you want NDIM to investigate.";
+        const routeText = activeEvidenceModes().map((mode) => mode.title).slice(0, 4).join(" / ") || "Core narrative routes";
+        return `
+          <section class="research-command" aria-label="NDIM research command workspace">
+            <div class="research-command-main">
+              <p class="eyebrow">${started ? "Current command" : "Research command"}</p>
+              <h3>${started ? "Move the next task through the engine" : "Start with a question, then load evidence"}</h3>
+              <div class="command-composer" role="note">
+                <span aria-hidden="true">&gt;</span>
+                <p>${escapeHtml(commandText)}</p>
+              </div>
+              <div class="command-tags" aria-label="NDIM pipeline">
+                <span>Evidence</span>
+                <span>Models</span>
+                <span>Intervention tests</span>
+                <span>Decision support</span>
+              </div>
+            </div>
+            <div class="research-runtime" aria-label="Workspace runtime">
+              <div class="runtime-item"><b></b><span><strong>Memory</strong>${escapeHtml(started ? workspaceName() : "Workspace not loaded")}</span></div>
+              <div class="runtime-item"><b></b><span><strong>Routes</strong>${escapeHtml(routeText)}</span></div>
+              <div class="runtime-item"><b></b><span><strong>Skill focus</strong>${escapeHtml(started && step ? stageAdvice(step.id) : "Load a project container before running the scientific workflow.")}</span></div>
+            </div>
+          </section>
+        `;
+      }
+
       function renderStrategyStrip() {
         return `
           <div class="strategy-strip" aria-label="Strategic communication lab">
@@ -6396,6 +7148,7 @@
                     <a class="button" href="/publication/" target="_blank" rel="noreferrer">${icon("export")} Publication</a>
                   </div>
                 </div>
+                ${renderResearchCommand(true)}
                 <div class="workspace-signal-row" aria-label="Workspace evidence routes">
                   <span class="workspace-signal"><strong>Routes</strong> ${modes.map(escapeHtml).join(" / ")}${extraModes ? ` / +${extraModes}` : ""}</span>
                   <span class="workspace-signal"><strong>Storage</strong> local-first</span>
@@ -6403,7 +7156,7 @@
                 </div>
               </section>
               <div class="workspace-side-stack">
-                ${renderSkillHarness(true)}
+                ${renderAgentBench(true)}
               </div>
             </div>
           `;
@@ -6417,25 +7170,10 @@
                   <h2>${escapeHtml(title)}</h2>
                   <p class="workspace-subtitle">${escapeHtml(subtitle)}</p>
                   <p>${escapeHtml(summary)}</p>
-                  <p>${escapeHtml(modelText)}</p>
-                  <p>${escapeHtml(scopeText)}</p>
                   <p class="workspace-support-line">${escapeHtml(pathway)}</p>
                 </div>
                 <span class="workspace-badge">local-first research tool</span>
               </div>
-              <div class="workspace-capability-row" aria-label="NDIM scientific capabilities">
-                <div class="workspace-capability"><strong>Governed evidence</strong>SDMX metadata, consent, review status, hashes, and an audit trail before evidence can influence models.</div>
-                <div class="workspace-capability"><strong>Scientific modelling</strong>Narrative encoding, ODE flow, agent behaviour, Bayesian updating, RL optimisation, and digital-twin feedback.</div>
-                <div class="workspace-capability"><strong>Policy safety</strong>Uncertainty, assumptions, limitations, confidence level, and required human review in every policy output.</div>
-              </div>
-              ${renderSkillHarness(true)}
-              ${state.workspace.started ? `
-                <div class="workspace-context-card" role="status" aria-label="Active workspace context">
-                  <span>Project context loaded</span>
-                  <strong>${escapeHtml(workspaceName())}</strong>
-                  <p>${escapeHtml(workspaceSummaryText())}</p>
-                </div>
-              ` : ""}
               <div class="workspace-command-row">
                 <div class="start-control">
                   <button class="button primary start-button" data-start-toggle type="button">${icon("start")} ${state.workspace.started ? "Switch workspace" : "Start workspace"}</button>
@@ -6447,6 +7185,20 @@
                   <a class="button" href="/manual/#workspaces" target="_blank" rel="noreferrer">${icon("manual")} Workspace guide</a>
                 </div>
               </div>
+              ${renderResearchCommand(false)}
+              ${renderAgentBench(true)}
+              <div class="workspace-capability-row" aria-label="NDIM scientific capabilities">
+                <div class="workspace-capability"><strong>Governed evidence</strong>SDMX metadata, consent, review status, hashes, and an audit trail before evidence can influence models.</div>
+                <div class="workspace-capability"><strong>Scientific modelling</strong>${escapeHtml(modelText)}</div>
+                <div class="workspace-capability"><strong>Domains and decisions</strong>${escapeHtml(scopeText)}</div>
+              </div>
+              ${state.workspace.started ? `
+                <div class="workspace-context-card" role="status" aria-label="Active workspace context">
+                  <span>Project context loaded</span>
+                  <strong>${escapeHtml(workspaceName())}</strong>
+                  <p>${escapeHtml(workspaceSummaryText())}</p>
+                </div>
+              ` : ""}
               <div class="workspace-signal-row" aria-label="Workspace evidence routes">
                 <span class="workspace-signal"><strong>Routes</strong> ${modes.map(escapeHtml).join(" / ")}${extraModes ? ` / +${extraModes}` : ""}</span>
                 <span class="workspace-signal"><strong>Grade</strong> ${escapeHtml(evidenceGrade())}</span>
