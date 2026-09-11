@@ -6,6 +6,7 @@ import platform
 import sys
 import zipfile
 from datetime import datetime, timezone
+from functools import lru_cache
 from hashlib import sha256
 from pathlib import Path
 from typing import Dict, Iterable
@@ -39,7 +40,7 @@ def resource_path(*parts: str) -> Path:
     return resource_root().joinpath(*parts)
 
 
-def default_data_dir() -> Path:
+def _preferred_data_dir() -> Path:
     override = os.getenv("NDIM_DATA_DIR")
     if override:
         return Path(override).expanduser().resolve()
@@ -54,8 +55,58 @@ def default_data_dir() -> Path:
     return Path(os.getenv("XDG_DATA_HOME") or home / ".local" / "share") / APP_SLUG
 
 
+def default_data_dir() -> Path:
+    return _preferred_data_dir()
+
+
+def _data_dir_candidates() -> list[Path]:
+    preferred = _preferred_data_dir()
+    candidates = [preferred]
+    if os.getenv("NDIM_DATA_DIR"):
+        return candidates
+
+    root = resource_root()
+    if not getattr(sys, "frozen", False):
+        candidates.append(root / ".ndim_dev_data")
+    candidates.append(Path.cwd() / ".ndim_data")
+    candidates.append(Path.home() / f".{APP_SLUG}")
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        resolved = candidate.expanduser().resolve()
+        key = str(resolved).lower()
+        if key not in seen:
+            unique.append(resolved)
+            seen.add(key)
+    return unique
+
+
+def _assert_writable_data_dir(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    for subdir in ("logs", "workspaces"):
+        target = path / subdir
+        target.mkdir(parents=True, exist_ok=True)
+        probe = target / ".ndim-write-test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+
+
+@lru_cache(maxsize=1)
+def runtime_data_dir() -> Path:
+    failures: list[str] = []
+    for candidate in _data_dir_candidates():
+        try:
+            _assert_writable_data_dir(candidate)
+            return candidate
+        except OSError as exc:
+            failures.append(f"{candidate}: {exc}")
+    detail = "; ".join(failures) or "no candidate data directories were available"
+    raise RuntimeError(f"NDIM Engine could not find a writable data directory ({detail}).")
+
+
 def app_paths() -> Dict[str, Path]:
-    base = default_data_dir()
+    base = runtime_data_dir()
     return {
         "data": base,
         "uploads": base / "uploads",
@@ -90,6 +141,7 @@ def diagnostics(create_dirs: bool = False) -> Dict[str, object]:
         "python": sys.version,
         "frozen": bool(getattr(sys, "frozen", False)),
         "resource_root": str(resource_root()),
+        "preferred_data_root": str(_preferred_data_dir()),
         "paths": {key: str(value) for key, value in paths.items()},
         "database_url_mode": "environment" if os.getenv("DATABASE_URL") else "local_sqlite",
         "desktop_mode": os.getenv("NDIM_DESKTOP") == "1",
