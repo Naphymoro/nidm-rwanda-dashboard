@@ -163,7 +163,6 @@ const SECTION_LABELS: Record<NavItem["section"], string> = {
   decision: "Decision",
 };
 
-const VERCEL_URL = "https://nidm-rwanda-dashboard.vercel.app";
 const REPO_URL = "https://github.com/Naphymoro/nidm-rwanda-dashboard";
 
 const PIPELINE_STAGES = [
@@ -394,14 +393,6 @@ export default function DashboardLayout({
                 </button>
               </div>
             </div>
-            <a
-              className="sidebar-url font-mono-data block truncate rounded-lg border border-[var(--bdr)] bg-[var(--deep)] px-3 py-2 text-[10px] text-[var(--indigoL)] transition hover:border-[var(--bdrV)]"
-              href={VERCEL_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {VERCEL_URL}
-            </a>
             <a
               className="sidebar-url font-mono-data block truncate rounded-lg border border-[var(--bdr)] bg-[var(--deep)] px-3 py-2 text-[10px] text-[var(--verdant)] transition hover:border-[var(--bdrV)]"
               href={REPO_URL}
