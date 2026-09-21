@@ -6,7 +6,7 @@ Status: accepted for alpha production hardening
 
 NDIM Engine uses the **FastAPI-only integrated UI** as the canonical production desktop architecture.
 
-The desktop launcher starts a local FastAPI process on `127.0.0.1`, serves the integrated workflow UI from `/`, serves the manual from `/manual`, and stores research data in the operating system data folder.
+The desktop launcher starts a local FastAPI process on `127.0.0.1`, serves Research Studio from `/`, the integrated workflow UI from `/workbench`, the manual from `/manual`, and stores research data in the operating system data folder. The studio introduces a bounded skill harness within the same runtime; see `docs/RESEARCH_STUDIO.md`.
 
 ## Why this architecture
 

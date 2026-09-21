@@ -59,6 +59,19 @@ The app exposes `GET /repository/google/status` so the UI can show whether the G
 
 ## Core modules
 
+The new **Research Studio** at `/` provides narrative exploration, streamed domain
+tool execution, scenario comparison, and downloadable research artifacts. Select
+a workspace to save completed explorations, reopen them after refresh, or delete
+them; the default tab-only option remains unsaved. The
+existing integrated workflow remains at `/workbench`. Start with
+[the code and architecture guide](docs/RESEARCH_STUDIO.md) to learn the system and
+the planned path from deterministic skills to an agent runtime.
+
+For an operator-facing explanation of the original ingestion, evidence-gate,
+encoding, modelling and export workflow, see the [NIDM user guide](docs/NIDM_USER_GUIDE.md).
+The complete original workflow remains available at `/classic-workbench` while
+the newer `/` Research Studio is being expanded.
+
 1. SDMX-inspired narrative ingestion gateway
 2. Canonical narrative schema
 3. Manual, AI, and hybrid encoding workflow
@@ -90,7 +103,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Frontend: http://localhost:3000
+Legacy frontend: http://localhost:3000
 Backend API: http://localhost:8000/docs
 
 The current integrated research UI is served by the FastAPI backend:

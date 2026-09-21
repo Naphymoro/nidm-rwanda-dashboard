@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+from contextlib import asynccontextmanager
+from html import escape as html_escape
 import os
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +37,10 @@ from .workspaces import (
 )
 from .publication_ui import get_publication_html
 from .workflow_ui import ACADEMY_HTML, MANUAL_HTML, WORKFLOW_UI_HTML
+from .research_ui import RESEARCH_UI_HTML
+from .research import router as research_router
+from .engine_harness import router as engine_router, harness
+from .engine_ui import engine_html, ASSETS
 
 if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
     ensure_app_dirs()
@@ -60,7 +66,18 @@ except ImportError:
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NDIM Engine API", version=os.getenv("NDIM_VERSION", "0.9.0-alpha.9"))
+@asynccontextmanager
+async def engine_lifespan(app):
+    harness.start()
+    try:
+        yield
+    finally:
+        harness.stop()
+
+
+app = FastAPI(title="NDIM Engine API", version=os.getenv("NDIM_VERSION", "0.9.0-alpha.9"), lifespan=engine_lifespan)
+app.include_router(research_router)
+app.include_router(engine_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -77,12 +94,34 @@ if analytics_router:
 @app.get("/", response_class=HTMLResponse)
 def root():
     return HTMLResponse(
-        WORKFLOW_UI_HTML,
+        engine_html('studio'),
         headers={
             "Cache-Control": "no-store, max-age=0",
             "Pragma": "no-cache",
         },
     )
+
+@app.get("/workbench", response_class=HTMLResponse)
+def research_workbench():
+    return HTMLResponse(engine_html('workbench'), headers={"Cache-Control": "no-store"})
+
+
+@app.get("/engine/assets/{filename}")
+def engine_asset(filename: str):
+    if filename not in {"engine.css", "engine.js", "engine-overrides.css"}:
+        raise HTTPException(404, "Asset not found")
+    return FileResponse(ASSETS / filename, media_type="text/css" if filename.endswith('.css') else "text/javascript",
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.get("/classic-studio", response_class=HTMLResponse)
+def classic_studio():
+    return HTMLResponse(RESEARCH_UI_HTML, headers={"Cache-Control": "no-store"})
+
+
+@app.get("/classic-workbench", response_class=HTMLResponse)
+def classic_workbench():
+    return HTMLResponse(WORKFLOW_UI_HTML, headers={"Cache-Control": "no-store"})
 
 @app.get("/api/status")
 def api_status():
@@ -231,10 +270,21 @@ def manual():
 def manual_html_alias():
     return manual()
 
+@app.get("/function-coverage", response_class=HTMLResponse)
+def function_coverage():
+    path = resource_path("docs", "NIDM_FUNCTION_COVERAGE.md")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Function coverage inventory is unavailable.")
+    body = html_escape(path.read_text(encoding="utf-8"))
+    return HTMLResponse(
+        f"<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>NIDM function coverage</title><style>body{{margin:0;background:#f4f6f9;color:#172c40;font:14px/1.6 system-ui,sans-serif}}main{{max-width:1100px;margin:32px auto;padding:0 24px}}pre{{white-space:pre-wrap;background:#fff;border:1px solid #dce3ea;border-radius:12px;padding:24px;overflow:auto}}a{{color:#006d77}}</style></head><body><main><p><a href='/'>← Return to Research Studio</a></p><pre>{body}</pre></main></body></html>",
+        headers={"Cache-Control": "no-store"},
+    )
+
 @app.get("/academy", response_class=HTMLResponse)
 def academy():
     return HTMLResponse(
-        ACADEMY_HTML,
+        engine_html('academy'),
         headers={
             "Cache-Control": "no-store, max-age=0",
             "Pragma": "no-cache",
@@ -244,6 +294,11 @@ def academy():
 @app.get("/academy.html", response_class=HTMLResponse)
 def academy_html_alias():
     return academy()
+
+
+@app.get("/academy/reference", response_class=HTMLResponse)
+def academy_reference():
+    return HTMLResponse(ACADEMY_HTML, headers={"Cache-Control": "no-store"})
 
 @app.get("/publication", response_class=HTMLResponse)
 def publication():
