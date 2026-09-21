@@ -17,7 +17,7 @@ from . import models
 from .evaluation import evaluate_encoding, evaluate_simulation, EncodingEvaluationRequest, SimulationEvaluationRequest
 from .modelling import model_assumptions, run_digital_twin
 from .pipeline import run_experiment_pipeline
-from .security import LOCAL_ORIGIN_REGEX, validate_upload_file
+from .security import cors_options, validate_upload_file
 from .storage import app_paths, diagnostics, ensure_app_dirs, make_full_backup, make_support_bundle, resource_path
 from .validation import VALIDATION_DATASET, evaluate_encoder_against_validation, validation_status
 from .cloud_repository import google_repository_status
@@ -79,14 +79,7 @@ app = FastAPI(title="NDIM Engine API", version=os.getenv("NDIM_VERSION", "0.9.0-
 app.include_router(research_router)
 app.include_router(engine_router)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[],
-    allow_origin_regex=LOCAL_ORIGIN_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, **cors_options())
 
 if analytics_router:
     app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
