@@ -5898,6 +5898,7 @@
           <button class="nav-item" data-flow-step="4" type="button">Model</button>
           <button class="nav-item" data-flow-step="6" type="button">Digital twin</button>
           <button class="nav-item" data-flow-step="11" type="button">Strategy Lab</button>
+          <a class="nav-item" href="engine/" target="_blank" rel="noreferrer" data-engine-link="nav">Research Studio</a>
           <a class="nav-item" href="publication/" target="_blank" rel="noreferrer">Publication Workspace</a>
           <a class="nav-item" href="academy/" target="_blank" rel="noreferrer">Academy</a>
           <a class="nav-item" href="manual/" target="_blank" rel="noreferrer">Manual</a>
@@ -8384,6 +8385,7 @@
               ${navItems.map(([label, index, iconName]) => `
                 <button class="df-nav-row ${steps[index]?.id === active ? "active" : ""}" data-flow-step="${index}" type="button">${icon(iconName)} ${escapeHtml(label)}</button>
               `).join("")}
+              <a class="df-nav-row" href="engine/" target="_blank" rel="noreferrer" data-engine-link="rail">${icon("model")} Research Studio</a>
               <a class="df-nav-row" href="publication/" target="_blank" rel="noreferrer">${icon("export")} Publication</a>
               <a class="df-nav-row" href="academy/" target="_blank" rel="noreferrer">${icon("learn")} Academy</a>
               <a class="df-nav-row" href="manual/" target="_blank" rel="noreferrer">${icon("manual")} Manual</a>
