@@ -1,0 +1,60 @@
+# NDIM engine + ndim-mcp for a DeerFlow that runs in Docker. Needs no host firewall change: both containers sit on
+# Docker networks, so nothing crosses the host's INPUT chain.
+#
+#   docker compose -f mcp_server/docker-compose.deerflow.yml up -d --build      (run from nidm-rwanda-dashboard/)
+#
+# `--build` needs the Docker buildx plugin; without it compose hangs. There, build the images first and drop --build:
+#   docker build -f backend/Dockerfile -t ndim-deerflow-ndim-engine . && docker build -t ndim-deerflow-ndim-mcp mcp_server
+#
+# The DeerFlow dev stack must be up first: it creates the external network below.
+# DeerFlow config: "type": "http", "url": "http://ndim-mcp:8766/mcp"
+#
+# The engine joins only the private `ndim` network, so other DeerFlow containers cannot call it directly (it has no
+# authentication). ndim-mcp joins both. No ports are published on the host.
+name: ndim-deerflow
+
+services:
+  ndim-engine:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    environment:
+      PORT: "8010"
+      NDIM_DEPLOYMENT_MODE: local
+      NDIM_DESKTOP: "1"
+      NDIM_DATA_DIR: /data
+      NDIM_MAX_UPLOAD_MB: "50"
+    volumes:
+      - ndim-data:/data
+    networks: [ndim]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8010/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  ndim-mcp:
+    build:
+      context: .
+    environment:
+      NDIM_ENGINE_URL: http://ndim-engine:8010
+      NDIM_MCP_AUDIT_LOG: /audit/audit.jsonl
+    volumes:
+      - ndim-audit:/audit
+    depends_on:
+      ndim-engine:
+        condition: service_healthy
+    networks: [ndim, deerflow]
+    restart: unless-stopped
+
+volumes:
+  ndim-data:
+  ndim-audit:
+
+networks:
+  ndim:
+  deerflow:
+    external: true
+    name: deer-flow-dev_deer-flow-dev

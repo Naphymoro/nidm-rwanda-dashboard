@@ -1,0 +1,10 @@
+# Only backend/Dockerfile builds from the repo root. Whitelist of exactly what it COPYs, so the build context does
+# not carry node_modules, .git, the frontend or local databases. Kept here rather than in backend/Dockerfile.dockerignore
+# because the legacy (non-BuildKit) builder only reads the root file.
+*
+!backend/requirements.lock.txt
+!backend/app
+!docs
+!stress_test_corpus
+!VERSION
+**/__pycache__
