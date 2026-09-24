@@ -17,6 +17,7 @@ env:
   CLOUD_RUN_MAX_INSTANCES: ${{ vars.CLOUD_RUN_MAX_INSTANCES || '2' }}
   CLOUD_RUN_TIMEOUT: ${{ vars.CLOUD_RUN_TIMEOUT || '900' }}
   NDIM_MAX_UPLOAD_MB: ${{ vars.NDIM_MAX_UPLOAD_MB || '20' }}
+  NDIM_ALLOWED_ORIGINS: ${{ vars.NDIM_ALLOWED_ORIGINS || 'https://ndim-engine.pages.dev' }}
   HAS_GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY != '' }}
 
 jobs:
@@ -99,7 +100,7 @@ jobs:
             --memory "$CLOUD_RUN_MEMORY" \
             --cpu "$CLOUD_RUN_CPU" \
             --timeout "$CLOUD_RUN_TIMEOUT" \
-            --set-env-vars "DATABASE_URL=$DATABASE_URL,NDIM_DEPLOYMENT_MODE=cloud,NDIM_REQUIRE_DATABASE=1,NDIM_MAX_UPLOAD_MB=$NDIM_MAX_UPLOAD_MB,NDIM_VERSION=$(cat VERSION)"
+            --set-env-vars "DATABASE_URL=$DATABASE_URL,NDIM_DEPLOYMENT_MODE=cloud,NDIM_REQUIRE_DATABASE=1,NDIM_MAX_UPLOAD_MB=$NDIM_MAX_UPLOAD_MB,NDIM_ALLOWED_ORIGINS=$NDIM_ALLOWED_ORIGINS,NDIM_VERSION=$(cat VERSION)"
 
       - name: Show deployed URL
         env:
