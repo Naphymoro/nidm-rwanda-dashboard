@@ -30,6 +30,10 @@
 <symbol id="i-resume" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
 <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
 <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+<symbol id="i-side" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
 </defs></svg>
 <div class="app" id="app">
@@ -39,15 +43,14 @@
   <div class="sb-project"><label class="sb-label" for="workspace">Project</label><div class="sb-row"><select id="workspace"></select><button class="icon-btn" id="new-workspace" type="button" aria-label="New project" title="New project"><svg><use href="#i-plus"/></svg></button></div></div>
   <div class="threads" id="threads"><p class="sb-empty">No chats yet.</p></div>
   <div class="sb-foot">
-    <a data-route="workbench" href="/engine/workbench/"><svg><use href="#i-flask"/></svg>Research workbench</a>
-    <a data-route="academy" href="/engine/academy/"><svg><use href="#i-cap"/></svg>Learning academy</a>
-    <a href="/manual/"><svg><use href="#i-book"/></svg>Field manual</a>
+    <button type="button" data-open-panel="workbench"><svg><use href="#i-flask"/></svg>Workbench</button>
+    <button type="button" data-open-panel="library"><svg><use href="#i-book"/></svg>Library<small>Field manual · curriculum</small></button>
     <div class="engine"><i class="dot"></i><span id="engine-status">Connecting…</span></div>
   </div>
 </aside>
 <div class="scrim" id="scrim" hidden></div>
 <main class="main empty" id="main">
-  <header class="topbar"><button class="icon-btn" id="menu" type="button" aria-label="Open sidebar" title="Open sidebar"><svg><use href="#i-panel"/></svg></button><h1 class="chat-title" id="chat-title">New chat</h1><button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme"><svg><use href="#i-moon"/></svg></button></header>
+  <header class="topbar"><button class="icon-btn" id="menu" type="button" aria-label="Open sidebar" title="Open sidebar"><svg><use href="#i-panel"/></svg></button><h1 class="chat-title" id="chat-title">New chat</h1><span class="model-badge" id="model-badge" hidden></span><button class="icon-btn" id="panel-toggle" type="button" aria-label="Open workbench and library" title="Workbench and library" aria-expanded="false"><svg><use href="#i-side"/></svg></button><button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme"><svg><use href="#i-moon"/></svg></button></header>
   <div class="scroller" id="scroller">
     <div class="welcome" id="welcome"><div class="welcome-mark" aria-hidden="true">n<span>·</span></div><h2 id="greeting">Hello</h2><p>What would you like to investigate?</p><div id="connect" hidden></div></div>
     <div class="thread" id="thread" aria-live="polite"></div>
@@ -74,7 +77,8 @@
           <div class="menu wide" id="skill-menu" role="menu" hidden></div></div>
         <div class="anchor"><button type="button" class="icon-btn" id="settings-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Experiment settings" title="Experiment settings"><svg><use href="#i-sliders"/></svg></button>
           <div class="menu settings" id="settings-menu" role="dialog" aria-label="Experiment settings" hidden>
-            <div class="menu-title">Experiment settings<small>Apply to your next message</small></div>
+            <div id="ai-settings" class="ai-settings"></div>
+            <div class="menu-title">Experiment settings<small>Defaults for new plans</small></div>
             <label>Model<select id="set-model"><option value="compartmental">S/M/T/I/R compartmental</option><option value="hybrid">Hybrid · compartmental + proxy</option><option value="agent_based">Agent-based proxy</option></select></label>
             <label>Compute<select id="set-profile"><option value="auto">Auto (measured)</option><option value="economy">Economy · 3 sweep points</option><option value="balanced">Balanced · 7 sweep points</option><option value="thorough">Thorough · 11 sweep points</option></select></label>
             <label>Intervention strength <output id="out-intervention">0.30</output><input id="set-intervention" type="range" min="0" max="1" step="0.01" value="0.3"></label>
@@ -95,5 +99,10 @@
     <p class="disclaimer">NDIM runs local scientific tools, not an AI model. Scores are heuristics and scenarios are illustrative, so check them against the evidence.</p>
   </div>
 </main>
+<aside class="panel" id="panel" hidden aria-label="Workbench and library">
+  <div class="panel-head"><div class="tabs" role="tablist" aria-label="Panel"><button type="button" role="tab" id="tab-workbench" data-tab="workbench" aria-selected="true" aria-controls="panel-workbench">Workbench</button><button type="button" role="tab" id="tab-library" data-tab="library" aria-selected="false" aria-controls="panel-library">Library</button></div><button class="icon-btn" id="panel-close" type="button" aria-label="Close panel" title="Close panel"><svg><use href="#i-x"/></svg></button></div>
+  <div class="panel-body" id="panel-workbench" role="tabpanel" aria-labelledby="tab-workbench"></div>
+  <div class="panel-body" id="panel-library" role="tabpanel" aria-labelledby="tab-library" hidden></div>
+</aside>
 </div>
 </body></html>

@@ -40,6 +40,7 @@ from .workflow_ui import ACADEMY_HTML, MANUAL_HTML, WORKFLOW_UI_HTML
 from .research_ui import RESEARCH_UI_HTML
 from .research import router as research_router
 from .engine_harness import router as engine_router, harness
+from .agent import router as agent_router
 from .engine_ui import engine_html, ASSETS
 
 if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
@@ -78,6 +79,7 @@ async def engine_lifespan(app):
 app = FastAPI(title="NDIM Engine API", version=os.getenv("NDIM_VERSION", "0.9.0-alpha.9"), lifespan=engine_lifespan)
 app.include_router(research_router)
 app.include_router(engine_router)
+app.include_router(agent_router)
 
 app.add_middleware(CORSMiddleware, **cors_options())
 

@@ -26,6 +26,12 @@ services:
       NDIM_DATA_DIR: /data
       NDIM_MAX_UPLOAD_MB: "50"
       NDIM_ALLOWED_ORIGINS: https://nidm-engine.pages.dev
+      # Research assistant (optional). Keys are read from the shell or an .env file next to this compose file;
+      # without one the chat still plans experiments directly. A key can also be saved from the chat's settings.
+      NDIM_AGENT_PROVIDER: ${NDIM_AGENT_PROVIDER:-}
+      NDIM_AGENT_MODEL: ${NDIM_AGENT_MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "127.0.0.1:8010:8010"
     volumes:
