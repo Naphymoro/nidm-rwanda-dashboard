@@ -48,6 +48,8 @@ class ExperimentRequest(BaseModel):
     narrative_influence: float = Field(default=.38, ge=0, le=1)
     lesson_id: Literal['evidence', 'scenario', 'sensitivity'] | None = None
     prior_run_ids: list[str] = Field(default_factory=list, max_length=3)
+    # Groups experiments into one conversation in the chat UI; a run without one is its own thread.
+    thread_id: str | None = Field(default=None, pattern=r'^[0-9a-f][0-9a-f-]{7,63}$')
 
     @model_validator(mode='after')
     def validate_meaningful_text(self):
@@ -124,7 +126,8 @@ def build_plan(payload, resource_snapshot=None):
                'explanation': {'guided': 'Follow each step, inspect its assumptions, then review the draft before reuse.',
                                'researcher': 'Inspect method selection, parameter provenance and the numerical audit.',
                                'expert': 'Review complete tool outputs, normalized dynamics, environment and code fingerprint.'}[payload.expertise]}
-    return {'run_id': str(uuid4()), 'workspace_id': payload.workspace_id, 'created_at': store.now(), 'updated_at': store.now(),
+    run_id = str(uuid4())
+    return {'run_id': run_id, 'thread_id': payload.thread_id or run_id, 'workspace_id': payload.workspace_id, 'created_at': store.now(), 'updated_at': store.now(),
             'status': 'planned', 'title': payload.question, 'evidence': payload.evidence, 'skill': skill, 'lesson_id': payload.lesson_id,
             'request': payload.model_dump(), 'context': context, 'plan': plan, 'warnings': warnings, 'blockers': blocked,
             'execution': {'profile': profile, 'selection_reason': 'Measured CPU/memory envelope' if payload.profile == 'auto' else 'Explicit researcher selection',

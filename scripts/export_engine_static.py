@@ -21,7 +21,7 @@ from app.engine_ui import ASSETS, engine_html  # noqa: E402
 
 PUBLIC = ROOT / 'cloudflare' / 'public'
 PAGES = {'studio': 'engine/index.html', 'workbench': 'engine/workbench/index.html', 'academy': 'engine/academy/index.html'}
-ASSET_FILES = ('engine.css', 'engine.js', 'engine-overrides.css', 'engine-theme.css')
+ASSET_FILES = ('engine.css', 'engine.js', 'engine-overrides.css', 'engine-theme.css', 'chat.css', 'chat.js')
 COVERAGE_URL = 'https://github.com/Naphymoro/nidm-rwanda-dashboard/blob/main/docs/NIDM_FUNCTION_COVERAGE.md'
 
 # Backend routes in the template -> where the same content lives on the static site.
@@ -37,7 +37,7 @@ LINKS = {
 CONFIG_JS = (
     "window.NDIM_ENGINE={static:true,routes:{studio:'/engine/',workbench:'/engine/workbench/',academy:'/engine/academy/'}};\n"
 )
-SCRIPT_TAG = '<script defer src="/engine/assets/engine.js"></script>'
+SCRIPT_TAG = re.compile(r'<script defer src="/engine/assets/(?:engine|chat)\.js"></script>')
 
 # Landing-page links: (marker, insert before this existing anchor, link to insert).
 LANDING = 'index.html'
@@ -77,9 +77,10 @@ def build():
         files[f'engine/assets/{name}'] = (ASSETS / name).read_text(encoding='utf-8')
     for page, path in PAGES.items():
         html = engine_html(page)
-        if SCRIPT_TAG not in html:
+        tag = SCRIPT_TAG.search(html)
+        if not tag:
             raise SystemExit('Engine template script tag changed; update SCRIPT_TAG.')
-        html = html.replace(SCRIPT_TAG, '<script src="/engine/assets/engine-config.js"></script>\n' + SCRIPT_TAG)
+        html = html.replace(tag.group(0), '<script src="/engine/assets/engine-config.js"></script>\n' + tag.group(0), 1)
         files[path] = rewrite_links(html)
     files[LANDING] = link_landing((PUBLIC / LANDING).read_text(encoding='utf-8'))
     return files

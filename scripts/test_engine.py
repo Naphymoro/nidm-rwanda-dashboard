@@ -67,9 +67,21 @@ class EngineTests(unittest.TestCase):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200)
             self.assertIn('data-page="'+page+'"', response.text)
-        for path in ['/classic-workbench', '/classic-studio', '/academy/reference', '/engine/assets/engine.js', '/engine/assets/engine.css']:
+        for path in ['/classic-workbench', '/classic-studio', '/academy/reference', '/engine/assets/engine.js', '/engine/assets/engine.css', '/engine/assets/chat.js', '/engine/assets/chat.css']:
             self.assertEqual(self.client.get(path).status_code, 200)
         self.assertEqual(self.client.get('/engine/assets/main.py').status_code, 404)
+
+    def test_thread_groups_runs_and_defaults_to_run_id(self):
+        alone = self.plan()
+        self.assertEqual(alone['thread_id'], alone['run_id'])
+        first = self.plan(thread_id='0f0e0d0c-aaaa-4bbb-8ccc-123456789abc')
+        second = self.plan(thread_id=first['thread_id'], question='What if the intervention were weaker?')
+        rows = self.client.get(f'/engine/workspaces/{self.workspace}/runs').json()['runs']
+        threads = {row['run_id']: row['thread_id'] for row in rows}
+        self.assertEqual(threads[first['run_id']], threads[second['run_id']])
+        self.assertEqual(threads[alone['run_id']], alone['run_id'])
+        for bad in ['../x', 'NOT-HEX-ID', 'abc']:
+            self.assertEqual(self.client.post('/engine/plans', json=self.payload | {'thread_id': bad}).status_code, 422)
 
     def test_review_plan_is_not_automatic_execution(self):
         before = self.client.get('/narratives').json()

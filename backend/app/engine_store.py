@@ -65,7 +65,7 @@ def listing(workspace):
         except HTTPException:
             logging.getLogger(__name__).warning('Unreadable experiment checkpoint: %s', file.name)
             continue
-        rows.append({k: run[k] for k in ('run_id', 'status', 'created_at', 'updated_at', 'title', 'skill', 'lesson_id')} | {'reviewed': bool(run.get('review')), 'lesson_passed': bool(run.get('lesson_check', {}).get('correct'))})
+        rows.append({k: run[k] for k in ('run_id', 'status', 'created_at', 'updated_at', 'title', 'skill', 'lesson_id')} | {'thread_id': run.get('thread_id', run['run_id']), 'reviewed': bool(run.get('review')), 'lesson_passed': bool(run.get('lesson_check', {}).get('correct'))})
     return sorted(rows, key=lambda item: (item['created_at'], item['run_id']), reverse=True)
 
 

@@ -1,10 +1,9 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content"><title>NDIM · Research Studio</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content"><title>NDIM · __TITLE__</title>
 <link rel="stylesheet" href="/engine/assets/chat.css">
 <script>try{const t=localStorage.getItem('ndim-theme');if(t)document.documentElement.dataset.theme=t;}catch{}</script>
-<script src="/engine/assets/engine-config.js"></script>
 <script defer src="/engine/assets/chat.js"></script></head>
-<body data-page="studio">
+<body data-page="__PAGE__">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
 <symbol id="i-send" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
@@ -34,14 +33,14 @@
 </defs></svg>
 <div class="app" id="app">
 <aside class="sidebar" id="sidebar" aria-label="Chats">
-  <div class="sb-head"><a class="brand" href="/engine/" data-route="studio"><span class="brand-mark">n<span>·</span></span><span>NDIM</span></a><button class="icon-btn" id="collapse" type="button" aria-label="Close sidebar" title="Close sidebar"><svg><use href="#i-panel"/></svg></button></div>
+  <div class="sb-head"><a class="brand" href="/" data-route="studio"><span class="brand-mark">n<span>·</span></span><span>NDIM</span></a><button class="icon-btn" id="collapse" type="button" aria-label="Close sidebar" title="Close sidebar"><svg><use href="#i-panel"/></svg></button></div>
   <button class="sb-new" id="new-chat" type="button"><svg><use href="#i-plus"/></svg>New chat<kbd>N</kbd></button>
   <div class="sb-project"><label class="sb-label" for="workspace">Project</label><div class="sb-row"><select id="workspace"></select><button class="icon-btn" id="new-workspace" type="button" aria-label="New project" title="New project"><svg><use href="#i-plus"/></svg></button></div></div>
   <div class="threads" id="threads"><p class="sb-empty">No chats yet.</p></div>
   <div class="sb-foot">
-    <a data-route="workbench" href="/engine/workbench/"><svg><use href="#i-flask"/></svg>Research workbench</a>
-    <a data-route="academy" href="/engine/academy/"><svg><use href="#i-cap"/></svg>Learning academy</a>
-    <a href="/manual/"><svg><use href="#i-book"/></svg>Field manual</a>
+    <a data-route="workbench" href="/workbench"><svg><use href="#i-flask"/></svg>Research workbench</a>
+    <a data-route="academy" href="/academy"><svg><use href="#i-cap"/></svg>Learning academy</a>
+    <a href="/manual"><svg><use href="#i-book"/></svg>Field manual</a>
     <div class="engine"><i class="dot"></i><span id="engine-status">Connecting…</span></div>
   </div>
 </aside>
