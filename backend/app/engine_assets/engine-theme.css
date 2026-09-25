@@ -164,3 +164,61 @@ main>*{min-width:0}
 .orientation-panel,.coverage-panel{order:1}
 .orientation-panel{margin-top:28px}
 .page-footer{order:2}
+
+/* Chat flow: greeting + centred composer on the start screen. */
+.chat-hero{text-align:center;margin:48px auto 26px;max-width:720px}
+.chat-hero h1{font-size:34px;margin:10px 0 8px}
+.chat-hero p{margin:0 auto;font-size:14px}
+body[data-page=studio] .editor-layout{grid-template-columns:minmax(0,1fr);max-width:860px;width:100%;margin:0 auto}
+body[data-page=studio] .editor-aside{grid-template-columns:1fr 1fr;align-items:start}
+body[data-page=studio] .editor-aside .workflow-map,body[data-page=studio] .editor-aside .method-note{display:block}
+body[data-page=studio] #starter-section{max-width:860px;width:100%;margin:0 auto}
+body[data-page=studio] .composer-heading{display:none}
+body[data-page=studio] .composer #question{padding-top:18px}
+#plan-button{border-radius:999px;padding:9px 16px}
+
+/* Thread */
+.thread .run-heading{align-items:center;margin:18px 0 16px}
+.thread .run-heading h1{font-size:20px;letter-spacing:-.3px;margin:4px 0}
+.thread .run-heading p{margin:0}
+.thread-messages{gap:22px;padding-bottom:12px}
+.msg{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.msg-user{justify-content:flex-end}
+.msg-user .bubble{max-width:min(620px,88%);background:var(--soft);border-radius:18px 18px 4px 18px;padding:12px 16px;min-width:0}
+.msg-user .bubble>p{margin:0;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg-evidence{margin-top:8px}
+.msg-evidence summary{font-size:12px;font-weight:500;color:var(--muted)}
+.msg-evidence .evidence-quote{margin:8px 0 0;background:var(--paper)}
+.msg-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted);text-transform:capitalize}
+.msg-avatar{width:30px;height:30px;border-radius:8px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;font-weight:600;font-size:15px;flex-shrink:0}
+.msg-avatar span{opacity:.6}
+.msg-body{flex:1;min-width:0;display:grid;gap:12px}
+.msg-author{font-size:13px;font-weight:600}
+.msg-author span{font-weight:400;color:var(--muted);margin-left:6px;font-size:12px}
+.msg-body>#plan-card #plan-explanation{margin-top:0;font-size:14px;color:var(--ink)}
+.msg-body .plan-steps{border:1px solid var(--line);border-radius:var(--radius);padding:2px 14px;background:var(--paper)}
+.msg-body .plan-steps li:last-child{border-bottom:0}
+.plan-steps .running .step-circle{animation:ndim-spin 1.2s linear infinite}
+@keyframes ndim-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.plan-steps .running .step-circle{animation:none}}
+.msg-body .run-toolbar{justify-content:flex-start;margin:0}
+.msg-body .error-box{margin:0}
+.msg-body>#results-card,.msg-body>#review-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.msg-body>#learning-check{margin:0}
+#review-card h2{font-size:15px;margin:4px 0}
+.run-layout{align-items:start}
+.run-aside{position:sticky;top:72px}
+
+/* Follow-up composer pinned to the bottom of the thread. */
+.followup-composer{position:sticky;bottom:0;z-index:5;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:end;max-width:860px;margin:20px 0 0;padding:10px 10px 8px 16px;background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 -6px 24px color-mix(in srgb,var(--bg) 85%,transparent),0 2px 12px #0000000d}
+.followup-composer textarea{border:0;background:transparent;padding:6px 0;resize:none;min-height:24px;max-height:160px;font-size:14px;field-sizing:content}
+.followup-composer textarea:focus-visible{outline:0}
+.followup-composer:focus-within{border-color:var(--input)}
+.send-button{width:34px;height:34px;border-radius:999px;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center}
+.send-button:hover{opacity:.88}
+.followup-hint{grid-column:1/-1;margin:0;font-size:11px;color:var(--muted)}
+main:has(#run-section:not([hidden])) :is(.orientation-panel,.coverage-panel){display:none}
+
+@media(max-width:900px){body[data-page=studio] .editor-aside{grid-template-columns:1fr}.run-aside{position:static}}
+@media(max-width:700px){.chat-hero{margin:24px auto 18px}.chat-hero h1{font-size:26px}.msg{gap:8px}.msg-avatar{width:26px;height:26px;font-size:13px}.msg-user .bubble{max-width:94%}.thread .run-heading{flex-wrap:wrap}.followup-composer{margin-left:-4px;margin-right:-4px}}
