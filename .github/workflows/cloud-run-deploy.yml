@@ -17,7 +17,7 @@ env:
   CLOUD_RUN_MAX_INSTANCES: ${{ vars.CLOUD_RUN_MAX_INSTANCES || '2' }}
   CLOUD_RUN_TIMEOUT: ${{ vars.CLOUD_RUN_TIMEOUT || '900' }}
   NDIM_MAX_UPLOAD_MB: ${{ vars.NDIM_MAX_UPLOAD_MB || '20' }}
-  NDIM_ALLOWED_ORIGINS: ${{ vars.NDIM_ALLOWED_ORIGINS || 'https://ndim-engine.pages.dev' }}
+  NDIM_ALLOWED_ORIGINS: ${{ vars.NDIM_ALLOWED_ORIGINS || 'https://nidm-engine.pages.dev' }}
   HAS_GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY != '' }}
 
 jobs:

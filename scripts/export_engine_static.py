@@ -21,7 +21,7 @@ from app.engine_ui import ASSETS, engine_html  # noqa: E402
 
 PUBLIC = ROOT / 'cloudflare' / 'public'
 PAGES = {'studio': 'engine/index.html', 'workbench': 'engine/workbench/index.html', 'academy': 'engine/academy/index.html'}
-ASSET_FILES = ('engine.css', 'engine.js', 'engine-overrides.css')
+ASSET_FILES = ('engine.css', 'engine.js', 'engine-overrides.css', 'engine-theme.css')
 COVERAGE_URL = 'https://github.com/Naphymoro/nidm-rwanda-dashboard/blob/main/docs/NIDM_FUNCTION_COVERAGE.md'
 
 # Backend routes in the template -> where the same content lives on the static site.

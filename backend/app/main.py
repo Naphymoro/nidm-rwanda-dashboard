@@ -101,7 +101,7 @@ def research_workbench():
 
 @app.get("/engine/assets/{filename}")
 def engine_asset(filename: str):
-    if filename not in {"engine.css", "engine.js", "engine-overrides.css"}:
+    if filename not in {"engine.css", "engine.js", "engine-overrides.css", "engine-theme.css"}:
         raise HTTPException(404, "Asset not found")
     return FileResponse(ASSETS / filename, media_type="text/css" if filename.endswith('.css') else "text/javascript",
                         headers={"Cache-Control": "no-store"})

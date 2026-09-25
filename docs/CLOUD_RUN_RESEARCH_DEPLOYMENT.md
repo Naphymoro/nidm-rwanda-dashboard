@@ -99,7 +99,7 @@ Optional GitHub repository variables:
 | `CLOUD_RUN_CPU` | `1` |
 | `CLOUD_RUN_TIMEOUT` | `900` |
 | `NDIM_MAX_UPLOAD_MB` | `20` |
-| `NDIM_ALLOWED_ORIGINS` | `https://ndim-engine.pages.dev` |
+| `NDIM_ALLOWED_ORIGINS` | `https://nidm-engine.pages.dev` |
 
 `NDIM_ALLOWED_ORIGINS` lets the Cloudflare Pages engine UI call this service from the browser. The API has no authentication, so keep it to origins you control. The deploy step passes it through `gcloud --set-env-vars`, so set a single origin here; a comma-separated list needs a custom gcloud delimiter.
 
