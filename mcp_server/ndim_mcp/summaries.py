@@ -2,6 +2,14 @@
 
 NOTICE = ('Illustrative, uncalibrated model output from keyword-based encodings. Not a forecast, not a confidence '
           'interval, not empirical validation. Report it as exploratory and pending researcher review.')
+# Keep in step with the skill's references/interpreting-results.md, "Allowed and forbidden wording".
+REPORTING_RULES = ('When reporting: lead a scenario with the baseline vs intervention difference in final adoption, '
+                   'then the evidence signals behind it, then the limitations. Say "in the illustrative model, endpoint '
+                   'adoption is X at day N", never "adoption will reach X". Call a delta the difference between two model '
+                   'endpoints, never an effect of the intervention. Call scores what "the keyword heuristic scored this '
+                   'narrative", never measured trust in a community. Never write validated, calibrated, confirmed, '
+                   'significant or robust. Scope claims to this narrative and this model. If peak_day is the last day, '
+                   'the peak adds nothing; if both arms end near 1.0, say the model saturated.')
 TERMINAL = {'completed', 'failed', 'cancelled', 'interrupted'}
 COMPARTMENTS = ('S', 'M', 'T', 'I', 'R')
 REQUEST_FIELDS = ('model', 'horizon_days', 'intervention_strength', 'initial_adoption', 'narrative_influence',
@@ -97,7 +105,7 @@ def summarize_run(run, include_trajectories=False):
                            'ndim_resume_experiment, or create a new plan.')
     elif run['status'] == 'completed' and not run['review']:
         summary['next'] = ('Present the results with their limitations. The researcher, not the agent, records the '
-                           'review that certifies the run was read.')
+                           'review that certifies the run was read. ' + REPORTING_RULES)
     if 'encode' in outputs:
         summary['encoding'] = _scalars(outputs['encode'])
     if 'diagnose' in outputs:

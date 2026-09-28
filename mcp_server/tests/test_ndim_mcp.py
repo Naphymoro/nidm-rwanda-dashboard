@@ -151,7 +151,7 @@ def test_start_without_real_approval_never_reaches_the_engine():
 def test_engine_error_detail_is_surfaced_to_the_agent():
     server = build(lambda request: httpx.Response(422, json={'detail': [{'loc': ['body', 'evidence'], 'msg': 'too short'}]}))
     with pytest.raises(Exception, match='evidence: too short'):
-        call(server, 'ndim_plan_experiment', workspace_id=WS, question='A long enough question', evidence='x' * 30)
+        call(server, 'ndim_plan_experiment', workspace_id=WS, question='A long enough question', evidence='x' * 30, skill='evidence')
 
 
 def test_unreachable_engine_gives_actionable_message():
@@ -169,6 +169,28 @@ def test_status_does_not_leak_local_paths():
                                                                        'worker_limit', 'profiles', 'dependencies')},
                                           'planner': 'p', 'implemented': [], 'unavailable': ['x'], 'access': 'a'})
     assert '/home/secret' not in json.dumps(call(build(handler), 'ndim_engine_status'))
+
+
+def test_plan_requires_an_explicit_workflow_and_describes_the_choice():
+    # A live chat showed an agent that never read SKILL.md: it left the workflow to the planner and got "evidence"
+    # for a "how might X change adoption" question. The rules it needs must be in what tools/list returns.
+    calls = []
+    server = build(lambda request: calls.append(request) or httpx.Response(201, json=make_run(status='planned')))
+    with pytest.raises(ToolError, match='skill'):
+        call(server, 'ndim_plan_experiment', workspace_id=WS, question='How might more CHWs change adoption?', evidence='e' * 40)
+    assert calls == []
+    tool = next(t for t in asyncio.run(server.list_tools()) if t.name == 'ndim_plan_experiment')
+    skill = tool.inputSchema['properties']['skill']
+    assert 'skill' in tool.inputSchema['required']
+    assert 'scenario' in skill['description'] and 'change' in skill['description'] and 'auto' in skill['description']
+    assert 'intervention_strength' in tool.description
+
+
+def test_completed_run_and_brief_carry_reporting_rules():
+    next_step = summarize_run(make_run())['next']
+    assert 'never "adoption will reach' in next_step and 'never an effect' in next_step
+    body = call(build(lambda request: httpx.Response(200, text='# brief')), 'ndim_get_brief', workspace_id=WS, run_id=RID)
+    assert 'Scope claims to this narrative' in body['reporting_rules']
 
 
 def test_dangerous_tools_are_not_exposed():

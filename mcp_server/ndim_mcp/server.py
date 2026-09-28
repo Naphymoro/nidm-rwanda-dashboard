@@ -14,14 +14,27 @@ from pydantic import Field
 from . import audit, sweeps
 from .client import EngineClient, EngineError, check_ids
 from .config import Settings
-from .summaries import NOTICE, TERMINAL, compare_runs, summarize_plan, summarize_run
+from .summaries import NOTICE, REPORTING_RULES, TERMINAL, compare_runs, summarize_plan, summarize_run
 
 INSTRUCTIONS = """NDIM scientific engine: a deterministic digital twin of narrative diffusion and adoption.
 Workflow: ndim_engine_status -> ndim_list_workspaces -> ndim_plan_experiment -> SHOW THE PLAN TO THE RESEARCHER AND GET
 THEIR APPROVAL -> ndim_start_experiment -> ndim_wait_for_run / ndim_get_run -> ndim_get_brief.
 Parameter sweeps: ndim_plan_sweep -> researcher approval -> ndim_run_sweep (runs and compares server-side).
-Results are illustrative and uncalibrated. Never present them as forecasts or validated findings. Never approve a plan
-or write a review on the researcher's behalf."""
+Choose the workflow yourself (see ndim_plan_experiment's skill argument): a question about how an action, programme or
+condition might change, affect, increase, reduce or improve adoption is a "scenario", not "evidence".
+Results are illustrative and uncalibrated. Never present them as forecasts, estimated effects or validated findings, and
+scope every claim to "this narrative" and "this model". Never approve a plan or write a review on the researcher's
+behalf."""
+
+# Shown with the plan tool, where the agent decides the workflow. Keep in step with SKILL.md "Choose the workflow".
+WORKFLOW_GUIDE = (
+    'Workflow. Choose it yourself; do not leave it to "auto", which guesses from keywords and falls back to evidence. '
+    '"scenario": the question asks how an action, programme or condition might change, affect, increase, reduce, '
+    'improve or influence adoption, trust or uptake ("How might training more CHWs change adoption?", "Would a subsidy '
+    'help?", "What if we ran a radio campaign?"). It runs the evidence steps too and adds a baseline vs intervention '
+    'comparison. This is the default for any question about change. '
+    '"sensitivity": "how much", "how strong", "at what level", "is more effort worth it". '
+    '"evidence": only what the notes contain (signals, themes, risks, trust) with no change in view.')
 
 READ = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
 WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False)
@@ -85,20 +98,21 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
     @mcp.tool(annotations=WRITE)
     async def ndim_plan_experiment(
         workspace_id: Workspace,
-        question: Annotated[str, Field(min_length=8, max_length=1000, description='The research question, in words. '
-            'Keywords steer the workflow: "sensitivity"/"sweep" -> intervention-strength sweep; "scenario"/"compare"/'
-            '"intervention"/"what if" -> baseline vs intervention; otherwise evidence-only.')],
+        question: Annotated[str, Field(min_length=8, max_length=1000, description="The researcher's question, in their words.")],
         evidence: Annotated[str, Field(min_length=20, max_length=20000, description='Source narrative or field notes, in '
-            'English. Non-English text is blocked by the engine; supply an explicit translation.')],
+            'English. Non-English text is blocked by the engine. If you translate, tell the researcher and get their '
+            'confirmation first.')],
+        skill: Annotated[Literal['scenario', 'sensitivity', 'evidence', 'auto'], Field(description=WORKFLOW_GUIDE)],
         consent: Annotated[Literal['synthetic', 'research_use', 'unconfirmed'], Field(description=(
             '"research_use" only if the researcher confirmed permission to use this evidence; "synthetic" for demo data; '
             'otherwise "unconfirmed". Never upgrade this yourself.'))] = 'unconfirmed',
-        skill: Annotated[Literal['auto', 'evidence', 'scenario', 'sensitivity'], Field(description='Workflow. "auto" infers it from the question.')] = 'auto',
         model: Annotated[Literal['compartmental', 'agent_based', 'hybrid'], Field(description='Model family. agent_based ignores '
             'intervention strength, so it is blocked for scenario and sensitivity workflows.')] = 'compartmental',
         profile: Annotated[Literal['auto', 'economy', 'balanced', 'thorough'], Field(description='Sensitivity grid density: 3, 7 or 11 points.')] = 'auto',
         horizon_days: Annotated[int, Field(ge=7, le=365)] = 90,
-        intervention_strength: Annotated[float, Field(ge=0, le=1)] = 0.3,
+        intervention_strength: Annotated[float, Field(ge=0, le=1, description='The only intervention lever in the model. '
+            'The researcher\'s intervention (e.g. "more trained CHWs") maps onto this abstract 0-1 value; the engine does '
+            'not model CHW counts, prices or channels. 0.3 = moderate.')] = 0.3,
         initial_adoption: Annotated[float, Field(ge=0, le=1)] = 0.1,
         narrative_influence: Annotated[float, Field(ge=0, le=1)] = 0.38,
         language: Annotated[Literal['en', 'rw', 'fr', 'other'], Field(description='Language of the evidence text.')] = 'en',
@@ -109,7 +123,9 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
     ) -> dict:
         """Create a reviewable experiment plan. Nothing executes until ndim_start_experiment.
 
-        Returns the steps, warnings and any blockers. Present them to the researcher before asking for approval."""
+        Set skill explicitly: a question about how something might change adoption is a scenario, not evidence.
+        Returns the steps, warnings and any blockers. Present them to the researcher before asking for approval,
+        and for a scenario say plainly that their intervention is represented only by intervention_strength."""
         check_ids(workspace_id)
         prior_run_ids = prior_run_ids or []
         for prior in prior_run_ids:
@@ -178,7 +194,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         """Return the engine-generated research brief (Markdown) for a completed run, marked as an exploratory draft."""
         check_ids(workspace_id, run_id)
         markdown = await engine.request('GET', f'/engine/workspaces/{workspace_id}/runs/{run_id}/artifacts/brief', text=True)
-        return {'run_id': run_id, 'markdown': markdown, 'notice': NOTICE}
+        return {'run_id': run_id, 'markdown': markdown, 'notice': NOTICE, 'reporting_rules': REPORTING_RULES}
 
     async def compare(workspace_id, run_ids, reference_id=None):
         check_ids(workspace_id)
@@ -291,8 +307,8 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         finished = await asyncio.gather(*(wait(workspace_id, run_id, wait_seconds) for run_id in started))
         return {'comparison': compare_runs(list(finished), reference_id=reference_run_id), 'errors': errors,
                 'still_running': [run['run_id'] for run in finished if run['status'] not in TERMINAL],
-                'next': 'Report with the comparability notes. If runs are still running, call ndim_wait_for_run '
-                        'then ndim_compare_runs.'}
+                'next': 'Report with the comparability notes; a grid shows sensitivity, not uncertainty. If runs are '
+                        'still running, call ndim_wait_for_run then ndim_compare_runs. ' + REPORTING_RULES}
 
     return mcp
 

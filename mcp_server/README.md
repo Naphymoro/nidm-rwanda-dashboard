@@ -45,23 +45,24 @@ python -m ndim_mcp --transport streamable-http --port 8765   # http://127.0.0.1:
 
 ## Wire into DeerFlow
 
-`deer-flow/extensions_config.json` contains an `ndim-engine` entry, **disabled**, pointing at
-`http://host.docker.internal:8766/mcp`, because DeerFlow's gateway here runs in Docker. Steps:
+DeerFlow's gateway here runs in Docker, so the engine and this server run as containers too
+(`mcp_server/docker-compose.deerflow.yml`; see its header for build steps). `ndim-mcp` joins DeerFlow's
+`deer-flow-dev_deer-flow-dev` network, so nothing crosses the host firewall. The engine joins only a private `ndim`
+network (plus `127.0.0.1:8010` on the host). `deer-flow/extensions_config.json` has `ndim-engine` **enabled**:
+`"type": "http", "url": "http://ndim-mcp:8766/mcp"`.
 
-1. Start the engine: `uvicorn backend.app.main:app --port 8010 --workers 1` (from `nidm-rwanda-dashboard/`).
-2. Start this server where the container can reach it. `host.docker.internal` resolves to `172.17.0.1` (docker0) inside the
-   gateway, so bind there, not to the LAN:
-   `python -m ndim_mcp --transport streamable-http --host 172.17.0.1 --port 8766`
-3. Enable `ndim-engine` (DeerFlow MCP settings, or `"enabled": true`).
+1. Start the DeerFlow dev stack first (it creates the external network).
+2. `docker compose -f mcp_server/docker-compose.deerflow.yml up -d` (from `nidm-rwanda-dashboard/`).
 
-**Firewall caveat (found on this machine).** From inside `deer-flow-gateway`, connections to *any* host port timed out,
-even a plain listener on `0.0.0.0`, while the host itself was fine. A host firewall is dropping container-to-host traffic.
-Without root I could not change that, so steps 2-3 were **not** verified end to end from the container. To allow it, run as
-root, for example: `ufw allow from 172.16.0.0/12 to any port 8766 proto tcp`, then re-test with
-`docker exec -i deer-flow-gateway /app/backend/.venv/bin/python -c "import httpx;print(httpx.get('http://host.docker.internal:8766/mcp').status_code)"`
-(any HTTP status, even 4xx, means it is reachable). The alternative that avoids the host firewall is running this server
-and the engine as containers on the gateway's compose network (`deer-flow-dev_deer-flow-dev`) and using
-`http://<service>:8766/mcp`. That is not built yet.
+Verified end to end on 2026-09-28: inside `deer-flow-gateway`, DeerFlow's own `get_mcp_tools()` loaded all 14 tools;
+`ndim_engine_status` and `ndim_list_workspaces` answered; and a synthetic `scenario` run
+(`ndim-core`, run `ec0bb7e8-…`, labelled `[E2E TEST]`) went plan → approved start → completed with
+`numerical_checks.passed: true` and a brief. The approval was written to the audit log. Quick reachability check:
+`docker exec deer-flow-gateway /app/backend/.venv/bin/python -c "import httpx;print(httpx.post('http://ndim-mcp:8766/mcp').status_code)"`
+(400 means reachable: the server rejects an empty request).
+
+The older host-process route (`host.docker.internal:8766`) is blocked by this machine's host firewall, which drops
+container-to-host traffic. Use the compose route instead.
 
 If DeerFlow runs directly on the host (not in Docker), use stdio instead. It reuses DeerFlow's own venv, and DeerFlow's MCP
 config has no `cwd`, hence `PYTHONPATH`:
@@ -84,7 +85,16 @@ python -m pytest mcp_server          # offline: httpx.MockTransport stands in fo
 ```
 
 Also verified by hand against a live engine: over real stdio, through DeerFlow's own `get_mcp_tools()` loader (stdio config,
-run on the host), and over streamable-http from the host. Not verified: the container-to-host path (see the firewall caveat).
+run on the host), over streamable-http from the host, and container-to-container from `deer-flow-gateway` (see above).
+A two-turn DeerFlow chat (embedded `DeerFlowClient`, gpt-4o, 2026-09-28) also worked mechanically: the agent planned,
+stopped for approval, quoted it, ran and reported. But it never read `SKILL.md`, so it planned `evidence` instead of
+`scenario` for a "how might X change adoption" question and overclaimed in its report. So the rules that must hold now
+also live in the server itself: `skill` is a required argument of `ndim_plan_experiment` and its description explains
+the choice, and completed-run summaries, briefs and sweep results carry `REPORTING_RULES` (wording from the skill's
+`interpreting-results.md`). Re-running the same chat afterwards, the agent planned `scenario` (run `50d12d4e-…`) and
+described the delta as a difference between model endpoints, not an effect. Still imperfect: it did not say that "more
+CHWs" is represented only by `intervention_strength`, it reported the last day as a peak, and it said the results
+"suggest the influence of the intervention".
 
 ## Known limits
 
