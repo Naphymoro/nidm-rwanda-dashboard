@@ -137,6 +137,19 @@ def summarize_plan(run):
                  if blockers else ask)}
 
 
+def _verbatim(run):
+    """The scenario's opening and closing sentences, spelled out inside the instruction itself.
+
+    Live agents told to quote comparison.baseline_vs_intervention.headline paraphrased it instead; text placed in the
+    instruction gets copied, a field reference gets reworded."""
+    comparison = _comparison(run).get('baseline_vs_intervention')
+    if not comparison:
+        return ''
+    return (f'Open your report with this sentence, copied character for character: "{comparison["headline"]}" '
+            f'End your report with this sentence, copied character for character: "{comparison["conclusion"]}" '
+            'Do not reword, round or shorten either sentence. ')
+
+
 def summarize_run(run, include_trajectories=False):
     outputs = run['outputs']
     summary = {
@@ -158,7 +171,7 @@ def summarize_run(run, include_trajectories=False):
                            'ndim_resume_experiment, or create a new plan.')
     elif run['status'] == 'completed' and not run['review']:
         summary['next'] = ('Present the results with their limitations. The researcher, not the agent, records the '
-                           'review that certifies the run was read. ' + REPORTING_RULES)
+                           'review that certifies the run was read. ' + _verbatim(run) + REPORTING_RULES)
     if 'encode' in outputs:
         summary['encoding'] = _scalars(outputs['encode'])
     if 'diagnose' in outputs:

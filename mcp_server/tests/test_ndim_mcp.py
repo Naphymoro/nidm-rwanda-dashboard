@@ -155,6 +155,22 @@ def test_scenario_comparison_carries_a_quotable_non_causal_headline():
     assert 'cannot say whether the intervention would change real adoption' in conclusion
 
 
+def test_completed_scenario_spells_out_the_sentences_to_copy():
+    # Agents told to quote a field by name paraphrased it; the sentences themselves must be in the instruction.
+    summary = summarize_run(make_run())
+    pair = summary['comparison']['baseline_vs_intervention']
+    next_step = summary['next']
+    assert f'"{pair["headline"]}"' in next_step and f'"{pair["conclusion"]}"' in next_step
+    assert next_step.index(pair['headline']) < next_step.index(pair['conclusion']) < next_step.index('When reporting')
+
+
+def test_run_without_a_scenario_comparison_has_no_sentences_to_copy():
+    run = make_run()
+    run['plan'] = [step for step in run['plan'] if step['id'] != 'intervention']
+    del run['outputs']['intervention']
+    assert 'character for character' not in summarize_run(run)['next']
+
+
 def test_reporting_rules_forbid_causal_verbs_and_recommendations():
     rules = summarize_run(make_run())['next']
     assert 'headline' in rules and 'close with its conclusion' in rules
