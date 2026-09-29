@@ -14,7 +14,7 @@ from pydantic import Field
 from . import audit, sweeps
 from .client import EngineClient, EngineError, check_ids
 from .config import Settings
-from .summaries import NOTICE, REPORTING_RULES, TERMINAL, compare_runs, summarize_plan, summarize_run
+from .summaries import DEFAULT_STRENGTH, NOTICE, REPORTING_RULES, TERMINAL, compare_runs, summarize_plan, summarize_run
 
 INSTRUCTIONS = """NDIM scientific engine: a deterministic digital twin of narrative diffusion and adoption.
 Workflow: ndim_engine_status -> ndim_list_workspaces -> ndim_plan_experiment -> SHOW THE PLAN TO THE RESEARCHER AND GET
@@ -117,7 +117,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         horizon_days: Annotated[int, Field(ge=7, le=365)] = 90,
         intervention_strength: Annotated[float, Field(ge=0, le=1, description='The only intervention lever in the model. '
             'The researcher\'s intervention (e.g. "more trained CHWs") maps onto this abstract 0-1 value; the engine does '
-            'not model CHW counts, prices or channels. 0.3 = moderate.')] = 0.3,
+            'not model CHW counts, prices or channels. 0.3 = moderate.')] = DEFAULT_STRENGTH,
         initial_adoption: Annotated[float, Field(ge=0, le=1)] = 0.1,
         narrative_influence: Annotated[float, Field(ge=0, le=1)] = 0.38,
         language: Annotated[Literal['en', 'rw', 'fr', 'other'], Field(description='Language of the evidence text.')] = 'en',
@@ -125,6 +125,9 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         source_name: Annotated[str, Field(min_length=1, max_length=240)] = 'Researcher-supplied field note',
         prior_run_ids: Annotated[list[str] | None, Field(max_length=3, description='Completed runs that carry a researcher review, '
             'used as context only; they never change model parameters.')] = None,
+        strength_reason: Annotated[str | None, Field(min_length=8, max_length=400, description=(
+            'Optional: why this intervention_strength. Quote the researcher only if they actually gave a value or level; '
+            'never attribute the default to them. Shown to the researcher before approval and kept in the audit log.'))] = None,
     ) -> dict:
         """Create a reviewable experiment plan. Nothing executes until ndim_start_experiment.
 
@@ -140,7 +143,11 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                    'intervention_strength': intervention_strength, 'initial_adoption': initial_adoption,
                    'narrative_influence': narrative_influence, 'language': language, 'expertise': expertise,
                    'source_name': source_name, 'prior_run_ids': prior_run_ids}
-        return summarize_plan(await engine.request('POST', '/engine/plans', json=payload))
+        plan = summarize_plan(await engine.request('POST', '/engine/plans', json=payload), strength_reason)
+        if plan['intervention_mapping']:  # the engine forbids extra fields, so the stated reason lives in the audit log
+            audit.record(settings, 'ndim_plan_experiment', workspace_id=workspace_id, run_id=plan['run_id'],
+                         intervention_strength=intervention_strength, strength_reason=strength_reason)
+        return plan
 
     async def gated(tool, action, workspace_id, run_id, approval_statement, wait_seconds):
         check_ids(workspace_id, run_id)

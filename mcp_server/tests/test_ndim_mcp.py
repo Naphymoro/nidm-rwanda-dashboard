@@ -320,6 +320,41 @@ def test_plan_requires_an_explicit_workflow_and_describes_the_choice():
     assert 'intervention_strength' in tool.description
 
 
+SCENARIO = dict(workspace_id=WS, question='How might more CHWs change adoption?', evidence='e' * 40, skill='scenario')
+
+
+def test_evidence_plan_has_no_strength_note():
+    server = build(lambda request: httpx.Response(201, json=make_run(status='planned') | {'skill': 'evidence'}))
+    plan = call(server, 'ndim_plan_experiment', **(SCENARIO | {'skill': 'evidence'}))
+    assert plan['run_id'] == RID and 'Intervention strength' not in plan['next']
+
+
+@pytest.mark.parametrize('strength,reason,expected,absent', [
+    (0.3, None, 'Intervention strength 0.3 is the tool\'s default, described only as "moderate": an assumption, not '
+                'derived from the evidence or measured from the intervention.', 'Reasoning given'),
+    (0.7, 'they asked for "a strong push"', 'Intervention strength 0.7 is an assumption, not derived from the evidence or '
+                'measured from the intervention. Reasoning given when planning: they asked for "a strong push".', "tool's default"),
+])
+def test_strength_note_explains_the_value_and_audit_log_keeps_the_reason(tmp_path, strength, reason, expected, absent):
+    # Live agents never said why they used 0.3. Asked who chose it, one wrongly told the researcher it was their
+    # choice, so the note states what is always true and asks the researcher to confirm.
+    audit_file = tmp_path / 'audit.jsonl'
+    cfg = Settings(audit_log=audit_file, retry_base_delay=0)
+    server = create_server(cfg, EngineClient(cfg, transport=httpx.MockTransport(
+        lambda request: httpx.Response(201, json=make_run(status='planned', strength=strength)))))
+    args = {'intervention_strength': strength} | ({'strength_reason': reason} if reason else {})
+    plan = call(server, 'ndim_plan_experiment', **SCENARIO, **args)
+    assert expected in plan['intervention_mapping'] and absent not in plan['intervention_mapping']
+    assert 'Confirm this value or give another before approving' in plan['intervention_mapping']
+    assert "researcher's choice" not in plan['intervention_mapping']
+    note = plan['intervention_mapping'][plan['intervention_mapping'].index('Intervention strength'):]
+    assert f'copied character for character: "{note}"' in plan['next']
+    assert plan['next'].index(note) < plan['next'].index('explicit approval')
+    entry = json.loads(audit_file.read_text().splitlines()[0])
+    assert entry['tool'] == 'ndim_plan_experiment' and entry['intervention_strength'] == strength
+    assert entry['strength_reason'] == reason
+
+
 def test_completed_run_and_brief_carry_reporting_rules():
     next_step = summarize_run(make_run())['next']
     assert 'never "adoption will reach' in next_step and 'never an effect' in next_step

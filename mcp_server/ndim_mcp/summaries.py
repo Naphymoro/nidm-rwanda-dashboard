@@ -101,28 +101,48 @@ def _comparison(run):
     return result if outputs else {}
 
 
-def intervention_mapping(run):
-    """How the researcher's intervention enters the engine, for workflows that simulate one; else None."""
+DEFAULT_STRENGTH = 0.3  # the engine's own default for intervention_strength
+
+
+def strength_note(run, strength_reason=None):
+    """Why the plan uses this intervention_strength, phrased so it is true whoever picked the value.
+
+    Live agents never said why they used 0.3. Asked to report who chose it, they answered inconsistently and once told
+    the researcher it was their own choice when it was the default, so the note never attributes the value."""
+    value = run['request']['intervention_strength']
+    # Paraphrases keep a sentence's opening and drop its asides, so the default, when it applies, comes first.
+    text = (f'Intervention strength {value:g} is ' + ('the tool\'s default, described only as "moderate": ' if value == DEFAULT_STRENGTH
+            else '') + 'an assumption, not derived from the evidence or measured from the intervention.')
+    if strength_reason:
+        text += f' Reasoning given when planning: {strength_reason.rstrip(".")}.'
+    return text + ' Confirm this value or give another before approving; a sensitivity run would show how the result depends on it.'
+
+
+def intervention_mapping(run, strength_reason=None):
+    """How the researcher's intervention enters the engine, and why its strength; None for evidence."""
     if run['skill'] not in {'scenario', 'sensitivity'}:
         return None
     lever = f'intervention_strength = {run["request"]["intervention_strength"]:g}'
     if grid := run['execution'].get('sensitivity_grid'):
         lever += ', plus a grid of ' + ', '.join(f'{value:g}' for value in grid)
-    return (f'The intervention in "{run["title"]}" is represented only by {lever}, an abstract 0-1 lever where 0 is '
+    text = (f'The intervention in "{run["title"]}" is represented only by {lever}, an abstract 0-1 lever where 0 is '
             'the baseline. The engine does not model what the intervention actually is (for example how many health '
-            'workers, prices, channels, reach or duration), so the chosen value is an assumption, not a measurement.')
+            'workers, prices, channels, reach or duration).')
+    return text + ' ' + strength_note(run, strength_reason)
 
 
-def summarize_plan(run):
+def summarize_plan(run, strength_reason=None):
     execution = run['execution']
     request = run['request']
     blockers = run['blockers']
-    mapping = intervention_mapping(run)
-    # Live agents skipped this step when it lived only in SKILL.md, so the plan result states it and demands it.
+    mapping = intervention_mapping(run, strength_reason)
+    note = strength_note(run, strength_reason) if mapping else None
+    # Live agents skipped this step when it lived only in SKILL.md, so the plan result states it and demands it; told
+    # to relay the mapping "in your own words", one dropped why the strength was used, so that sentence is spelled out.
     ask = ('Show this plan to the researcher, quoting the question field exactly so they can confirm it is their '
            'question; if it differs from their words at all, say what changed and create a new plan. ' +
-           ('Before asking for approval, tell them intervention_mapping in your '
-           'own words and say why this intervention_strength was chosen. ' if mapping else '') +
+           ('Before asking for approval, tell them intervention_mapping in your own words' if mapping else '') +
+           (f', and include this sentence copied character for character: "{note}" ' if note else '') +
            'Obtain explicit approval before calling ndim_start_experiment. Do not approve on their behalf.')
     return {
         'run_id': run['run_id'], 'workspace_id': run['workspace_id'], 'status': run['status'],
