@@ -14,7 +14,8 @@ from pydantic import Field
 from . import audit, sweeps
 from .client import EngineClient, EngineError, check_ids
 from .config import Settings
-from .summaries import DEFAULT_STRENGTH, NOTICE, REPORTING_RULES, TERMINAL, compare_runs, summarize_plan, summarize_run
+from .summaries import (DEFAULT_STRENGTH, ELIGIBLE, EXISTING_RUNS, NOTICE, REPORTING_RULES, TERMINAL, compare_runs,
+                        existing_run_note, ineligible, summarize_plan, summarize_run)
 
 INSTRUCTIONS = """NDIM scientific engine: a deterministic digital twin of narrative diffusion and adoption.
 Workflow: ndim_engine_status -> ndim_list_workspaces -> ndim_plan_experiment -> SHOW THE PLAN TO THE RESEARCHER AND GET
@@ -24,6 +25,7 @@ Choose the workflow yourself (see ndim_plan_experiment's skill argument): a ques
 condition might change, affect, increase, reduce or improve adoption is a "scenario", not "evidence".
 Results are illustrative and uncalibrated. Never present them as forecasts, estimated effects or validated findings, and
 scope every claim to "this narrative" and "this model". Pass the researcher's question verbatim; never rephrase it.
+A new question needs a new plan. Runs from ndim_list_runs are existing work: if you report one, say so and when it ran.
 Never approve a plan or write a review on the researcher's behalf."""
 
 # Shown with the plan tool, where the agent decides the workflow. Keep in step with SKILL.md "Choose the workflow".
@@ -151,6 +153,11 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
 
     async def gated(tool, action, workspace_id, run_id, approval_statement, wait_seconds):
         check_ids(workspace_id, run_id)
+        # Check first: an approval must never be logged for a run the engine will refuse (a live agent "started" an
+        # old completed run it had found with ndim_list_runs). The engine still enforces this if the status changes.
+        run = await fetch_run(workspace_id, run_id)
+        if run['status'] not in ELIGIBLE[action]:
+            raise EngineError(ineligible(run, action))
         audit.record(settings, tool, workspace_id=workspace_id, run_id=run_id, approval_statement=approval_statement)
         await engine.request('POST', f'/engine/workspaces/{workspace_id}/runs/{run_id}/{action}', retry_busy=True)
         return summarize_run(await wait(workspace_id, run_id, wait_seconds))
@@ -197,16 +204,21 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
     @mcp.tool(annotations=READ)
     async def ndim_list_runs(workspace_id: Workspace, offset: Annotated[int, Field(ge=0)] = 0,
                              limit: Annotated[int, Field(ge=1, le=100)] = 30) -> dict:
-        """List a workspace's runs, newest first as the engine orders them."""
+        """List a workspace's existing runs, newest first. Not a way to answer a new question: plan a new experiment."""
         check_ids(workspace_id)
-        return await engine.request('GET', f'/engine/workspaces/{workspace_id}/runs', params={'offset': offset, 'limit': limit})
+        listing = await engine.request('GET', f'/engine/workspaces/{workspace_id}/runs', params={'offset': offset, 'limit': limit})
+        return {**listing, 'next': EXISTING_RUNS}
 
     @mcp.tool(annotations=READ)
     async def ndim_get_brief(workspace_id: Workspace, run_id: RunId) -> dict:
         """Return the engine-generated research brief (Markdown) for a completed run, marked as an exploratory draft."""
         check_ids(workspace_id, run_id)
         markdown = await engine.request('GET', f'/engine/workspaces/{workspace_id}/runs/{run_id}/artifacts/brief', text=True)
-        return {'run_id': run_id, 'markdown': markdown, 'notice': NOTICE, 'reporting_rules': REPORTING_RULES}
+        run = await fetch_run(workspace_id, run_id)
+        # The brief can stand in for a report, so it carries the same instructions, plus where the run came from.
+        return {'run_id': run_id, 'question': run['title'], 'created_at': run.get('created_at'), 'markdown': markdown,
+                'notice': NOTICE, 'reporting_rules': REPORTING_RULES,
+                'next': existing_run_note(run) + ' ' + summarize_run(run).get('next', REPORTING_RULES)}
 
     async def compare(workspace_id, run_ids, reference_id=None):
         check_ids(workspace_id)
@@ -304,14 +316,17 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         if reference_run_id is not None:
             check_ids(workspace_id, reference_run_id)
         unique = list(dict.fromkeys(run_ids))
-        for run_id in unique:
-            audit.record(settings, 'ndim_run_sweep', workspace_id=workspace_id, run_id=run_id, approval_statement=approval_statement)
         gate = asyncio.Semaphore(4)
         errors = []
 
         async def begin(run_id):
             async with gate:
                 try:
+                    run = await fetch_run(workspace_id, run_id)
+                    if run['status'] not in ELIGIBLE['start']:  # as in gated(): no approval logged for a refused run
+                        raise EngineError(ineligible(run, 'start'))
+                    audit.record(settings, 'ndim_run_sweep', workspace_id=workspace_id, run_id=run_id,
+                                 approval_statement=approval_statement)
                     await engine.request('POST', f'/engine/workspaces/{workspace_id}/runs/{run_id}/start', retry_busy=True)
                     return run_id
                 except EngineError as exc:

@@ -18,6 +18,13 @@ REPORTING_RULES = ('When reporting: lead a scenario with comparison.baseline_vs_
                    'fastest_growth_day (when adoption grew fastest) instead. If both arms end near 1.0, say the model '
                    'saturated.')
 TERMINAL = {'completed', 'failed', 'cancelled', 'interrupted'}
+# Statuses from which each approval-gated action can proceed; checked before an approval is written to the audit log.
+ELIGIBLE = {'start': {'planned'}, 'resume': {'failed', 'interrupted', 'cancelled'}}
+# A live agent answered a new question with an old run's brief from ndim_list_runs, then "started" that completed run.
+EXISTING_RUNS = ('These are existing runs, possibly from other conversations or researchers. A new question needs a new '
+                 'plan (ndim_plan_experiment). If you report an existing run instead, tell the researcher it is an '
+                 'existing run and when it was created, and check that its question, evidence and parameters match '
+                 'theirs. Never call ndim_start_experiment on a run you did not plan and show in this conversation.')
 COMPARTMENTS = ('S', 'M', 'T', 'I', 'R')
 REQUEST_FIELDS = ('model', 'horizon_days', 'intervention_strength', 'initial_adoption', 'narrative_influence',
                   'language', 'consent', 'profile')
@@ -194,6 +201,36 @@ def _verbatim(run):
         parts.append(f'End your report with this sentence, copied character for character: "{comparison["conclusion"]}" '
                      'Do not reword, round or shorten the opening or closing sentence.')
     return ' '.join(parts) + ' ' if parts else ''
+
+
+def _created(run):
+    return f'on {run["created_at"][:16].replace("T", " ")} UTC' if run.get('created_at') else 'earlier'
+
+
+def existing_run_note(run):
+    return (f'This is run {run["run_id"]}, created {_created(run)} for the question "{run["title"]}". If it was not '
+            'planned and approved in this conversation, tell the researcher it is an existing run from that date, not a '
+            'new experiment, and check that its question, evidence and parameters match theirs; otherwise plan a new '
+            'experiment.')
+
+
+def ineligible(run, action):
+    """Why an approval-gated action cannot proceed on this run, and what to do instead."""
+    status = run['status']
+    if status == 'completed':
+        return (f'Run {run["run_id"]} already completed ({_created(run)}); nothing was started and no approval was '
+                'recorded. To report it, call ndim_get_run and tell the researcher it is an existing run, not a new '
+                'experiment. To answer a new question, call ndim_plan_experiment.')
+    if action == 'start' and status in ELIGIBLE['resume']:
+        return (f'Run {run["run_id"]} is {status}; nothing was started and no approval was recorded. Ask the researcher '
+                'whether to resume it with ndim_resume_experiment, or create a new plan.')
+    if action == 'resume' and status == 'planned':
+        return (f'Run {run["run_id"]} has not run yet, so it cannot be resumed; no approval was recorded. Start it '
+                'with ndim_start_experiment once the researcher has approved it.')
+    if status not in TERMINAL and status != 'planned':
+        return f'Run {run["run_id"]} is already {status}; call ndim_wait_for_run. No approval was recorded.'
+    return (f'Run {run["run_id"]} is {status}, so this action is not possible; no approval was recorded. '
+            'Create a new plan with ndim_plan_experiment.')
 
 
 def summarize_run(run, include_trajectories=False):

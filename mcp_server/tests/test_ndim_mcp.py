@@ -265,7 +265,7 @@ def test_start_records_approval_and_retries_when_queue_full(tmp_path):
         if request.method == 'POST' and request.url.path.endswith('/start'):
             seen['starts'] += 1
             return httpx.Response(429, json={'detail': 'queue full'}) if seen['starts'] < 3 else httpx.Response(200, json={})
-        return httpx.Response(200, json=make_run())
+        return httpx.Response(200, json=make_run(status='completed' if seen['starts'] >= 3 else 'planned'))
     cfg = Settings(audit_log=audit_file, retry_base_delay=0)
     server = create_server(cfg, EngineClient(cfg, transport=httpx.MockTransport(handler)))
     body = call(server, 'ndim_start_experiment', workspace_id=WS, run_id=RID, approval_statement='Approved, please run it.')
@@ -358,8 +358,52 @@ def test_strength_note_explains_the_value_and_audit_log_keeps_the_reason(tmp_pat
 def test_completed_run_and_brief_carry_reporting_rules():
     next_step = summarize_run(make_run())['next']
     assert 'never "adoption will reach' in next_step and 'never an effect' in next_step
-    body = call(build(lambda request: httpx.Response(200, text='# brief')), 'ndim_get_brief', workspace_id=WS, run_id=RID)
+    body = call(build(brief_engine), 'ndim_get_brief', workspace_id=WS, run_id=RID)
     assert 'Scope claims to this narrative' in body['reporting_rules']
+
+
+def brief_engine(request):
+    if request.url.path.endswith('/artifacts/brief'):
+        return httpx.Response(200, text='# brief')
+    return httpx.Response(200, json=make_run() | {'created_at': '2026-09-28T13:44:58.1+00:00'})
+
+
+def test_brief_says_whose_run_it_is_and_carries_the_report_instructions():
+    # A live agent answered a new question with an old run's brief, presented as a new result.
+    body = call(build(brief_engine), 'ndim_get_brief', workspace_id=WS, run_id=RID)
+    assert body['created_at'].startswith('2026-09-28') and body['question'] == 'Does it work?'
+    assert f'This is run {RID}, created on 2026-09-28 13:44 UTC' in body['next']
+    assert 'tell the researcher it is an existing run' in body['next'] and 'Open your report with this sentence' in body['next']
+
+
+def test_list_runs_marks_them_as_existing_work():
+    listing = call(build(lambda request: httpx.Response(200, json={'runs': [], 'total': 0})), 'ndim_list_runs', workspace_id=WS)
+    assert listing['total'] == 0 and 'A new question needs a new plan' in listing['next']
+    assert 'Never call ndim_start_experiment on a run you did not plan' in listing['next']
+
+
+@pytest.mark.parametrize('tool,status,message', [
+    ('ndim_start_experiment', 'completed', 'already completed'),
+    ('ndim_start_experiment', 'failed', 'ndim_resume_experiment'),
+    ('ndim_start_experiment', 'running', 'ndim_wait_for_run'),
+    ('ndim_resume_experiment', 'completed', 'already completed'),
+    ('ndim_resume_experiment', 'planned', 'cannot be resumed'),
+])
+def test_ineligible_run_is_refused_before_any_approval_is_logged(tmp_path, tool, status, message):
+    # The audit log held an approval for "starting" an old completed run the engine then refused.
+    audit_file, posts = tmp_path / 'audit.jsonl', []
+    cfg = Settings(audit_log=audit_file, retry_base_delay=0)
+
+    def handler(request):
+        if request.method == 'POST':
+            posts.append(request)
+        return httpx.Response(200, json=make_run(status=status))
+    server = create_server(cfg, EngineClient(cfg, transport=httpx.MockTransport(handler)))
+    with pytest.raises(ToolError, match=message):
+        call(server, tool, workspace_id=WS, run_id=RID, approval_statement='Yes, I approve this plan as shown.')
+    assert posts == [] and not audit_file.exists()
+    with pytest.raises(ToolError, match='no approval was recorded|No approval was recorded'):
+        call(server, tool, workspace_id=WS, run_id=RID, approval_statement='Yes, I approve this plan as shown.')
 
 
 def test_dangerous_tools_are_not_exposed():
@@ -470,6 +514,20 @@ def test_run_sweep_starts_all_retries_queue_and_compares(tmp_path):
     assert body['comparison']['comparability']['controlled'] is True and len(body['comparison']['rows']) == 3
     logged = [json.loads(line)['run_id'] for line in audit_file.read_text().splitlines()]
     assert sorted(logged) == sorted(ids)
+
+
+def test_run_sweep_logs_no_approval_for_a_run_that_is_not_planned(tmp_path):
+    fake = FakeEngine()
+    audit_file = tmp_path / 'audit.jsonl'
+    cfg = Settings(audit_log=audit_file, retry_base_delay=0)
+    server = create_server(cfg, EngineClient(cfg, transport=httpx.MockTransport(fake)))
+    ids = [item['run_id'] for item in call(server, 'ndim_plan_sweep', workspace_id=WS, question='How does influence matter?',
+                                           evidence='e' * 40, vary={'narrative_influence': [0.2, 0.6]})['planned']]
+    fake.runs[ids[1]] = make_run(ids[1], status='completed')
+    body = call(server, 'ndim_run_sweep', workspace_id=WS, run_ids=ids, approval_statement='Approved: run the whole design.')
+    assert body['errors'][0]['run_id'] == ids[1] and 'already completed' in body['errors'][0]['error']
+    logged = [json.loads(line)['run_id'] for line in audit_file.read_text().splitlines()]
+    assert ids[1] not in logged and sorted(logged) == sorted([ids[0], ids[2]])
 
 
 def test_run_sweep_keeps_going_when_one_run_cannot_start():
