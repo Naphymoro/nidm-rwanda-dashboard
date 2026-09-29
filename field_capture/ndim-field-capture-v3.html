@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NDIM Field Capture v3 - #ClimateTales Kicukiro</title>
+<style>
+:root{
+  --navy:#0C1940; --maroon:#800000; --ink:#1B2233; --muted:#5A6275; --paper:#FFFFFF;
+  --wash:#F1F3F8; --rule:#D3D8E2; --ok:#1E6B3A; --warn:#8A5A00; --bad:#9B1C1C; --focus:#2F5BD3;
+  --head:var(--navy); --acc:var(--maroon);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --ink:#E4E7EF; --muted:#A5ACBD; --paper:#0F1428; --wash:#19213B; --rule:#2F395A;
+    --head:#C8D2F0; --acc:#E28A8A; --ok:#6FCF8E; --warn:#E7B54A; --bad:#F08080; }
+}
+*,*::before,*::after{box-sizing:inherit;}
+html,body{margin:0; background:var(--paper); color:var(--ink);}
+body{font-family:"Myriad Pro","Source Sans 3","Segoe UI",Roboto,Helvetica,Arial,sans-serif; font-size:17px; line-height:1.5;}
+header.app{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--navy); color:#fff; padding:.6rem 1rem; display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; justify-content:space-between;}
+header.app .brand{font-weight:700; letter-spacing:.01em;}
+header.app .brand small{font-weight:400; opacity:.8; margin-left:.4rem;}
+nav.tabs{display:flex; gap:.25rem; flex-wrap:wrap;}
+nav.tabs button{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.35); padding:.4rem .8rem; border-radius:4px; font:inherit; font-size:.95rem; cursor:pointer;}
+nav.tabs button[aria-current="page"]{background:#fff; color:var(--navy); font-weight:600;}
+main{max-width:60rem; margin:0 auto; padding:1rem 1rem 5rem;}
+h1{font-size:1.5rem; color:var(--head); margin:.5rem 0 .75rem;}
+h2{font-size:1.2rem; color:var(--head); margin:1.5rem 0 .5rem; border-bottom:1px solid var(--rule); padding-bottom:.3rem;}
+h3{font-size:1.05rem; color:var(--head); margin:1.1rem 0 .35rem;}
+p{margin:.4rem 0 .8rem; max-width:48rem;}
+.muted{color:var(--muted); font-size:.93rem;}
+.banner{padding:.75rem 1rem; border-left:4px solid var(--acc); background:var(--wash); margin:.75rem 0;}
+.banner.bad{border-color:var(--bad);}
+.banner.ok{border-color:var(--ok);}
+label{display:block; font-weight:600; margin:.8rem 0 .25rem;}
+label .hint{font-weight:400; color:var(--muted); font-size:.9rem; display:block;}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=tel],select,textarea{
+  width:100%; font:inherit; color:var(--ink); background:var(--paper); border:1px solid var(--rule); border-radius:4px; padding:.55rem .65rem; min-height:44px;}
+textarea{min-height:6.5rem; resize:vertical;}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--focus); outline-offset:1px;}
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(16rem,1fr)); gap:0 1rem;}
+.choices{display:flex; flex-wrap:wrap; gap:.4rem;}
+.choices label{font-weight:400; margin:0; display:inline-flex; align-items:center; gap:.4rem; border:1px solid var(--rule); border-radius:4px; padding:.45rem .7rem; min-height:44px; cursor:pointer; background:var(--paper);}
+.choices input{width:1.15rem; height:1.15rem; accent-color:var(--navy);}
+.choices label:has(input:checked){border-color:var(--navy); background:var(--wash); font-weight:600;}
+button.btn{font:inherit; border-radius:4px; padding:.6rem 1rem; min-height:44px; cursor:pointer; border:1px solid var(--navy); background:var(--navy); color:#fff;}
+button.btn.sec{background:var(--paper); color:var(--head); border-color:var(--rule);}
+button.btn.danger{background:var(--paper); color:var(--bad); border-color:var(--bad);}
+button.btn.rec{background:var(--maroon); border-color:var(--maroon);}
+button.btn:disabled{opacity:.45; cursor:not-allowed;}
+.row{display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:.75rem 0;}
+.spacer{flex:1;}
+.stepper{display:flex; flex-wrap:wrap; gap:.3rem; margin:.5rem 0 1rem; padding:0; list-style:none;}
+.stepper li{font-size:.85rem; padding:.25rem .55rem; border:1px solid var(--rule); border-radius:3px; color:var(--muted);}
+.stepper li.done{color:var(--ok); border-color:var(--ok);}
+.stepper li.cur{color:#fff; background:var(--navy); border-color:var(--navy);}
+.prompt{font-size:1.3rem; line-height:1.45; color:var(--head); border-left:5px solid var(--acc); padding:.5rem 0 .5rem 1rem; margin:.75rem 0;}
+.prompt.rw{font-size:1.15rem; color:var(--ink); border-left-color:var(--navy);}
+.recpanel{border:1px solid var(--rule); border-radius:6px; padding:.75rem 1rem; margin:1rem 0; background:var(--wash);}
+.recstate{font-weight:700;}
+.recstate.live{color:var(--maroon);}
+.meter{height:10px; background:var(--rule); border-radius:5px; overflow:hidden; margin:.5rem 0; }
+.meter i{display:block; height:100%; width:0; background:var(--ok); transition:width .08s linear;}
+.timer{font-variant-numeric:tabular-nums; font-size:1.4rem; font-weight:700; color:var(--head);}
+.takes{list-style:none; padding:0; margin:.5rem 0 0;}
+.takes li{display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.35rem 0; border-top:1px solid var(--rule);}
+.takes audio{height:36px; max-width:100%;}
+.scroll{overflow-x:auto; border:1px solid var(--rule); margin:.5rem 0 1rem;}
+table{border-collapse:collapse; width:100%; min-width:36rem; font-size:.94rem;}
+th,td{text-align:left; vertical-align:top; padding:.5rem .6rem; border-bottom:1px solid var(--rule);}
+th{background:var(--wash); color:var(--head);}
+.pill{display:inline-block; font-size:.8rem; padding:.05rem .45rem; border-radius:3px; border:1px solid var(--rule); white-space:nowrap;}
+.pill.draft{color:var(--warn); border-color:var(--warn);}
+.pill.interviewed{color:var(--navy); border-color:var(--navy);}
+.pill.encoded{color:var(--ok); border-color:var(--ok);}
+.pill.declined,.pill.withdrawn{color:var(--bad); border-color:var(--bad);}
+.bar{height:8px; background:var(--rule); border-radius:4px; overflow:hidden; min-width:6rem;}
+.bar i{display:block; height:100%; background:var(--navy);}
+.phi{font-size:1.6rem; font-weight:700; color:var(--acc);}
+.encgrid{display:grid; grid-template-columns:7.5rem 5.5rem 5.5rem 5.5rem 1fr; gap:.4rem .6rem; align-items:start;}
+.encgrid .h{font-weight:600; font-size:.9rem; color:var(--muted);}
+@media (max-width:640px){ .encgrid{grid-template-columns:1fr 1fr 1fr;} .encgrid .ev{grid-column:1/-1;} .encgrid .h.ev{display:none;} }
+.toast{position:fixed; left:50%; bottom:calc(1rem + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--navy); color:#fff; padding:.6rem 1rem; border-radius:4px; z-index:20; max-width:90vw;}
+.qcard{border:1px solid var(--rule); border-radius:6px; padding:.75rem 1rem; margin:.75rem 0;}
+.qcard .q{font-weight:600; color:var(--head);}
+footer.app{max-width:60rem; margin:0 auto; padding:0 1rem 2rem; color:var(--muted); font-size:.85rem;}
+@media (prefers-reduced-motion: reduce){ .meter i{transition:none;} }
+
+.stepper li{padding:0;}
+.stepbtn{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:.25rem .55rem;min-height:32px;}
+.pill.reviewed{color:var(--ok); border-color:var(--ok);}
+#recbar{position:sticky; top:calc(3.2rem + env(safe-area-inset-top,0px)); z-index:4;}
+#recbar details{margin-top:.25rem;}
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="brand">NDIM Field Capture<small>#ClimateTales community narrative interview, v3</small></div>
+  <nav class="tabs" aria-label="Sections">
+    <button data-view="records">Interviews</button>
+    <button data-view="protocol">How it works</button>
+    <button data-view="setup">Setup</button>
+  </nav>
+</header>
+<main id="main" tabindex="-1"></main>
+<footer class="app">Data stays on this device until exported. Export each evening to AIMS storage, check the export, then clear the device. NDIM-INS-FLD-003 (field capture v3).</footer>
+<script>
+"use strict";
+/* Storage (IndexedDB). No fallback: the tool refuses to collect data if it cannot persist it. */
+let db = null;
+function openDB(){
+  return new Promise(res=>{
+    try{
+      const r = indexedDB.open("ndim_field_capture_v3", 1);
+      r.onupgradeneeded = ()=>{
+        const d = r.result;
+        d.createObjectStore("kv");
+        d.createObjectStore("records",{keyPath:"id"});
+        const c = d.createObjectStore("clips",{keyPath:"clipId"}); c.createIndex("recordId","recordId");
+        const ch = d.createObjectStore("chunks",{autoIncrement:true}); ch.createIndex("clipId","clipId");
+      };
+      r.onsuccess = ()=>{ db = r.result; res(true); };
+      r.onerror = ()=>res(false);
+      r.onblocked = ()=>res(false);
+    }catch(e){ res(false); }
+  });
+}
+function idb(store, mode, fn){
+  return new Promise((res,rej)=>{
+    let out;
+    const t = db.transaction(store, mode);
+    const req = fn(t.objectStore(store));
+    if(req) req.onsuccess = ()=>{ out = req.result; };
+    t.oncomplete = ()=>res(out);
+    t.onerror = ()=>rej(t.error);
+    t.onabort = ()=>rej(t.error || new Error("Transaction aborted"));
+  });
+}
+const kvGet = k=>idb("kv","readonly",s=>s.get(k));
+const kvSet = (k,v)=>idb("kv","readwrite",s=>s.put(v,k));
+const recPut = r=>idb("records","readwrite",s=>s.put(r));
+const recGet = id=>idb("records","readonly",s=>s.get(id));
+const recAll = ()=>idb("records","readonly",s=>s.getAll());
+const recDel = id=>idb("records","readwrite",s=>s.delete(id));
+const clipPut = c=>idb("clips","readwrite",s=>s.put(c));
+const clipGet = id=>idb("clips","readonly",s=>s.get(id));
+const clipAll = ()=>idb("clips","readonly",s=>s.getAll());
+const clipsFor = rid=>idb("clips","readonly",s=>s.index("recordId").getAll(rid));
+const clipDel = id=>idb("clips","readwrite",s=>s.delete(id));
+const chunkAdd = c=>idb("chunks","readwrite",s=>s.add(c));
+async function chunksFor(clipId){
+  return new Promise((res,rej)=>{
+    const out=[]; const t=db.transaction("chunks","readonly");
+    const cur=t.objectStore("chunks").index("clipId").openCursor(IDBKeyRange.only(clipId));
+    cur.onsuccess=()=>{ const c=cur.result; if(c){ out.push({key:c.primaryKey, ...c.value}); c.continue(); } };
+    t.oncomplete=()=>res(out.sort((a,b)=>a.seq-b.seq)); t.onerror=()=>rej(t.error);
+  });
+}
+async function chunksDelete(keys){
+  return idb("chunks","readwrite",s=>{ keys.forEach(k=>s.delete(k)); return null; });
+}
+
+
+/* Helpers */
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+function esc(v){ return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function getPath(o,p){ return p.split(".").reduce((a,k)=>a==null?undefined:a[k],o); }
+function setPath(o,p,v){ const ks=p.split("."); let a=o; ks.slice(0,-1).forEach(k=>{ if(a[k]==null||typeof a[k]!=="object") a[k]={}; a=a[k]; }); a[ks[ks.length-1]]=v; }
+function nowISO(){ return new Date().toISOString(); }
+function fmtTime(ms){ const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+function fmtBytes(b){ if(!b&&b!==0) return ""; if(b<1024) return b+" B"; if(b<1048576) return (b/1024).toFixed(0)+" KB"; return (b/1048576).toFixed(1)+" MB"; }
+function toast(msg,ms=2600){ $$(".toast").forEach(x=>x.remove()); const t=document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),ms); }
+function uid(){ return Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4); }
+function clamp01(x){ const n=parseFloat(x); if(isNaN(n)) return null; return Math.min(1,Math.max(0,n)); }
+
+
+/* Form binding */
+function bindForm(root,obj,after){
+  $$("[data-b]",root).forEach(el=>{
+    const p=el.dataset.b; const v=getPath(obj,p);
+    if(el.type==="checkbox"){ el.checked=Array.isArray(v)&&v.includes(el.value); }
+    else if(el.type==="radio"){ el.checked=(v!=null&&String(v)===el.value); }
+    else if(v!=null) el.value=v;
+    const ev=(el.tagName==="SELECT"||el.type==="radio"||el.type==="checkbox")?"change":"input";
+    el.addEventListener(ev,()=>{
+      if(el.type==="checkbox"){ let arr=getPath(obj,p); if(!Array.isArray(arr)) arr=[]; arr=arr.filter(x=>x!==el.value); if(el.checked) arr.push(el.value); setPath(obj,p,arr); }
+      else if(el.type==="radio"){ if(el.checked) setPath(obj,p,el.value); }
+      else setPath(obj,p,el.value);
+      if(after) after(p,el);
+    });
+  });
+}
+function field(label,path,opts={}){
+  const hint=opts.hint?`<span class="hint">${esc(opts.hint)}</span>`:"";
+  const id="f_"+path.replace(/\W/g,"_");
+  if(opts.type==="textarea") return `<label for="${id}">${esc(label)}${hint}</label><textarea id="${id}" data-b="${path}" ${opts.rows?`rows="${opts.rows}"`:""}></textarea>`;
+  if(opts.type==="select") return `<label for="${id}">${esc(label)}${hint}</label><select id="${id}" data-b="${path}"><option value="">Select</option>${opts.options.map(o=>`<option value="${esc(o.value??o)}">${esc(o.label??o)}</option>`).join("")}</select>`;
+  return `<label for="${id}">${esc(label)}${hint}</label><input id="${id}" type="${opts.type||"text"}" data-b="${path}" ${opts.attrs||""}>`;
+}
+function choices(label,path,opts,type="checkbox",hint){
+  const name="n_"+path.replace(/\W/g,"_")+"_"+uid();
+  return `<fieldset style="border:0;padding:0;margin:.8rem 0 0"><legend style="font-weight:600;margin-bottom:.35rem">${esc(label)}${hint?`<span class="hint" style="display:block;font-weight:400;color:var(--muted);font-size:.9rem">${esc(hint)}</span>`:""}</legend><div class="choices">${opts.map(o=>`<label><input type="${type}" name="${name}" data-b="${path}" value="${esc(o)}">${esc(o)}</label>`).join("")}</div></fieldset>`;
+}
+
+
+/* ZIP (store method; audio is already compressed) */
+const CRC_T=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++) c=CRC_T[(c^u8[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function dosTime(d){ return { time:((d.getHours()<<11)|(d.getMinutes()<<5)|(Math.floor(d.getSeconds()/2)))&0xFFFF, date:(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF }; }
+async function makeZip(files){
+  const enc=new TextEncoder(); const parts=[]; const central=[]; let offset=0; const {time,date}=dosTime(new Date());
+  for(const f of files){
+    const name=enc.encode(f.name);
+    const data=f.data instanceof Uint8Array?f.data:(typeof f.data==="string"?enc.encode(f.data):new Uint8Array(await f.data.arrayBuffer()));
+    const crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,time,true); lh.setUint16(12,date,true); lh.setUint32(14,crc,true); lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true);
+    lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),name,data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,time,true); ch.setUint16(14,date,true); ch.setUint32(16,crc,true); ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true);
+    ch.setUint16(28,name.length,true); ch.setUint16(30,0,true); ch.setUint16(32,0,true); ch.setUint16(34,0,true); ch.setUint16(36,0,true); ch.setUint32(38,0,true); ch.setUint32(42,offset,true);
+    central.push(new Uint8Array(ch.buffer),name);
+    offset+=30+name.length+data.length;
+  }
+  const cdSize=central.reduce((a,p)=>a+p.length,0);
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true); end.setUint32(12,cdSize,true); end.setUint32(16,offset,true);
+  return new Blob([...parts,...central,new Uint8Array(end.buffer)],{type:"application/zip"});
+}
+async function readZip(blob){
+  const buf=new Uint8Array(await blob.arrayBuffer()); const dv=new DataView(buf.buffer); const dec=new TextDecoder();
+  let e=-1; for(let i=buf.length-22;i>=Math.max(0,buf.length-65557);i--){ if(dv.getUint32(i,true)===0x06054b50){ e=i; break; } }
+  if(e<0) throw new Error("Not a ZIP file");
+  const count=dv.getUint16(e+10,true); let p=dv.getUint32(e+16,true); const out={};
+  for(let i=0;i<count;i++){
+    if(dv.getUint32(p,true)!==0x02014b50) throw new Error("Corrupt ZIP directory");
+    const method=dv.getUint16(p+10,true), csize=dv.getUint32(p+20,true), nlen=dv.getUint16(p+28,true), xlen=dv.getUint16(p+30,true), clen=dv.getUint16(p+32,true), lho=dv.getUint32(p+42,true);
+    const name=dec.decode(buf.subarray(p+46,p+46+nlen));
+    if(method!==0) throw new Error("Only backups exported by this tool can be imported");
+    const lnl=dv.getUint16(lho+26,true), lxl=dv.getUint16(lho+28,true); const start=lho+30+lnl+lxl;
+    out[name]=buf.slice(start,start+csize);
+    p+=46+nlen+xlen+clen;
+  }
+  return out;
+}
+async function sha256(blob){ try{ const h=await crypto.subtle.digest("SHA-256",await blob.arrayBuffer()); return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,"0")).join(""); }catch(e){ return null; } }
+
+
+/* ------------------------------------------------------------------ */
+/* Study content                                                       */
+/* ------------------------------------------------------------------ */
+const APP_VERSION = "3.0.0";
+const SCHEMA = "ndim-field-record/3.0";
+const COUNTRY = "Rwanda", PROVINCE = "Kigali City", DISTRICT = "Kicukiro";
+const SECTORS = ["Gahanga","Gatenga","Gikondo","Kagarama","Kanombe","Kicukiro","Kigarama","Masaka","Niboye","Nyarugunga"];
+
+/* Engine structured_interview columns, in the exact order of the NDIM Engine sample file. */
+const ENGINE_COLUMNS = ["narrative_id","evidence_mode","interview_id","country","province","district","sector","cell","village","respondent_profile","respondent_role","household_cooking_role","primary_decision_maker","current_cooking_methods","adoption_status","technology_focus","intervention_channel","source_type","source_name","period","language","consent_tier","visibility","reviewer","observation_date","location_precision","validation_status","community_validation","knowledge_type","knowledge_holder","sensitivity","attribution","contributor_type","citizen_confidence","feed_sources","platform","source_actor","trusted_messenger","perceived_harm_fear","indigenous_knowledge_status","q1","q2","q3","q4","q5","narrative","tone_archetype","adoption_stance","key_barrier","key_motivator","social_influence","translation_notes","benefit_sharing","manual_barrier_strength","trust_signal","misinformation_risk","inoculation_opportunity","emotional_intensity","credibility_local_grounding","expected_ndim_signal","collection_template"];
+const TEMPLATE_ID = "climatetales-kicukiro-technology-neutral-q1-q5-v3";
+
+/* Five technology-neutral questions. Rwandan detail sits in the probes, not the main prompt. */
+const QUESTIONS = [
+ { id:"q1", code:"Q1", title:"The last meal", role:"Trigger story",
+   prompt:"Think about the last time you cooked the main meal for your household. Walk me through it, from getting the fire or stove ready to serving the food.",
+   probes:["What did you cook, and on what? (for example beans, umutsima, isombe, igitoki, rice)","How long did it take, especially the beans?","Where did you cook: inside the house, a separate kitchen, or outside?","Who was near you while you cooked, and were children close by?","What did the fuel cost you that day, in money or in time: charcoal, firewood, gas, or electricity tokens?","Did you use more than one stove or fuel for this meal? Why?"],
+   purpose:"Grounds the interview in today's practice without judgement. Establishes current methods, stacking and the everyday burden of cooking.",
+   feeds:"current_cooking_methods, adoption_status; barrier pressure (B)." },
+ { id:"q2", code:"Q2", title:"The first time", role:"Change exposure",
+   prompt:"Tell me about the first time you saw or heard about a way of cooking different from the one you use. What happened, and what went through your mind?",
+   probes:["What was it: an improved stove, gas, electric cooking, biogas, or something else?","Where were you, and who showed or told you? (a neighbour, a health worker, a vendor, the radio, a meeting such as umugoroba w'ababyeyi or inteko z'abaturage)","How long ago was that?","What did you feel in that moment?","What did you understand about how it works and what it costs?","Have you heard about it again since then, and from where?"],
+   purpose:"Captures first exposure, which technology, the channel and messenger, and the emotional charge of the encounter. If the person has never heard of any alternative, record that: it is data.",
+   feeds:"intervention_channel, technology_focus; exposure (E)." },
+ { id:"q3", code:"Q3", title:"What people say", role:"Social influence and competing narratives",
+   prompt:"What do people around you say about new ways of cooking? Tell me about one story or conversation that stayed with you, good or bad.",
+   probes:["Who told it, and do you trust that person on this subject?","Did you believe it?","Which parts feel true, and which feel exaggerated?","Have you ever repeated this story to someone else?","Have you heard stories about safety, cost, or the taste of the food?","Is there a story that says the opposite?"],
+   purpose:"Harvests the narratives in circulation, including fears and rumours, with who carries them and whether they are believed or passed on.",
+   feeds:"trusted_messenger, perceived_harm_fear, social_influence; trust (τ), credibility (C); misinformation (M) versus supportive (T) stories." },
+ { id:"q4", code:"Q4", title:"The decision", role:"Decision tension",
+   prompt:"Tell me about a time when you or your household thought about changing the way you cook, or decided not to. What happened?",
+   probes:["What pulled you towards changing?","What held you back?","Who had the final say, and did everyone agree?","Did a savings group (ibimina), a subsidy, credit, or paying in instalments come up?","What would have needed to be different?","If you changed, do you still use it every day? When do you go back to charcoal or firewood: for umutsima, big pots, guests, or when the power is off or the gas runs out?"],
+   purpose:"Surfaces what narratives alone cannot move: cost, supply, safety, fit with Rwandan dishes, electricity reliability, and who decides in the household.",
+   feeds:"key_barrier, key_motivator, primary_decision_maker, adoption_status; barrier pressure (B), social influence (S)." },
+ { id:"q5", code:"Q5", title:"The next generation", role:"Imagined future",
+   prompt:"Imagine a child growing up in this neighbourhood today. Years from now, when they cook for their own family, what do you hope their kitchen looks like, and what would have to change for that to happen?",
+   probes:["What will they cook with?","What would you want to tell them about cooking?","Who in this community could make that change happen?","Is there a saying about fire, smoke or the kitchen that comes to mind?","Would you tell your neighbours about a way of cooking you trust? How?"],
+   purpose:"Elicits aspiration, agency and willingness to advocate, and the proverbs and futures imagery that storytelling toolkits can build on.",
+   feeds:"tone_archetype, adoption_stance; resistance (κ), advocacy." }
+];
+const CLOSING_PROMPT = "Is there anything about cooking in your home or community that we have not asked, and that you think we should understand?";
+
+/* Vocabularies: NDIM Engine terms first, Rwandan additions after. */
+const V = {
+  methods:["firewood (three-stone fire)","firewood improved stove","charcoal (imbabura)","charcoal improved stove","LPG gas","electric hotplate or induction","electric pressure cooker","biogas","pellets or briquettes","other"],
+  adoption:["not aware of alternatives","aware but not adopted","interested non-user","trial user","regular user with backup","sustained user","former user"],
+  technology:["improved biomass cookstove","LPG stove","electric pressure cooker","electric hotplate or induction","biogas digester","pellet stove","briquette stove","waste-to-energy cooking fuel","none or unclear"],
+  channel:["neighbour or relative","community health worker visit","savings group (ibimina)","umugoroba w'ababyeyi","inteko z'abaturage","Umuganda","church or mosque","radio drama and call-in programme","television","vendor or market demonstration","pay-as-you-cook retailer","subsidy programme or sector office","school","social media or WhatsApp","other"],
+  messenger:["neighbour who already uses the stove","community health worker","savings-group chair","women cooperative leader","church leader","respected elder cook","school cook","local technician","sector social affairs officer","village leader (umukuru w'umudugudu)","vendor or agent","radio presenter","trained youth catalyst","spouse or relative","other"],
+  harm:["none mentioned","burns","gas leak or explosion","electric shock","high bill","electricity token cost","food taste loss","smoke cough","repair failure","fuel runs out","other"],
+  tone:["anxious","aspirational","cautious","confident","curious","frustrated","hopeful","pragmatic","protective","skeptical","regretful","resigned"],
+  barrier:["upfront cost","fuel availability","electricity reliability","electricity token cost","gas refill cost or access","safety fear","taste and food texture","fit with Rwandan dishes","pot size and cooking for guests","habit and cooking identity","gendered workload","household decision","repair access","trust in vendor","misinformation","housing or kitchen space","other"],
+  motivator:["time savings","fuel savings","reduced smoke","child health","clean kitchen","less firewood collection","safety","status and modernity","forest protection","business productivity","school attendance for children","other"],
+  role:["primary cook","budget contributor","commercial cook","community mobilizer","elder adviser","trusted messenger","technical adviser","student/youth catalyst","school communicator"],
+  hhRole:["daily cooking lead","family cook","occasional cook","fuel purchaser","fuel decision partner","cooking adviser","maintenance supporter","business energy manager"],
+  narrClass:["fear or misinformation","health, family or loss","aspiration or practical benefit","prebunking or safety confidence","other or unclear"]
+};
+
+const QUOTA_DEFAULT = [
+ {id:"cook_trad",  label:"Primary cooks using firewood or charcoal only", target:5},
+ {id:"cook_stack", label:"Primary cooks stacking (a cleaner option plus firewood or charcoal)", target:4},
+ {id:"user_clean", label:"Sustained users of an improved stove, gas or electric cooking", target:3},
+ {id:"user_quit",  label:"Tried a cleaner option and stopped", target:2},
+ {id:"men_dm",     label:"Men who decide on or pay for stoves and fuel", target:6},
+ {id:"youth",      label:"Young people aged 18 to 24", target:4},
+ {id:"influencer", label:"Influencers (leaders, health workers, vendors, faith, savings groups, school cooks)", target:6}
+];
+
+const GLOSSARY = [
+ ["ibishyimbo","beans; a daily staple that needs long boiling"],["umutsima","stiff maize or cassava porridge; needs strong stirring"],
+ ["isombe","cassava leaves; long cooking"],["igitoki","cooking banana (plantain)"],["igikoma","porridge, often for breakfast and children"],
+ ["imbabura","charcoal stove"],["amakara","charcoal"],["inkwi","firewood"],["ibimina","savings groups"],
+ ["abajyanama b'ubuzima","community health workers"],["umugoroba w'ababyeyi","parents' evening forum"],["inteko z'abaturage","community assembly"],
+ ["Umuganda","monthly community work day and meeting"],["umukuru w'umudugudu","village leader"],["Cash Power","prepaid electricity tokens"]
+];
+
+const STEPS = ["consent","context","q1","q2","q3","q4","q5","closing","coding"];
+const STEP_LABEL = {consent:"Consent",context:"Context",q1:"Q1",q2:"Q2",q3:"Q3",q4:"Q4",q5:"Q5",closing:"Close",coding:"Coding"};
+const MARKED_STEPS = ["q1","q2","q3","q4","q5","closing"];
+
+/* ------------------------------------------------------------------ */
+/* App state                                                           */
+/* ------------------------------------------------------------------ */
+const App = { settings:null, view:"records", rec:null, step:0, saveTimer:null };
+
+function defaultSettings(){
+  return {
+    studyId:"CLIMATETALES-NDIM", protocolVersion:"NDIM-INS-FLD-003 v3.0", deviceId:"DEV-"+uid().slice(0,4).toUpperCase(),
+    enumeratorId:"", enumeratorName:"", enumeratorGender:"", enumeratorRole:"",
+    sector:"", cells:"",
+    withdrawName:"", withdrawPhone:"", withdrawDays:14,
+    aiProcessing:"Recordings and transcripts are processed only on computers controlled by AIMS in Rwanda. They are not uploaded to any external AI company.",
+    consentRw:"", promptsRw:{q1:"",q2:"",q3:"",q4:"",q5:"",closing:""},
+    targetMinutes:40, quotas:QUOTA_DEFAULT.map(q=>({...q}))
+  };
+}
+function newRecord(){
+  const s=App.settings;
+  return {
+    schema:SCHEMA, appVersion:APP_VERSION, id:null, status:"draft",
+    createdAt:nowISO(), updatedAt:nowISO(), deviceId:s.deviceId, studyId:s.studyId, protocolVersion:s.protocolVersion,
+    enumerator:{id:s.enumeratorId, name:s.enumeratorName, gender:s.enumeratorGender, role:s.enumeratorRole},
+    consent:{}, context:{country:COUNTRY, province:PROVINCE, district:DISTRICT, sector:s.sector, date:new Date().toISOString().slice(0,10)},
+    answers:{q1:{},q2:{},q3:{},q4:{},q5:{}}, closing:{}, coding:{narratives:[{},{},{}]},
+    markers:[], timing:{}, review:{}
+  };
+}
+async function assignId(rec){
+  const s=App.settings; const sc=(rec.context.sector||s.sector||"XXX").slice(0,3).toUpperCase();
+  const en=(s.enumeratorId||"E00").replace(/\s+/g,"").toUpperCase();
+  const prefix=`RW-KIC-${sc}-${en}-`;
+  const all=await recAll();
+  const nums=all.filter(r=>r.id&&r.id.startsWith(prefix)).map(r=>parseInt(r.id.slice(prefix.length),10)||0);
+  rec.id=prefix+String((nums.length?Math.max(...nums):0)+1).padStart(3,"0");
+}
+function scheduleSave(){ clearTimeout(App.saveTimer); App.saveTimer=setTimeout(saveNow,400); }
+async function saveNow(){
+  if(!App.rec||!App.rec.id) return;
+  App.rec.updatedAt=nowISO();
+  try{ await recPut(App.rec); }catch(e){ toast("Save failed: "+e.message+". Stop and export now.",6000); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Continuous recorder with question markers                          */
+/* One interview = one or more audio parts. Moving between questions  */
+/* while recording drops a marker at the current offset.              */
+/* ------------------------------------------------------------------ */
+const Rec = { mr:null, stream:null, clipId:null, recordId:null, t0:0, acc:0, paused:false, tick:null, ctx:null, an:null, raf:null, wake:null, pending:Promise.resolve() };
+function pickMime(){
+  if(!window.MediaRecorder) return null;
+  for(const m of ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"]){ try{ if(MediaRecorder.isTypeSupported(m)) return m; }catch(e){} }
+  return "";
+}
+function extFor(mime){ if(!mime) return "webm"; if(mime.includes("mp4")) return "m4a"; if(mime.includes("ogg")) return "ogg"; return "webm"; }
+function isRecording(){ return !!(Rec.mr && Rec.mr.state!=="inactive"); }
+function elapsed(){ return Rec.acc + (Rec.paused||!Rec.t0 ? 0 : Date.now()-Rec.t0); }
+
+function addMarker(type,step,label){
+  if(!isRecording()||!App.rec) return;
+  App.rec.markers=App.rec.markers||[];
+  App.rec.markers.push({type, step, label:label||"", clipId:Rec.clipId, part:Rec.part, offsetMs:elapsed(), at:nowISO()});
+  scheduleSave();
+}
+async function startRecording(){
+  if(isRecording()) return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){ toast("This browser cannot record audio. Use current Chrome.",6000); return; }
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:true,autoGainControl:true}}); }
+  catch(e){ toast("Microphone not available: "+e.message,6000); return; }
+  const mime=pickMime(); let mr;
+  try{ mr=new MediaRecorder(stream, mime?{mimeType:mime,audioBitsPerSecond:64000}:undefined); }catch(e){ mr=new MediaRecorder(stream); }
+  const rid=App.rec.id;
+  const part=(await clipsFor(rid)).length+1;
+  const clipId=`${rid}_P${part}_${Date.now().toString(36)}`;
+  await clipPut({clipId, recordId:rid, part, mime:mr.mimeType||mime||"audio/webm", startedAt:nowISO(), durationMs:0, finalized:false});
+  Object.assign(Rec,{mr,stream,clipId,recordId:rid,part,t0:Date.now(),acc:0,paused:false,pending:Promise.resolve()});
+  let seq=0;
+  mr.ondataavailable=e=>{ if(e.data&&e.data.size){ const blob=e.data,n=seq++; Rec.pending=Rec.pending.then(()=>chunkAdd({clipId,seq:n,blob})).catch(err=>toast("Audio save failed: "+err.message,6000)); } };
+  mr.onstop=()=>{ const dur=elapsed(); Rec.pending.then(()=>finalizeClip(clipId,dur)).then(()=>renderRecBar()); };
+  mr.start(4000);
+  if(!App.rec.timing.firstRecordingAt){ App.rec.timing.firstRecordingAt=nowISO(); }
+  const step=STEPS[App.step]; if(MARKED_STEPS.includes(step)) addMarker("question",step);
+  try{ if("wakeLock" in navigator) Rec.wake=await navigator.wakeLock.request("screen"); }catch(e){}
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; Rec.ctx=new AC();
+    const src=Rec.ctx.createMediaStreamSource(stream); Rec.an=Rec.ctx.createAnalyser(); Rec.an.fftSize=1024; src.connect(Rec.an);
+    const buf=new Float32Array(Rec.an.fftSize);
+    const draw=()=>{ if(!Rec.an) return; Rec.an.getFloatTimeDomainData(buf); let s=0; for(const v of buf) s+=v*v; const rms=Math.sqrt(s/buf.length);
+      const m=$("#meter i"); if(m) m.style.width=Math.min(100,Math.round(rms*400))+"%"; Rec.raf=requestAnimationFrame(draw); };
+    draw();
+  }catch(e){}
+  Rec.tick=setInterval(()=>{ const t=$("#rectimer"); if(t) t.textContent=fmtTime(elapsed()); },250);
+  scheduleSave(); renderRecBar();
+}
+function pauseResume(){
+  if(!isRecording()) return;
+  if(Rec.mr.state==="recording"){ Rec.mr.pause(); Rec.acc+=Date.now()-Rec.t0; Rec.paused=true; }
+  else if(Rec.mr.state==="paused"){ Rec.mr.resume(); Rec.t0=Date.now(); Rec.paused=false; }
+  renderRecBar();
+}
+function stopRecording(){
+  if(!isRecording()) return;
+  Rec.mr.stop(); Rec.stream.getTracks().forEach(t=>t.stop());
+  clearInterval(Rec.tick); cancelAnimationFrame(Rec.raf); Rec.an=null;
+  try{ Rec.ctx&&Rec.ctx.close(); }catch(e){}
+  try{ Rec.wake&&Rec.wake.release(); }catch(e){}
+  Rec.wake=null; renderRecBar();
+}
+async function finalizeClip(clipId,durationMs,recovered){
+  const clip=await clipGet(clipId); if(!clip) return;
+  const parts=await chunksFor(clipId);
+  if(!parts.length){ await clipDel(clipId); if(Rec.clipId===clipId){ Rec.mr=null; Rec.clipId=null; } return; }
+  const blob=new Blob(parts.map(p=>p.blob),{type:clip.mime.split(";")[0]});
+  clip.blob=blob; clip.sizeBytes=blob.size; clip.durationMs=durationMs||clip.durationMs||(recovered?parts.length*4000:0);
+  clip.finalized=true; clip.endedAt=nowISO(); if(recovered){ clip.recovered=true; clip.durationApprox=true; }
+  await clipPut(clip); await chunksDelete(parts.map(p=>p.key));
+  if(Rec.clipId===clipId){ Rec.mr=null; Rec.clipId=null; }
+}
+async function recoverOrphans(){
+  const clips=await clipAll(); let n=0;
+  for(const c of clips){ if(!c.finalized){ await finalizeClip(c.clipId,c.durationMs,true); n++; } }
+  if(n) toast(`Recovered ${n} interrupted recording(s). Note it in the field notes.`,7000);
+}
+window.addEventListener("beforeunload",e=>{ if(isRecording()){ e.preventDefault(); e.returnValue=""; } });
+
+async function renderRecBar(){
+  const p=$("#recbar"); if(!p||!App.rec) return;
+  const parts=(await clipsFor(App.rec.id)).sort((a,b)=>a.part-b.part);
+  const live=isRecording()&&Rec.recordId===App.rec.id, paused=live&&Rec.paused;
+  const marks=(App.rec.markers||[]);
+  p.innerHTML=`<div class="row" style="margin:0">
+    <span class="recstate ${live&&!paused?"live":""}">${live?(paused?"Paused":"Recording"):(parts.length?"Stopped":"Not recording")}</span>
+    <span class="timer" id="rectimer">${live?fmtTime(elapsed()):"00:00"}</span><span class="spacer"></span>
+    ${live?`<button class="btn sec" id="rMark">Mark key moment</button><button class="btn sec" id="rPause">${paused?"Resume":"Pause"}</button><button class="btn rec" id="rStop">Stop</button>`
+          :`<button class="btn rec" id="rStart">${parts.length?"Start new part":"Start recording"}</button>`}
+  </div>
+  <div class="meter" id="meter" aria-hidden="true"><i></i></div>
+  <details><summary class="muted">${parts.length} part(s), ${marks.filter(m=>m.type==="question").length} question marker(s), ${marks.filter(m=>m.type==="moment").length} key moment(s)</summary>
+   ${parts.length?`<ul class="takes">${parts.map(t=>`<li><strong>Part ${t.part}</strong><span class="muted">${t.blob?`${t.durationApprox?"about ":""}${fmtTime(t.durationMs||0)}, ${fmtBytes(t.sizeBytes)}${t.recovered?", recovered after interruption":""}`:(live&&t.clipId===Rec.clipId?"in progress":"saving")}</span>${t.blob?`<audio controls preload="none" data-clip="${esc(t.clipId)}"></audio>`:""}</li>`).join("")}</ul>`:""}
+   ${marks.length?`<ul class="takes">${marks.map(m=>`<li><span class="pill">${esc(m.type==="question"?STEP_LABEL[m.step]:"moment")}</span><span class="muted">part ${m.part}, ${fmtTime(m.offsetMs)}${m.label?", "+esc(m.label):""}</span></li>`).join("")}</ul>`:""}
+  </details>`;
+  $("#rStart")&&$("#rStart").addEventListener("click",startRecording);
+  $("#rPause")&&$("#rPause").addEventListener("click",pauseResume);
+  $("#rStop")&&$("#rStop").addEventListener("click",stopRecording);
+  $("#rMark")&&$("#rMark").addEventListener("click",()=>{ const l=prompt("Short label for this moment (optional), e.g. proverb, strong quote, rumour"); if(l!==null){ addMarker("moment",STEPS[App.step],l); toast("Moment marked at "+fmtTime(elapsed())); renderRecBar(); } });
+  $$("audio[data-clip]",p).forEach(a=>{ const t=parts.find(x=>x.clipId===a.dataset.clip); if(t&&t.blob) a.src=URL.createObjectURL(t.blob); });
+  const exit=$("#btnExit"); if(exit) exit.disabled=live;
+}
+
+/* ------------------------------------------------------------------ */
+/* Views                                                               */
+/* ------------------------------------------------------------------ */
+function setView(v){
+  if(isRecording()){ toast("Stop the recording first."); return; }
+  App.view=v;
+  $$("nav.tabs button").forEach(b=>b.setAttribute("aria-current", (b.dataset.view===v||(v==="interview"&&b.dataset.view==="records"))?"page":"false"));
+  render();
+}
+function render(){
+  const m=$("#main");
+  if(App.view==="setup") return renderSetup(m);
+  if(App.view==="protocol") return renderProtocol(m);
+  if(App.view==="interview") return renderInterview(m);
+  return renderRecords(m);
+}
+function setupComplete(){ const s=App.settings; return !!(s.enumeratorId&&s.sector&&s.withdrawName&&s.withdrawPhone); }
+function summariesDone(r){ return QUESTIONS.filter(q=>(r.answers[q.id]||{}).summary).length; }
+
+/* ---------- Interviews list ---------- */
+async function renderRecords(m){
+  const recs=(await recAll()).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const clips=await clipAll(); const s=App.settings;
+  const done=recs.filter(r=>r.status==="interviewed"||r.status==="reviewed");
+  const byQuota={}; done.forEach(r=>{ byQuota[r.context.quota]=(byQuota[r.context.quota]||0)+1; });
+  const leaderRef=done.filter(r=>r.context.recruitment==="Referred by a local leader").length;
+  const declined=recs.filter(r=>r.status==="declined").length;
+  let est=""; try{ const e=await navigator.storage.estimate(); est=`Storage used ${fmtBytes(e.usage)} of about ${fmtBytes(e.quota)}.`; }catch(e){}
+  const total=s.quotas.reduce((a,q)=>a+(+q.target||0),0);
+  m.innerHTML=`<h1>Interviews</h1>
+  ${setupComplete()?"":`<div class="banner bad"><strong>Setup is incomplete.</strong> Enter the enumerator ID, sector and withdrawal contact in Setup before the first interview.</div>`}
+  <div class="row"><button class="btn" id="btnNew" ${setupComplete()?"":"disabled"}>Start new interview</button><span class="spacer"></span>
+   <button class="btn sec" id="btnExport">Export all (ZIP)</button><button class="btn sec" id="btnImport">Import backup</button><input type="file" id="fileImport" accept=".zip" hidden></div>
+  <p class="muted">${esc(est)} Site: <strong>${esc(s.sector||"sector not set")}</strong>, ${DISTRICT} District, ${PROVINCE}. Device ${esc(s.deviceId)}.</p>
+  <h2>Sampling quota</h2>
+  <p class="muted">${done.length} of ${total} completed. ${declined} declined (reported as non-participation). Recruited through a local leader: ${leaderRef} of ${done.length}${done.length&&leaderRef/done.length>0.4?' <strong style="color:var(--bad)">(over 40 percent: widen recruitment routes)</strong>':""}.</p>
+  <div class="scroll"><table><thead><tr><th>Category</th><th>Done</th><th>Target</th><th style="width:30%">Progress</th></tr></thead><tbody>
+  ${s.quotas.map(q=>{ const d=byQuota[q.id]||0; const pct=q.target?Math.min(100,Math.round(d/q.target*100)):0; return `<tr><td>${esc(q.label)}</td><td>${d}</td><td>${esc(q.target)}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td></tr>`; }).join("")}
+  </tbody></table></div>
+  <h2>Records on this device</h2>
+  ${recs.length?`<div class="scroll"><table><thead><tr><th>ID</th><th>Date</th><th>Status</th><th>English summaries</th><th>Audio</th><th>Actions</th></tr></thead><tbody>
+  ${recs.map(r=>{ const cs=clips.filter(c=>c.recordId===r.id); const sd=summariesDone(r);
+   return `<tr><td><strong>${esc(r.id)}</strong><br><span class="muted">${esc((s.quotas.find(x=>x.id===r.context.quota)||{}).label||"")}</span></td><td>${esc(r.context.date||"")}</td>
+   <td><span class="pill ${esc(r.status)}">${esc(r.status)}</span>${r.review&&r.review.reviewer?`<br><span class="muted">by ${esc(r.review.reviewer)}</span>`:""}</td>
+   <td>${r.status==="declined"?"-":`${sd} of 5${sd<5&&r.status!=="draft"?' <span class="muted">(needed for engine import)</span>':""}`}</td>
+   <td>${cs.length} part(s)<br><span class="muted">${fmtBytes(cs.reduce((a,c)=>a+(c.sizeBytes||0),0))}</span></td>
+   <td><div class="row" style="margin:0">
+     ${r.status!=="declined"?`<button class="btn sec" data-open="${esc(r.id)}">${r.status==="draft"?"Continue":"Open"}</button>`:""}
+     ${r.status==="interviewed"?`<button class="btn sec" data-rev="${esc(r.id)}">Supervisor review</button>`:""}
+     <button class="btn sec" data-exp="${esc(r.id)}">Export</button>
+     <button class="btn danger" data-wd="${esc(r.id)}">Withdraw</button></div></td></tr>`; }).join("")}
+  </tbody></table></div>`:`<p class="muted">No interviews yet.</p>`}`;
+  $("#btnNew")&&$("#btnNew").addEventListener("click",startNew);
+  $("#btnExport").addEventListener("click",()=>exportZip(null));
+  $("#btnImport").addEventListener("click",()=>$("#fileImport").click());
+  $("#fileImport").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) importZip(f); e.target.value=""; });
+  $$("[data-open]").forEach(b=>b.addEventListener("click",async()=>{ App.rec=await recGet(b.dataset.open); App.step=App.rec.status==="draft"?(App.rec.lastStep||0):2; setView("interview"); }));
+  $$("[data-rev]").forEach(b=>b.addEventListener("click",()=>supervisorReview(b.dataset.rev)));
+  $$("[data-exp]").forEach(b=>b.addEventListener("click",()=>exportZip(b.dataset.exp)));
+  $$("[data-wd]").forEach(b=>b.addEventListener("click",()=>withdraw(b.dataset.wd)));
+}
+async function startNew(){ App.rec=newRecord(); await assignId(App.rec); await recPut(App.rec); App.step=0; setView("interview"); }
+async function supervisorReview(id){
+  const r=await recGet(id);
+  const miss=QUESTIONS.filter(q=>!(r.answers[q.id]||{}).summary).map(q=>q.code);
+  const who=prompt(`Supervisor review of ${id}.${miss.length?` English summaries missing for ${miss.join(", ")}.`:""} Listen to a sample of the audio against the notes, then enter your reviewer ID to confirm.`);
+  if(!who) return;
+  r.review={reviewer:who.trim(), at:nowISO(), missingSummaries:miss}; r.status="reviewed"; r.updatedAt=nowISO();
+  await recPut(r); toast(`${id} marked as field reviewed.`); render();
+}
+async function withdraw(id){
+  const typed=prompt(`Withdrawal deletes all text and audio for ${id} from this device and keeps only a log line. Type the record ID to confirm.`);
+  if(typed!==id){ if(typed!==null) toast("ID did not match. Nothing deleted."); return; }
+  for(const c of await clipsFor(id)) await clipDel(c.clipId);
+  await recDel(id);
+  const log=(await kvGet("withdrawals"))||[]; log.push({id,at:nowISO(),deviceId:App.settings.deviceId}); await kvSet("withdrawals",log);
+  toast(`${id} deleted from this device. If already exported, delete it from AIMS storage too.`,7000); render();
+}
+
+/* ---------- Interview ---------- */
+function stepper(){ const cur=STEPS[App.step]; return `<ol class="stepper">${STEPS.map((s,i)=>`<li class="${s===cur?"cur":(i<App.step?"done":"")}"><button type="button" class="stepbtn" data-step="${i}">${STEP_LABEL[s]}</button></li>`).join("")}</ol>`; }
+async function renderInterview(m){
+  const r=App.rec; const step=STEPS[App.step]; r.lastStep=App.step;
+  const audioOK=r.consent.audio==="Yes";
+  let body="";
+  if(step==="consent") body=viewConsent(r);
+  else if(step==="context") body=viewContext(r);
+  else if(step.startsWith("q")) body=viewQuestion(r,QUESTIONS.find(q=>q.id===step));
+  else if(step==="closing") body=viewClosing(r);
+  else body=viewCoding(r);
+  m.innerHTML=`<h1>${esc(r.id)}</h1>${stepper()}
+  ${step!=="consent"&&audioOK?`<div class="recpanel" id="recbar" aria-live="polite"></div>`:""}
+  ${step!=="consent"&&!audioOK&&r.consent.obtained==="Yes"?`<div class="banner bad">Audio not permitted for this participant. Write as close to their words as you can.</div>`:""}
+  <div id="stepbody">${body}</div>
+  <div class="row"><button class="btn sec" id="btnBack" ${App.step===0?"disabled":""}>Back</button><button class="btn sec" id="btnExit">Save and exit</button><span class="spacer"></span>
+  <button class="btn" id="btnNext">${step==="coding"?"Finish interview":"Next"}</button></div>`;
+  bindForm($("#stepbody"),r,(p)=>{ scheduleSave(); if(p.startsWith("consent.")) updateConsentGate(); });
+  if(step==="consent") updateConsentGate();
+  if($("#recbar")) await renderRecBar();
+  $("#btnBack").addEventListener("click",()=>goTo(App.step-1));
+  $("#btnNext").addEventListener("click",()=>next());
+  $("#btnExit").addEventListener("click",async()=>{ if(isRecording()){ toast("Stop the recording first."); return; } await saveNow(); setView("records"); });
+  $$(".stepbtn").forEach(b=>b.addEventListener("click",()=>{ const i=+b.dataset.step; if(i<=App.step||r.status!=="draft") goTo(i); else toast("Use Next to move forward so the checks run."); }));
+  window.scrollTo(0,0);
+}
+async function goTo(i){
+  i=Math.max(0,Math.min(STEPS.length-1,i));
+  if(i===App.step) return;
+  if(STEPS[i]==="consent"&&isRecording()){ toast("Stop the recording before returning to consent."); return; }
+  App.step=i;
+  const step=STEPS[i]; if(isRecording()&&MARKED_STEPS.includes(step)) addMarker("question",step);
+  await saveNow(); renderInterview($("#main"));
+}
+async function next(){
+  const r=App.rec; const step=STEPS[App.step];
+  if(step==="consent"){
+    if(r.consent.obtained==="No"){ r.status="declined"; r.consent.declinedAt=nowISO(); await saveNow(); toast("Recorded as declined. Thank the person and leave."); setView("records"); return; }
+    const miss=consentMissing(r); if(miss){ toast(miss,5000); return; }
+  }
+  if(step==="context"){
+    const need=[["context.quota","sampling category"],["context.cell","cell"],["context.gender","gender"],["context.ageRange","age range"],["context.recruitment","recruitment route"],["context.respondentRole","respondent role"],["context.adoption","adoption status"]].filter(([p])=>!getPath(r,p));
+    if(need.length){ toast("Please complete: "+need.map(x=>x[1]).join(", "),5000); return; }
+    if(!r.timing.startedAt) r.timing.startedAt=nowISO();
+    if(r.consent.audio==="Yes"&&!isRecording()&&!(await clipsFor(r.id)).length) toast("Reminder: start the recording before Q1.",4000);
+  }
+  if(step==="closing"&&!r.timing.endedAt) r.timing.endedAt=nowISO();
+  if(step==="coding"){
+    if(isRecording()){ toast("Stop the recording before finishing."); return; }
+    const need=[["coding.stance","adoption stance"],["coding.technology","main technology discussed"],["coding.barrier","key barrier"],["coding.socialInfluence","social influence"]].filter(([p])=>!getPath(r,p));
+    if(need.length){ toast("Please complete: "+need.map(x=>x[1]).join(", "),5000); return; }
+    if(r.status==="draft"){ r.status="interviewed"; r.completedAt=nowISO(); }
+    await saveNow(); toast("Interview saved. Add any missing English summaries from the audio before supervisor review.",5000); setView("records"); return;
+  }
+  goTo(App.step+1);
+}
+function consentMissing(r){
+  const c=r.consent;
+  if(c.read!=="Yes") return "Read the full consent statement to the participant first.";
+  if(c.obtained!=="Yes") return "Consent must be recorded as Yes to continue.";
+  if(!c.type) return "Record the consent type (written or verbal witnessed).";
+  if(c.type==="Verbal (witnessed)"&&!c.witness) return "Enter the witness name or ID for verbal consent.";
+  if(!c.language) return "Record the consent language.";
+  if(!c.audio) return "Record whether audio recording is allowed.";
+  if(!c.reuse) return "Record the level of reuse the participant agreed to.";
+  if(!c.ref) return "Enter the consent form or signature reference.";
+  return "";
+}
+function updateConsentGate(){
+  const r=App.rec; const el=$("#consentStatus"); if(!el) return;
+  const miss=r.consent.obtained==="No"?"Participant declined. Pressing Next records this as non-participation.":consentMissing(r);
+  el.className="banner "+(miss?"":"ok"); el.textContent=miss||"Consent complete. Audio recording is "+(r.consent.audio==="Yes"?"allowed.":"NOT allowed: take written notes only.");
+}
+function consentText(){
+  const s=App.settings;
+  return `We are researchers from the African Institute for Mathematical Sciences in Kigali, working with Imperial College London. We are studying how people in Rwanda cook, and the stories people tell about different ways of cooking. What we learn may help design better community information in future.
+
+This is not a sales activity. Taking part does not mean you will receive, or have to buy, any stove, fuel or anything else.
+
+We are asking you because you live in this community. The conversation takes about ${s.targetMinutes} minutes. Taking part is entirely your choice, and saying no is completely fine. You may skip any question and stop at any time.
+
+If you agree, we will record your voice and take notes. The recordings will be written out and translated. ${s.aiProcessing} Your name, your voice and anything that could identify you will not be made public. The data will be stored securely at AIMS in Rwanda.
+
+You can withdraw within ${s.withdrawDays} days by contacting ${s.withdrawName||"[name]"} on ${s.withdrawPhone||"[number]"}, and your recording and notes will be deleted. After that, your words may already be combined with others for analysis and cannot always be separated out.
+
+Do you have any questions? Would you like to take part?`;
+}
+function viewConsent(r){
+  const rw=App.settings.consentRw;
+  return `<h2>Section 1. Consent</h2>
+  <div class="banner">Find a private place first. Take consent away from leaders, spouses or relatives where possible, and make it clear that saying no is normal. Do not start recording until consent is complete.</div>
+  <div class="qcard" style="white-space:pre-wrap">${esc(rw||consentText())}</div>
+  ${rw?`<details><summary class="muted">English reference text</summary><div class="qcard" style="white-space:pre-wrap">${esc(consentText())}</div></details>`:`<p class="muted">No approved Kinyarwanda consent text loaded. Add it in Setup before fieldwork.</p>`}
+  ${choices("Consent statement read in full","consent.read",["Yes","No"],"radio")}
+  ${choices("Consent given","consent.obtained",["Yes","No"],"radio")}
+  <div class="grid2"><div>${choices("Consent type","consent.type",["Written","Verbal (witnessed)"],"radio")}</div><div>${field("Witness name or ID (verbal consent)","consent.witness")}</div></div>
+  ${choices("Language of the interview","consent.language",["Kinyarwanda","English","French","Other"],"radio")}
+  ${choices("Audio recording allowed","consent.audio",["Yes","No"],"radio")}
+  ${choices("Reuse agreed","consent.reuse",["Research analysis only","Research plus anonymised community playback","Research plus anonymised use in public campaigns"],"radio","Record the widest use the participant agreed to. This sets the engine consent tier.")}
+  ${choices("Consent taken in private","consent.private",["Yes","Partly","No"],"radio")}
+  ${field("Consent form or signature reference","consent.ref")}
+  <div id="consentStatus" class="banner" role="status"></div>`;
+}
+function viewContext(r){
+  const s=App.settings; const cells=(s.cells||"").split(",").map(x=>x.trim()).filter(Boolean);
+  return `<h2>Section 2. Context and respondent</h2>
+  <div class="grid2">
+   ${field("Date","context.date",{type:"date"})}
+   ${field("Sector","context.sector",{type:"select",options:SECTORS,hint:"Single-sector sample in Kicukiro District. Change only with PI approval."})}
+   ${cells.length?field("Cell","context.cell",{type:"select",options:cells}):field("Cell","context.cell")}
+   ${field("Village (umudugudu)","context.village")}
+  </div>
+  ${field("Sampling category","context.quota",{type:"select",options:s.quotas.map(q=>({value:q.id,label:q.label})),hint:"Decide from the answers below, not from appearance."})}
+  ${choices("Recruitment route","context.recruitment",["Door-to-door","Referred by a local leader","Referred by another participant","Savings group (ibimina) or other group","Market or public place","Other"],"radio")}
+  <div class="grid2">
+   ${field("Age range","context.ageRange",{type:"select",options:["18-24","25-34","35-44","45-54","55-64","65+"]})}
+   ${field("Gender","context.gender",{type:"select",options:["female","male","prefer not to say"]})}
+   ${field("Occupation","context.occupation",{hint:"e.g. market vendor, farmer, moto driver, teacher"})}
+   ${field("Household size","context.hhSize",{type:"number",attrs:'min="1" max="30" inputmode="numeric"'})}
+  </div>
+  ${field("Respondent role","context.respondentRole",{type:"select",options:V.role})}
+  ${choices("Role in household cooking","context.hhRole",V.hhRole)}
+  ${choices("Main decision-maker on stoves and fuel","context.decisionMaker",["yes","no","shared"],"radio")}
+  ${choices("Cooking methods used in the last 7 days","context.methods",V.methods)}
+  ${field("Main method for the evening meal","context.primary",{type:"select",options:V.methods})}
+  ${field("Adoption status","context.adoption",{type:"select",options:V.adoption,hint:"Towards any cleaner option: improved stove, gas, electric or biogas."})}
+  <div class="grid2">
+   ${field("Setting","context.setting",{type:"select",options:["Home, in or near the kitchen","Home, other room","Compound or outside","Other location"]})}
+   <div>${choices("Others present","context.othersPresent",["No one","Spouse","Children","Relative or elder","Local leader","Other"])}</div>
+  </div>`;
+}
+function viewQuestion(r,q){
+  const rw=(App.settings.promptsRw||{})[q.id];
+  return `<h2>${esc(q.code)}. ${esc(q.title)} <span class="muted" style="font-weight:400">(${esc(q.role)})</span></h2>
+  ${rw?`<div class="prompt rw" lang="rw">${esc(rw)}</div>`:""}
+  <div class="prompt" lang="en">${esc(q.prompt)}</div>
+  ${rw?"":`<p class="muted">No approved Kinyarwanda wording loaded for ${esc(q.code)}. Use the approved printed translation.</p>`}
+  <p class="muted">Ask, then wait. Use a probe only if the story stalls, and tick it.</p>
+  ${choices("Probes used","answers."+q.id+".probes",q.probes)}
+  ${field("Participant's words (as spoken, in the language used)","answers."+q.id+".verbatim",{type:"textarea",rows:6})}
+  ${field("English summary (goes to the engine; can be completed from the audio later)","answers."+q.id+".summary",{type:"textarea",rows:3})}
+  ${field("Local terms, proverbs or contested meanings","answers."+q.id+".terms",{hint:"term = meaning, for example imbabura = charcoal stove"})}
+  ${choices("Answer status","answers."+q.id+".status",["Answered","Partly answered","Skipped by participant","Not asked"],"radio")}
+  <details style="margin-top:1rem"><summary class="muted">Why this question, and what it feeds</summary><p class="muted">${esc(q.purpose)}</p><p class="muted"><strong>Feeds:</strong> ${esc(q.feeds)}</p></details>`;
+}
+function viewClosing(r){
+  const rw=(App.settings.promptsRw||{}).closing;
+  const dur=r.timing.startedAt?Math.round((Date.now()-Date.parse(r.timing.startedAt))/60000):null;
+  return `<h2>Closing</h2>
+  ${rw?`<div class="prompt rw" lang="rw">${esc(rw)}</div>`:""}<div class="prompt">${esc(CLOSING_PROMPT)}</div>
+  ${field("Participant's words","closing.verbatim",{type:"textarea"})}
+  ${field("English summary","closing.summary",{type:"textarea",rows:2})}
+  <h3>Before you leave</h3>
+  ${choices("Offered a playback or transcript review","closing.reviewOffered",["Yes, accepted","Yes, declined","Not offered"],"radio")}
+  ${choices("Thank-you or reimbursement given","closing.reciprocity",["Transport refund","Refreshment","Invitation to community feedback session","None"])}
+  ${choices("Participant could refer someone whose story they mentioned","closing.referral",["Yes","No","Not asked"],"radio","Follow stories back to their source, within the quota.")}
+  <h3>Interviewer notes (complete straight after)</h3>
+  <p class="muted">Elapsed since the context step: ${dur!=null?dur+" minutes":"not started"}.</p>
+  ${choices("Audio quality","closing.audioQuality",["Good","Fair","Poor","No audio"],"radio")}
+  ${choices("Backup device recorded the full session","closing.backup",["Yes","No"],"radio")}
+  ${field("Interruptions or others joining","closing.interruptions",{type:"textarea",rows:2})}
+  ${field("Field notes: the kitchen, stoves and fuels you could see, non-verbal cues","closing.fieldNotes",{type:"textarea"})}
+  ${field("The story in one sentence","closing.oneLine")}
+  ${field("The best line, in the participant's words","closing.bestLine")}
+  ${field("What surprised you","closing.surprise")}
+  ${field("Reflexivity: how might you, or who was present, have shaped the answers?","closing.reflexivity",{type:"textarea",rows:3})}`;
+}
+function viewCoding(r){
+  const narr=[0,1,2].map(i=>`<div class="qcard"><div class="q">Story heard ${i+1}</div>
+    ${field("Summary in your own words","coding.narratives."+i+".summary",{type:"textarea",rows:2})}
+    <div class="grid2">
+     ${field("Technology it is about","coding.narratives."+i+".technology",{type:"select",options:V.technology})}
+     ${field("Kind of story","coding.narratives."+i+".class",{type:"select",options:V.narrClass})}
+     ${field("Who tells it","coding.narratives."+i+".messenger",{type:"select",options:V.messenger})}
+    </div>
+    ${choices("Does the participant believe it","coding.narratives."+i+".believed",["Yes","Partly","No","Unclear"],"radio")}
+    ${choices("Has the participant retold it","coding.narratives."+i+".retold",["Yes","No","Unclear"],"radio")}</div>`).join("");
+  return `<h2>Section 4. Post-interview coding</h2>
+  <p class="muted">Complete immediately. Code what was said, not what you expected. Engine scoring (E, C, τ, κ, B, S) happens later in the NDIM Engine, not here.</p>
+  <div class="grid2">
+   ${field("Main technology discussed","coding.technology",{type:"select",options:V.technology})}
+   ${field("How they first heard of it (channel)","coding.channel",{type:"select",options:V.channel})}
+   ${field("Most trusted messenger named","coding.messenger",{type:"select",options:V.messenger})}
+   ${field("Main fear or harm mentioned","coding.harm",{type:"select",options:V.harm})}
+   ${field("Tone","coding.tone",{type:"select",options:V.tone})}
+   ${field("Key barrier","coding.barrier",{type:"select",options:V.barrier})}
+   ${field("Key motivator","coding.motivator",{type:"select",options:V.motivator})}
+  </div>
+  ${choices("Adoption stance","coding.stance",["for","against","mixed"],"radio")}
+  ${choices("Social influence on this person","coding.socialInfluence",["high","medium","low"],"radio")}
+  ${choices("Other barriers mentioned","coding.otherBarriers",V.barrier)}
+  ${choices("Sensitivity","coding.sensitivity",["ordinary","sensitive"],"radio","Sensitive: health disclosures, family conflict, or anything that could harm the participant if linked back.")}
+  <h3>Stories heard (competing narratives)</h3>${narr}
+  ${field("Translation and contested-meaning notes","coding.translationNotes",{type:"textarea",rows:3})}`;
+}
+
+/* ---------- Setup ---------- */
+function renderSetup(m){
+  const s=App.settings;
+  m.innerHTML=`<h1>Setup</h1><p class="muted">Complete once per device before fieldwork. Changes apply to new interviews.</p>
+  <h2>Study and device</h2>
+  <div class="grid2">${field("Study ID","studyId")}${field("Protocol version","protocolVersion")}${field("Device ID","deviceId",{hint:"Unique per device"})}${field("Target interview length (minutes)","targetMinutes",{type:"number",attrs:'min="10" max="120"'})}</div>
+  <h2>Enumerator</h2>
+  <div class="grid2">${field("Enumerator ID","enumeratorId",{hint:"e.g. E01. Used in record IDs"})}${field("Name","enumeratorName")}${field("Gender","enumeratorGender",{type:"select",options:["female","male"]})}${field("Role and training","enumeratorRole",{hint:"e.g. AIMS MSc student, 2-day NDIM training"})}</div>
+  <h2>Site</h2>
+  <p class="muted">${PROVINCE}, ${DISTRICT} District. One sector only.</p>
+  ${field("Sector","sector",{type:"select",options:SECTORS})}
+  ${field("Cells to sample (comma separated)","cells",{hint:"Aim for about three cells so stories do not come from one village network only"})}
+  <h2>Consent</h2>
+  <div class="grid2">${field("Withdrawal contact name","withdrawName")}${field("Withdrawal contact phone","withdrawPhone",{type:"tel"})}${field("Withdrawal window (days)","withdrawDays",{type:"number"})}</div>
+  ${field("AI processing statement (read inside consent)","aiProcessing",{type:"textarea",rows:3,hint:"Must match the ethics approval."})}
+  ${field("Approved Kinyarwanda consent text","consentRw",{type:"textarea",rows:8,hint:"Paste the ethics-approved, back-translated text."})}
+  <h2>Approved Kinyarwanda question wording</h2>
+  ${QUESTIONS.map(q=>field(q.code+". "+q.prompt,"promptsRw."+q.id,{type:"textarea",rows:3})).join("")}
+  ${field("Closing. "+CLOSING_PROMPT,"promptsRw.closing",{type:"textarea",rows:2})}
+  <h2>Quota targets</h2>
+  <div class="grid2">${s.quotas.map((q,i)=>field(q.label,"quotas."+i+".target",{type:"number",attrs:'min="0" max="50"'})).join("")}</div>
+  <div class="row"><button class="btn" id="setSave">Save setup</button><button class="btn sec" id="setPersist">Protect storage from automatic clearing</button></div>`;
+  bindForm(m,s,()=>{});
+  $("#setSave").addEventListener("click",async()=>{ s.quotas.forEach(q=>q.target=Number(q.target)||0); s.targetMinutes=Number(s.targetMinutes)||40; await kvSet("settings",s); toast("Setup saved."); });
+  $("#setPersist").addEventListener("click",async()=>{ try{ const ok=navigator.storage&&await navigator.storage.persist(); toast(ok?"Storage marked as persistent.":"Not granted. Export daily."); }catch(e){ toast("Not supported. Export daily."); } });
+}
+
+/* ---------- Protocol ---------- */
+function renderProtocol(m){
+  const s=App.settings;
+  m.innerHTML=`<h1>How this tool works</h1>
+  <h2>1. The logic in one paragraph</h2>
+  <p>The NDIM Engine needs, for each interview, five short stories (Q1 to Q5) plus who told them, where, and a few codes. It turns each story into a record, scores it on E, C, τ, κ, B and S, and uses those scores to move people between the S, M, T, I and R states of the model. This tool's only job is to collect those stories well, keep the audio as evidence, and hand the engine one clean row per interview. Scoring happens in the engine, not here.</p>
+  <h2>2. From interview to model</h2>
+  <ol>
+   <li>Interview on the device, offline: consent, context, Q1 to Q5 with one continuous recording, closing, coding.</li>
+   <li>Same day or later: complete the English summary for each question from the audio.</li>
+   <li>Supervisor review: listen to a sample, confirm, mark as reviewed.</li>
+   <li>Export each evening. The ZIP contains the engine import file and the audio.</li>
+   <li>In the NDIM Engine (ClimateTales Rwanda workspace), choose the Structured interview route and open <code>engine/ndim_structured_interview_en.csv</code>. The engine creates five records per interview (q1 to q5), which go through the evidence gate, then encoding and modelling.</li>
+  </ol>
+  <h2>3. Why the questions are technology-neutral</h2>
+  <p>The research permit covers improved cookstoves, biogas and waste-to-energy, and most Rwandan households still cook with firewood or charcoal, with improved biomass stoves making up most of what has been distributed. Naming one technology in the main questions would lead the answers. So the main prompts stay open, the participant names the technology, and the enumerator codes which technology each story is about. The data then shows which technologies carry the strongest stories, fears and trust in the sector.</p>
+  <h2>4. Where Rwandan cooking culture enters</h2>
+  <p>In the probes (dishes such as ibishyimbo, umutsima and isombe; cooking for guests; power cuts; Cash Power tokens; gas refills; savings groups), in the answer lists (imbabura, three-stone fire, improved stoves, LPG, electric, biogas, pellets), and in the messengers and channels (abajyanama b'ubuzima, ibimina, umugoroba w'ababyeyi, inteko z'abaturage, Umuganda, radio, church, vendor demonstrations). Probes are used only when a story stalls.</p>
+  <h3>Terms to keep in the participant's words</h3>
+  <p class="muted">Check spellings and meanings with the project translator before fieldwork.</p>
+  <div class="scroll"><table><thead><tr><th>Term</th><th>Meaning</th></tr></thead><tbody>${GLOSSARY.map(([a,b])=>`<tr><td><strong>${esc(a)}</strong></td><td>${esc(b)}</td></tr>`).join("")}</tbody></table></div>
+  <h2>5. The five questions and what each feeds</h2>
+  ${QUESTIONS.map(q=>`<div class="qcard"><div class="q">${esc(q.code)}. ${esc(q.title)} (${esc(q.role)})</div><p>${esc(q.prompt)}</p><p class="muted"><strong>Probes:</strong> ${esc(q.probes.join(" "))}</p><p class="muted"><strong>Purpose:</strong> ${esc(q.purpose)}</p><p class="muted"><strong>Feeds:</strong> ${esc(q.feeds)}</p></div>`).join("")}
+  <div class="qcard"><div class="q">Closing</div><p>${esc(CLOSING_PROMPT)}</p><p class="muted">Keeps stories and topics the team did not anticipate. Exported to the engine's narrative column.</p></div>
+  <h2>6. Sample</h2>
+  <p>One sector of ${DISTRICT} District${s.sector?`, currently <strong>${esc(s.sector)}</strong>`:""}, across about three cells. Target 30 interviews within the permit's 20 to 30; after 24, stop when three consecutive interviews add no new story. Recruit through several routes, not only leaders, and interview men and women separately.</p>
+  <div class="scroll"><table><thead><tr><th>Category</th><th>Target</th></tr></thead><tbody>${s.quotas.map(q=>`<tr><td>${esc(q.label)}</td><td>${esc(q.target)}</td></tr>`).join("")}</tbody></table></div>
+  <h2>7. Recording</h2>
+  <p>After consent, start one recording and let it run through all five questions. Moving to the next question drops a marker at that point in the audio, so the transcriber can find each answer. Use "Mark key moment" for a proverb, a strong line or a rumour. Pause if the participant needs a break. Audio is saved every 4 seconds; if the browser closes, the recording is recovered when the tool reopens. Keep a second device recording the whole session as backup. Place the device 30 to 50 cm from the speaker on a cloth, away from radios and animals.</p>
+  <h2>8. What the export contains</h2>
+  <p><code>engine/ndim_structured_interview_en.csv</code>: one row per interview in the exact NDIM Engine column order, with q1 to q5 holding the English summaries, plus a final <code>collection_template</code> column that the engine reads, so records carry this technology-neutral protocol label instead of the default pressure-cooker template. <code>engine/ndim_structured_interview_rw.csv</code>: the same rows with the participant's own words, for Kinyarwanda analysis. Also: records.json (everything collected), markers.csv (question timings in the audio), clips.json (audio details and checksums), withdrawals.json, and the audio files. Consent maps to the engine tiers as follows: research only is <code>restricted</code>; community playback or public campaign use is <code>research_use</code>.</p>
+  <h2>9. Data protection</h2>
+  <p>Voice is personal data under Rwanda's data protection law. Data stay on this device until exported, and exports go only to AIMS-controlled storage in Rwanda. Use a device with a screen lock and encryption; never send files by WhatsApp or email. Withdrawal deletes the record and audio from the device and keeps only an ID and date, exported so the same record can be deleted at AIMS.</p>`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Export                                                              */
+/* ------------------------------------------------------------------ */
+function csvCell(v){ const s=v==null?"":String(v).replace(/\r?\n+/g," ").trim(); return /[",]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function toCSV(cols,rows,bom){ return (bom?"\uFEFF":"")+[cols.join(","),...rows.map(r=>cols.map(c=>csvCell(r[c])).join(","))].join("\r\n")+"\r\n"; }
+function consentTier(r){ return r.consent.reuse==="Research analysis only"?"restricted":"research_use"; }
+function engineRow(r,lang){
+  const c=r.context, k=r.coding||{}, a=r.answers||{};
+  const text=q=>{ const x=a[q]||{}; return lang==="rw"?(x.verbatim||""):(x.summary||""); };
+  const terms=QUESTIONS.map(q=>(a[q.id]||{}).terms).filter(Boolean).join("; ");
+  return {
+    narrative_id:`CT-RW-SI-${r.id}`, evidence_mode:"structured_interview", interview_id:r.id,
+    country:COUNTRY, province:c.province||PROVINCE, district:c.district||DISTRICT, sector:c.sector||"", cell:c.cell||"", village:c.village||"",
+    respondent_profile:[c.ageRange,c.gender,c.occupation].filter(Boolean).join(", "),
+    respondent_role:c.respondentRole||"", household_cooking_role:(c.hhRole||[]).join("; "),
+    primary_decision_maker:c.decisionMaker||"", current_cooking_methods:(c.methods||[]).join("; "),
+    adoption_status:c.adoption||"", technology_focus:k.technology||"", intervention_channel:k.channel||"",
+    source_type:"interview", source_name:"enumerator_q1_q5", period:(c.date||"").slice(0,4)||"2026",
+    language:lang==="rw"?(r.consent.language||"Kinyarwanda"):"English",
+    consent_tier:consentTier(r), visibility:"project_team", reviewer:(r.review&&r.review.reviewer)||"",
+    observation_date:c.date||"", location_precision:"sector",
+    validation_status:r.status==="reviewed"?"field reviewed":"pending community validation", community_validation:"pending",
+    knowledge_type:"", knowledge_holder:"", sensitivity:k.sensitivity||"ordinary", attribution:"anonymous", contributor_type:"enumerator",
+    citizen_confidence:"", feed_sources:"", platform:"", source_actor:"", trusted_messenger:k.messenger||"", perceived_harm_fear:k.harm||"",
+    indigenous_knowledge_status:"",
+    q1:text("q1"), q2:text("q2"), q3:text("q3"), q4:text("q4"), q5:text("q5"),
+    narrative:lang==="rw"?(r.closing.verbatim||""):(r.closing.summary||""),
+    tone_archetype:k.tone||"", adoption_stance:k.stance||"", key_barrier:k.barrier||"", key_motivator:k.motivator||"", social_influence:k.socialInfluence||"",
+    translation_notes:[k.translationNotes,terms].filter(Boolean).join(" | "),
+    benefit_sharing:(r.closing.reciprocity||[]).join("; "),
+    manual_barrier_strength:"", trust_signal:"", misinformation_risk:"", inoculation_opportunity:"", emotional_intensity:"", credibility_local_grounding:"", expected_ndim_signal:"", collection_template:TEMPLATE_ID
+  };
+}
+function download(blob,name){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000); }
+async function exportZip(onlyId){
+  if(isRecording()){ toast("Stop the recording first."); return; }
+  let recs=await recAll(); if(onlyId) recs=recs.filter(r=>r.id===onlyId);
+  if(!recs.length){ toast("Nothing to export."); return; }
+  toast("Preparing export...");
+  const ids=new Set(recs.map(r=>r.id));
+  const clips=(await clipAll()).filter(c=>ids.has(c.recordId)&&c.blob);
+  const files=[], clipMeta=[];
+  for(const c of clips){
+    const name=`audio/${c.recordId}_part${c.part}.${extFor(c.mime)}`;
+    clipMeta.push({clipId:c.clipId,recordId:c.recordId,part:c.part,mime:c.mime,startedAt:c.startedAt,endedAt:c.endedAt,durationMs:c.durationMs,durationApprox:!!c.durationApprox,sizeBytes:c.sizeBytes,recovered:!!c.recovered,file:name,sha256:await sha256(c.blob)});
+    files.push({name,data:c.blob});
+  }
+  const complete=recs.filter(r=>r.status==="interviewed"||r.status==="reviewed");
+  const markerRows=recs.flatMap(r=>(r.markers||[]).map(m=>({record_id:r.id,type:m.type,step:m.step,label:m.label,part:m.part,offset:fmtTime(m.offsetMs),offset_ms:m.offsetMs,file:(clipMeta.find(c=>c.clipId===m.clipId)||{}).file||""})));
+  const missing=complete.filter(r=>summariesDone(r)<5).map(r=>r.id);
+  const withdrawals=(await kvGet("withdrawals"))||[];
+  const meta={exportedAt:nowISO(),appVersion:APP_VERSION,schema:SCHEMA,deviceId:App.settings.deviceId,studyId:App.settings.studyId,protocolVersion:App.settings.protocolVersion,records:recs.length,engineRows:complete.length,declined:recs.filter(r=>r.status==="declined").length,audioParts:clips.length,recordsMissingEnglishSummaries:missing};
+  files.unshift(
+    {name:"README.txt",data:`NDIM field capture export\nStudy: ${meta.studyId}\nDevice: ${meta.deviceId}\nExported: ${meta.exportedAt}\nRecords: ${meta.records} (engine rows: ${meta.engineRows}, declined: ${meta.declined})\nAudio parts: ${meta.audioParts}\n${missing.length?`English summaries incomplete for: ${missing.join(", ")}. Complete them before importing the _en file.\n`:""}\nImport engine/ndim_structured_interview_en.csv into the NDIM Engine using the Structured interview route.\nContains personal data (voice). Store only on AIMS-controlled encrypted storage.\n`},
+    {name:"export.json",data:JSON.stringify(meta,null,2)},
+    {name:"engine/ndim_structured_interview_en.csv",data:toCSV(ENGINE_COLUMNS,complete.map(r=>engineRow(r,"en")),false)},
+    {name:"engine/ndim_structured_interview_rw.csv",data:toCSV(ENGINE_COLUMNS,complete.map(r=>engineRow(r,"rw")),false)},
+    {name:"records.json",data:JSON.stringify(recs,null,2)},
+    {name:"markers.csv",data:toCSV(["record_id","type","step","label","part","offset","offset_ms","file"],markerRows,true)},
+    {name:"clips.json",data:JSON.stringify(clipMeta,null,2)},
+    {name:"withdrawals.json",data:JSON.stringify(withdrawals,null,2)}
+  );
+  try{
+    const zip=await makeZip(files);
+    const stamp=new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
+    download(zip,`ndim_${App.settings.deviceId}_${onlyId||"all"}_${stamp}.zip`);
+    const log=(await kvGet("exports"))||[]; log.push({at:nowISO(),records:recs.length,parts:clips.length,bytes:zip.size}); await kvSet("exports",log);
+    toast(`Export ready: ${recs.length} record(s), ${clips.length} audio part(s), ${fmtBytes(zip.size)}.${missing.length?" Some English summaries are missing.":""}`,6000);
+  }catch(e){ toast("Export failed: "+e.message,6000); }
+}
+async function importZip(file){
+  try{
+    const z=await readZip(file); const dec=new TextDecoder();
+    if(!z["records.json"]) throw new Error("records.json missing");
+    const recs=JSON.parse(dec.decode(z["records.json"])); const clips=z["clips.json"]?JSON.parse(dec.decode(z["clips.json"])):[];
+    let nr=0,nc=0,sk=0;
+    for(const r of recs){ const ex=await recGet(r.id); if(!ex||(r.updatedAt||"")>(ex.updatedAt||"")){ await recPut(r); nr++; } else sk++; }
+    for(const c of clips){ if(await clipGet(c.clipId)) continue; const bytes=z[c.file]; if(!bytes) continue;
+      const blob=new Blob([bytes],{type:(c.mime||"audio/webm").split(";")[0]});
+      await clipPut({...c,sizeBytes:blob.size,finalized:true,blob}); nc++; }
+    toast(`Imported ${nr} record(s) and ${nc} audio part(s). ${sk} already up to date.`,5000); render();
+  }catch(e){ toast("Import failed: "+e.message,6000); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Boot                                                                */
+/* ------------------------------------------------------------------ */
+(async function boot(){
+  $$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+  const ok=await openDB();
+  if(!ok){ $("#main").innerHTML=`<div class="banner bad"><strong>Storage is unavailable on this browser.</strong> Do not collect data on this device. Open the file in current Chrome, outside private or incognito mode.</div>`; return; }
+  const saved=await kvGet("settings");
+  App.settings=Object.assign(defaultSettings(),saved||{});
+  App.settings.promptsRw=Object.assign(defaultSettings().promptsRw,App.settings.promptsRw||{});
+  if(!saved) await kvSet("settings",App.settings);
+  await recoverOrphans();
+  setView(setupComplete()?"records":"setup");
+})();
+
+</script>
+</body>
+</html>
