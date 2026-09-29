@@ -113,6 +113,38 @@ def test_compare_does_not_show_the_last_day_as_a_peak():
     assert cells['shape'] == 'rises_to_end' and cells['peak_day'] == ''
 
 
+def test_scenario_plan_states_the_intervention_mapping_before_approval():
+    # A live chat asked for approval without saying that "more trained CHWs" is only an abstract 0-1 number.
+    plan = summarize_plan(make_run(status='planned', strength=0.3))
+    assert 'intervention_strength = 0.3' in plan['intervention_mapping'] and 'Does it work?' in plan['intervention_mapping']
+    assert 'Before asking for approval' in plan['next'] and 'intervention_mapping' in plan['next']
+    assert plan['next'].index('intervention_mapping') < plan['next'].index('explicit approval')
+
+
+def test_sensitivity_plan_mapping_lists_the_grid_and_evidence_plan_has_none():
+    run = make_run(status='planned', strength=0.3)
+    run['skill'], run['execution']['sensitivity_grid'] = 'sensitivity', [0.0, 0.5, 1.0]
+    assert 'plus a grid of 0, 0.5, 1' in summarize_plan(run)['intervention_mapping']
+    run['skill'] = 'evidence'
+    plan = summarize_plan(run)
+    assert plan['intervention_mapping'] is None and 'intervention_mapping' not in plan['next']
+
+
+def test_scenario_comparison_carries_a_quotable_non_causal_headline():
+    headline = summarize_run(make_run(base_final=0.82693, alt_final=0.88651))['comparison']['baseline_vs_intervention']['headline']
+    assert 'day 9 ' in headline and '0.8269 in the baseline arm' in headline and '0.8865 in the intervention arm' in headline
+    assert '+0.0596 (+5.96 percentage points)' in headline and 'not an estimated effect' in headline
+    conclusion = summarize_run(make_run())['comparison']['baseline_vs_intervention']['conclusion']
+    assert 'cannot say whether the intervention would change real adoption' in conclusion
+
+
+def test_reporting_rules_forbid_causal_verbs_and_recommendations():
+    rules = summarize_run(make_run())['next']
+    assert 'headline' in rules and 'close with its conclusion' in rules
+    assert 'contributes to' in rules and 'not even with "may"' in rules
+    assert 'no recommendations' in rules and 'never as a percent' in rules
+
+
 def test_reporting_rules_forbid_calling_the_endpoint_a_peak():
     next_step = summarize_run(make_run())['next']
     assert 'fastest_growth_day' in next_step and 'peaks_before_end' in next_step

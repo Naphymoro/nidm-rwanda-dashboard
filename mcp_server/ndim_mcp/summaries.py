@@ -3,10 +3,15 @@
 NOTICE = ('Illustrative, uncalibrated model output from keyword-based encodings. Not a forecast, not a confidence '
           'interval, not empirical validation. Report it as exploratory and pending researcher review.')
 # Keep in step with the skill's references/interpreting-results.md, "Allowed and forbidden wording".
-REPORTING_RULES = ('When reporting: lead a scenario with the baseline vs intervention difference in final adoption, '
-                   'then the evidence signals behind it, then the limitations. Say "in the illustrative model, endpoint '
+REPORTING_RULES = ('When reporting: lead a scenario with comparison.baseline_vs_intervention.headline, quoted word for '
+                   'word, then the evidence signals behind it, then the limitations, and close with its conclusion, '
+                   'quoted word for word, as your only conclusion. Say "in the illustrative model, endpoint '
                    'adoption is X at day N", never "adoption will reach X". Call a delta the difference between two model '
-                   'endpoints, never an effect of the intervention. Call scores what "the keyword heuristic scored this '
+                   'endpoints, never an effect of the intervention, and give it in adoption units or percentage points, '
+                   'never as a percent. Never write that the intervention causes, drives, contributes to, improves, '
+                   'increases or influences adoption, not even with "may", "could" or "suggests": the model cannot show '
+                   'it. Write no recommendations, policy advice or programme suggestions; offer further analyses instead '
+                   '(a sensitivity run, a shorter horizon, calibration against field data). Call scores what "the keyword heuristic scored this '
                    'narrative", never measured trust in a community. Never write validated, calibrated, confirmed, '
                    'significant or robust. Scope claims to this narrative and this model. Only speak of a peak when '
                    'stats.shape is "peaks_before_end"; when adoption rises to the last day there is no peak, so report '
@@ -69,12 +74,23 @@ def _comparison(run):
     sims = {step['id']: output for step, output in _simulations(run)}
     result = {}
     if 'baseline' in sims and 'intervention' in sims:
-        base = sims['baseline']['trajectory'][-1]['adoption']
-        alt = sims['intervention']['trajectory'][-1]['adoption']
+        last = sims['baseline']['trajectory'][-1]
+        base, alt = last['adoption'], sims['intervention']['trajectory'][-1]['adoption']
+        strength = sims['intervention']['parameters']['intervention_strength']
+        delta = round(alt - base, 4)
         result['baseline_vs_intervention'] = {
-            'intervention_strength': sims['intervention']['parameters']['intervention_strength'],
+            'intervention_strength': strength,
             'baseline_final_adoption': round(base, 4), 'intervention_final_adoption': round(alt, 4),
-            'delta_final_adoption': round(alt - base, 4),
+            'delta_final_adoption': delta,
+            # A ready-made sentence: live agents paraphrased the numbers into causal claims and percents.
+            'headline': (f'In the illustrative, uncalibrated model, endpoint adoption at day {last["day"]:g} is '
+                         f'{base:.4f} in the baseline arm and {alt:.4f} in the intervention arm (intervention_strength '
+                         f'{strength:g}). The difference between these two model endpoints is {delta:+.4f} '
+                         f'({delta * 100:+.2f} percentage points); it is not an estimated effect of the intervention.'),
+            # Agents given only the headline still closed with "X could lead to higher adoption"; give them the close too.
+            'conclusion': ('This model cannot say whether the intervention would change real adoption. Within this '
+                           'illustrative model and this one narrative, the only finding is the difference between two '
+                           'model endpoints; testing it in reality would need field data and calibration.'),
             'note': 'Difference between two illustrative model endpoints; not an estimated treatment effect.'}
     sweep = [(step, output) for step, output in _simulations(run) if step['id'].startswith('sweep_')]
     if sweep:
@@ -85,22 +101,38 @@ def _comparison(run):
     return result if outputs else {}
 
 
+def intervention_mapping(run):
+    """How the researcher's intervention enters the engine, for workflows that simulate one; else None."""
+    if run['skill'] not in {'scenario', 'sensitivity'}:
+        return None
+    lever = f'intervention_strength = {run["request"]["intervention_strength"]:g}'
+    if grid := run['execution'].get('sensitivity_grid'):
+        lever += ', plus a grid of ' + ', '.join(f'{value:g}' for value in grid)
+    return (f'The intervention in "{run["title"]}" is represented only by {lever}, an abstract 0-1 lever where 0 is '
+            'the baseline. The engine does not model what the intervention actually is (for example how many health '
+            'workers, prices, channels, reach or duration), so the chosen value is an assumption, not a measurement.')
+
+
 def summarize_plan(run):
     execution = run['execution']
     request = run['request']
     blockers = run['blockers']
+    mapping = intervention_mapping(run)
+    # Live agents skipped this step when it lived only in SKILL.md, so the plan result states it and demands it.
+    ask = ('Show this plan to the researcher. ' + ('Before asking for approval, tell them intervention_mapping in your '
+           'own words and say why this intervention_strength was chosen. ' if mapping else '') +
+           'Obtain explicit approval before calling ndim_start_experiment. Do not approve on their behalf.')
     return {
         'run_id': run['run_id'], 'workspace_id': run['workspace_id'], 'status': run['status'],
         'question': run['title'], 'workflow': run['skill'],
         'request': {key: request[key] for key in REQUEST_FIELDS if key in request},
         'steps': [{key: step[key] for key in ('id', 'tool', 'title', 'strength') if key in step} for step in run['plan']],
         'sensitivity_grid': execution['sensitivity_grid'], 'execution_profile': execution['profile'],
-        'warnings': run['warnings'], 'blockers': blockers,
+        'intervention_mapping': mapping, 'warnings': run['warnings'], 'blockers': blockers,
         'provenance': {'source_sha256': run['provenance']['source_sha256'],
                        'code_version': run['provenance']['code_version'], 'planner': run['provenance']['planner']},
         'next': ('BLOCKED: this plan cannot run. Explain the blocker to the researcher and create a corrected plan.'
-                 if blockers else 'Show this plan to the researcher and obtain explicit approval before calling '
-                                  'ndim_start_experiment. Do not approve on their behalf.')}
+                 if blockers else ask)}
 
 
 def summarize_run(run, include_trajectories=False):
