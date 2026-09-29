@@ -137,17 +137,43 @@ def summarize_plan(run):
                  if blockers else ask)}
 
 
-def _verbatim(run):
-    """The scenario's opening and closing sentences, spelled out inside the instruction itself.
+def evidence_signals(outputs):
+    """One sentence on the encoded inputs that drive the simulation, or None before encoding has run."""
+    encoded, diagnosed = outputs.get('encode'), outputs.get('diagnose') or {}
+    if not encoded or encoded.get('trust_score') is None or encoded.get('adoption_barrier_score') is None:
+        return None
+    text = (f'The keyword heuristic scored this narrative {encoded["trust_score"]:.3f} on trust and '
+            f'{encoded["adoption_barrier_score"]:.3f} on adoption barriers')
+    if diagnosed.get('misinformation_risk_score') is not None:
+        text += f', and the inoculation heuristic scored its misinformation risk {diagnosed["misinformation_risk_score"]:.3f}'
+        if diagnosed.get('threat_type'):
+            text += f' (flagged threat: {diagnosed["threat_type"].replace("_", " ")}, pending human review)'
+    text += '.'
+    if encoded.get('themes'):
+        text += ' Themes found: ' + ', '.join(theme.replace('_', ' ') for theme in encoded['themes']) + '.'
+    return text + (' These scores come from keywords in one English text, not from measurements in a community, and '
+                   'they set the same trust, barrier and misinformation inputs for every simulated arm.')
 
-    Live agents told to quote comparison.baseline_vs_intervention.headline paraphrased it instead; text placed in the
-    instruction gets copied, a field reference gets reworded."""
+
+def _verbatim(run):
+    """The report's fixed content, spelled out inside the instruction itself.
+
+    Live agents told to quote comparison.baseline_vs_intervention.headline paraphrased it instead, and skipped the
+    evidence signals the rules asked for; text placed in the instruction gets copied, a field reference gets reworded.
+    Only the headline and conclusion must be exact: demanding a third, number-heavy quote made agents turn it into
+    bullets and loosen the other two as well, so the evidence may be reformatted as long as numbers and caveat stay."""
     comparison = _comparison(run).get('baseline_vs_intervention')
-    if not comparison:
-        return ''
-    return (f'Open your report with this sentence, copied character for character: "{comparison["headline"]}" '
-            f'End your report with this sentence, copied character for character: "{comparison["conclusion"]}" '
-            'Do not reword, round or shorten either sentence. ')
+    signals = evidence_signals(run['outputs'])
+    parts = []
+    if comparison:
+        parts.append(f'Open your report with this sentence, copied character for character: "{comparison["headline"]}"')
+    if signals:
+        parts.append(f'{"Then" if comparison else "First"} report the evidence signals behind it (a list is fine), keeping '
+                     f'every number and the caveat that they come from keywords in one English text: {signals}')
+    if comparison:
+        parts.append(f'End your report with this sentence, copied character for character: "{comparison["conclusion"]}" '
+                     'Do not reword, round or shorten the opening or closing sentence.')
+    return ' '.join(parts) + ' ' if parts else ''
 
 
 def summarize_run(run, include_trajectories=False):
@@ -174,6 +200,7 @@ def summarize_run(run, include_trajectories=False):
                            'review that certifies the run was read. ' + _verbatim(run) + REPORTING_RULES)
     if 'encode' in outputs:
         summary['encoding'] = _scalars(outputs['encode'])
+        summary['evidence_signals'] = evidence_signals(outputs)
     if 'diagnose' in outputs:
         summary['inoculation_diagnosis'] = _scalars(outputs['diagnose'])
     simulations = []

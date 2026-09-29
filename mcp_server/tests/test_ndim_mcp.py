@@ -164,11 +164,34 @@ def test_completed_scenario_spells_out_the_sentences_to_copy():
     assert next_step.index(pair['headline']) < next_step.index(pair['conclusion']) < next_step.index('When reporting')
 
 
-def test_run_without_a_scenario_comparison_has_no_sentences_to_copy():
+def test_run_without_a_scenario_comparison_copies_only_the_evidence_sentence():
     run = make_run()
     run['plan'] = [step for step in run['plan'] if step['id'] != 'intervention']
     del run['outputs']['intervention']
-    assert 'character for character' not in summarize_run(run)['next']
+    next_step = summarize_run(run)['next']
+    assert 'Open your report' not in next_step and 'End your report' not in next_step
+    assert 'First report the evidence signals' in next_step and 'character for character' not in next_step
+
+
+def test_evidence_signals_sentence_names_the_scores_and_their_limits():
+    # Live reports led with the headline and skipped the encoded inputs that explain it.
+    run = make_run()
+    run['outputs']['diagnose'] = {'misinformation_risk_score': 0.12, 'threat_type': 'affordability_fear'}
+    signals = summarize_run(run)['evidence_signals']
+    assert signals.startswith('The keyword heuristic scored this narrative 0.600 on trust and 0.700 on adoption barriers')
+    assert 'misinformation risk 0.120 (flagged threat: affordability fear, pending human review)' in signals
+    assert 'Themes found: cost.' in signals and 'not from measurements in a community' in signals
+
+
+def test_evidence_signals_sit_between_headline_and_conclusion():
+    summary = summarize_run(make_run())
+    pair, next_step = summary['comparison']['baseline_vs_intervention'], summary['next']
+    assert next_step.index(pair['headline']) < next_step.index(summary['evidence_signals']) < next_step.index(pair['conclusion'])
+
+
+def test_no_evidence_sentence_before_encoding_has_run():
+    run = make_run(status='running')
+    assert summarize_run(run).get('evidence_signals') is None and 'character for character' not in summarize_run(run)['next']
 
 
 def test_reporting_rules_forbid_causal_verbs_and_recommendations():
