@@ -121,6 +121,23 @@ def test_scenario_plan_states_the_intervention_mapping_before_approval():
     assert plan['next'].index('intervention_mapping') < plan['next'].index('explicit approval')
 
 
+def test_question_must_be_verbatim_and_shown_back_before_approval():
+    # A live agent planned "adoption of gas stoves" for a question about "clean cooking adoption".
+    tools = {t.name: t for t in asyncio.run(build(lambda r: httpx.Response(200, json={})).list_tools())}
+    for name in ('ndim_plan_experiment', 'ndim_plan_sweep'):
+        description = tools[name].inputSchema['properties']['question']['description']
+        assert 'verbatim' in description and 'gas stoves' in description, name
+    next_step = summarize_plan(make_run(status='planned'))['next']
+    assert 'quoting the question field exactly' in next_step
+    assert next_step.index('question') < next_step.index('explicit approval')
+
+
+def test_plan_sweep_echoes_the_question_for_the_researcher_to_check():
+    body = call(build(FakeEngine()), 'ndim_plan_sweep', workspace_id=WS, question='How does influence matter?',
+                evidence='e' * 40, vary={'narrative_influence': [0.2, 0.6]})
+    assert body['question'] == 'How does influence matter?' and 'quoting the question exactly' in body['next']
+
+
 def test_sensitivity_plan_mapping_lists_the_grid_and_evidence_plan_has_none():
     run = make_run(status='planned', strength=0.3)
     run['skill'], run['execution']['sensitivity_grid'] = 'sensitivity', [0.0, 0.5, 1.0]

@@ -23,8 +23,8 @@ Parameter sweeps: ndim_plan_sweep -> researcher approval -> ndim_run_sweep (runs
 Choose the workflow yourself (see ndim_plan_experiment's skill argument): a question about how an action, programme or
 condition might change, affect, increase, reduce or improve adoption is a "scenario", not "evidence".
 Results are illustrative and uncalibrated. Never present them as forecasts, estimated effects or validated findings, and
-scope every claim to "this narrative" and "this model". Never approve a plan or write a review on the researcher's
-behalf."""
+scope every claim to "this narrative" and "this model". Pass the researcher's question verbatim; never rephrase it.
+Never approve a plan or write a review on the researcher's behalf."""
 
 # Shown with the plan tool, where the agent decides the workflow. Keep in step with SKILL.md "Choose the workflow".
 WORKFLOW_GUIDE = (
@@ -41,6 +41,11 @@ WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHin
 
 Workspace = Annotated[str, Field(description='Workspace slug from ndim_list_workspaces, e.g. "ndim-core".')]
 RunId = Annotated[str, Field(description='Run UUID returned by ndim_plan_experiment.')]
+# A live agent turned "clean cooking adoption" into "adoption of gas stoves"; the question is the researcher's, not ours.
+Question = Annotated[str, Field(min_length=8, max_length=1000, description=(
+    "The researcher's question copied verbatim from their message. Do not rephrase, narrow, broaden or swap terms "
+    '(e.g. do not turn "clean cooking" into "gas stoves" or "CHWs" into "health workers"), and do not add a prefix. '
+    'If it is too long or unclear, ask the researcher rather than rewriting it.'))]
 Approval = Annotated[str, Field(min_length=12, max_length=1000, description=(
     "The researcher's own words approving THIS plan, quoted from the conversation. Only call this tool after the "
     'researcher has actually approved; never write this text yourself. It is stored in an audit log.'))]
@@ -98,7 +103,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
     @mcp.tool(annotations=WRITE)
     async def ndim_plan_experiment(
         workspace_id: Workspace,
-        question: Annotated[str, Field(min_length=8, max_length=1000, description="The researcher's question, in their words.")],
+        question: Question,
         evidence: Annotated[str, Field(min_length=20, max_length=20000, description='Source narrative or field notes, in '
             'English. Non-English text is blocked by the engine. If you translate, tell the researcher and get their '
             'confirmation first.')],
@@ -223,7 +228,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
     @mcp.tool(annotations=WRITE)
     async def ndim_plan_sweep(
         workspace_id: Workspace,
-        question: Annotated[str, Field(min_length=8, max_length=1000)],
+        question: Question,
         evidence: Annotated[str, Field(min_length=20, max_length=20000, description='Sent unchanged with every plan, so all '
             'runs share one source hash. Do not paste it repeatedly yourself; call this tool once.')],
         vary: Annotated[dict[str, list[float]], Field(description=(
@@ -269,7 +274,9 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                 'shared': {'source_sha256': plan['provenance']['source_sha256'], 'code_version': plan['provenance']['code_version'],
                            'model': model, 'consent': consent},
                 'warnings': plan['warnings'],
-                'next': 'Show this design to the researcher and obtain explicit approval before calling ndim_run_sweep '
+                'question': question,
+                'next': 'Show this design to the researcher, quoting the question exactly so they can confirm it is '
+                        'theirs, and obtain explicit approval before calling ndim_run_sweep '
                         'with these run_ids. Do not approve on their behalf.'}
 
     @mcp.tool(annotations=WRITE)

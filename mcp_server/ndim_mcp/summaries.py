@@ -119,7 +119,9 @@ def summarize_plan(run):
     blockers = run['blockers']
     mapping = intervention_mapping(run)
     # Live agents skipped this step when it lived only in SKILL.md, so the plan result states it and demands it.
-    ask = ('Show this plan to the researcher. ' + ('Before asking for approval, tell them intervention_mapping in your '
+    ask = ('Show this plan to the researcher, quoting the question field exactly so they can confirm it is their '
+           'question; if it differs from their words at all, say what changed and create a new plan. ' +
+           ('Before asking for approval, tell them intervention_mapping in your '
            'own words and say why this intervention_strength was chosen. ' if mapping else '') +
            'Obtain explicit approval before calling ndim_start_experiment. Do not approve on their behalf.')
     return {
