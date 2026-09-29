@@ -21,11 +21,19 @@ TERMINAL = {'completed', 'failed', 'cancelled', 'interrupted'}
 # Statuses from which each approval-gated action can proceed; checked before an approval is written to the audit log.
 ELIGIBLE = {'start': {'planned'}, 'resume': {'failed', 'interrupted', 'cancelled'}}
 # A live agent answered a new question with an old run's brief from ndim_list_runs, then "started" that completed run.
-EXISTING_RUNS = ('These are existing runs, possibly from other conversations or researchers. A new question needs a new '
-                 'plan (ndim_plan_experiment). If you report an existing run instead, tell the researcher it is an '
-                 'existing run and when it was created, and check that its question, evidence and parameters match '
-                 'theirs. Never call ndim_start_experiment on a run you did not plan and show in this conversation.')
+# The researcher chose to meet an old run with its matching tutorial, never with the old run itself.
+EXISTING_RUNS = ('These are existing runs, possibly from other conversations or researchers. Never present one as the '
+                 'answer to the researcher\'s question, and never show its results or brief (run ids are withheld here '
+                 'for that reason; a researcher can paste one from the web app). When one matches their '
+                 'question, offer its matching_tutorial instead: name the lesson, say in one sentence what it teaches, '
+                 'and give its link. To answer their own question, plan a new experiment on their evidence '
+                 '(ndim_plan_experiment). Never call ndim_start_experiment on a run you did not plan and show in this '
+                 'conversation.')
 COMPARTMENTS = ('S', 'M', 'T', 'I', 'R')
+# The engine's own names (modelling.run_compartmental_model). Given only the letters, a live agent invented
+# "Messenger", "Trust", "Influenced" and "Retained".
+COMPARTMENT_NAMES = {'S': 'susceptible', 'M': 'misinformed', 'T': 'truth-aligned', 'I': 'inoculated',
+                     'R': 'durable adoption belief'}
 REQUEST_FIELDS = ('model', 'horizon_days', 'intervention_strength', 'initial_adoption', 'narrative_influence',
                   'language', 'consent', 'profile')
 # Factors that make two runs a controlled comparison only when exactly the varied one differs.
@@ -61,6 +69,7 @@ def trajectory_stats(trajectory):
         stats['final_heuristic_band'] = [round(last['adoption_lower'], 4), round(last['adoption_upper'], 4)]
     if all(name in last for name in COMPARTMENTS):
         stats['final_compartments'] = {name: round(last[name], 4) for name in COMPARTMENTS}
+        stats['compartment_names'] = COMPARTMENT_NAMES
     return stats
 
 
@@ -207,20 +216,33 @@ def _created(run):
     return f'on {run["created_at"][:16].replace("T", " ")} UTC' if run.get('created_at') else 'earlier'
 
 
-def existing_run_note(run):
-    return (f'This is run {run["run_id"]}, created {_created(run)} for the question "{run["title"]}". If it was not '
-            'planned and approved in this conversation, tell the researcher it is an existing run from that date, not a '
-            'new experiment, and check that its question, evidence and parameters match theirs; otherwise plan a new '
-            'experiment.')
+def tutorial(lesson, workspace_id, public_url):
+    """The engine lesson that teaches a workflow, with a link the researcher can open."""
+    return {'lesson_id': lesson['id'], 'title': f'Lesson {lesson["number"]}: {lesson["title"]}',
+            'teaches': lesson['subtitle'], 'duration': lesson['duration'],
+            'link': f'{public_url}/academy?workspace={workspace_id}&lesson={lesson["id"]}'}
 
 
-def ineligible(run, action):
+def tutorial_offer(found):
+    if not found:
+        return 'Offer to plan a new experiment on their own evidence.'
+    return (f'Offer the matching tutorial instead, "{found["title"]}" ({found["teaches"]}, {found["duration"]}): '
+            f'{found["link"]} . You can also run it here: plan it with lesson_id="{found["lesson_id"]}" on the synthetic '
+            'sample from ndim_list_lessons. Then offer to plan a new experiment on their own evidence.')
+
+
+def existing_run_note(run, found=None):
+    return (f'This is run {run["run_id"]}, created {_created(run)} for the question "{run["title"]}". Unless it was '
+            'planned and approved in this conversation, do not present it or its brief as an answer: tell the researcher '
+            f'only that an earlier run exists (from that date). {tutorial_offer(found)}')
+
+
+def ineligible(run, action, found=None):
     """Why an approval-gated action cannot proceed on this run, and what to do instead."""
     status = run['status']
     if status == 'completed':
         return (f'Run {run["run_id"]} already completed ({_created(run)}); nothing was started and no approval was '
-                'recorded. To report it, call ndim_get_run and tell the researcher it is an existing run, not a new '
-                'experiment. To answer a new question, call ndim_plan_experiment.')
+                'recorded. Do not present that earlier run as an answer. ' + tutorial_offer(found))
     if action == 'start' and status in ELIGIBLE['resume']:
         return (f'Run {run["run_id"]} is {status}; nothing was started and no approval was recorded. Ask the researcher '
                 'whether to resume it with ndim_resume_experiment, or create a new plan.')

@@ -50,6 +50,8 @@ services:
       context: .
     environment:
       NDIM_ENGINE_URL: http://ndim-engine:8010
+      # Links the chat gives the researcher (tutorials, the web app) must open in their browser, not inside Docker.
+      NDIM_PUBLIC_URL: http://127.0.0.1:8010
       NDIM_MCP_AUDIT_LOG: /audit/audit.jsonl
     volumes:
       - ndim-audit:/audit

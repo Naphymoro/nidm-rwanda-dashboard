@@ -7,6 +7,7 @@ from pathlib import Path
 @dataclass(frozen=True)
 class Settings:
     engine_url: str = 'http://127.0.0.1:8010'
+    public_url: str | None = None  # where the researcher's browser reaches the engine's web app; defaults to engine_url
     bearer_token: str | None = None
     timeout: float = 30.0
     audit_log: Path | None = None
@@ -26,6 +27,7 @@ class Settings:
             audit_path = Path.home() / '.ndim-mcp' / 'audit.jsonl'
         return cls(
             engine_url=env.get('NDIM_ENGINE_URL', cls.engine_url).rstrip('/'),
+            public_url=(env.get('NDIM_PUBLIC_URL') or '').rstrip('/') or None,
             bearer_token=env.get('NDIM_ENGINE_BEARER_TOKEN') or None,
             timeout=float(env.get('NDIM_ENGINE_TIMEOUT', cls.timeout)),
             audit_log=audit_path,

@@ -16,10 +16,12 @@ class EngineError(Exception):
         self.status = status
 
 
-def check_ids(workspace_id, run_id=None):
+def check_ids(workspace_id, run_id=None, journey_id=None):
     """IDs become URL path segments, so reject anything that is not a plain slug or UUID."""
     if not WORKSPACE_RE.fullmatch(workspace_id) or len(workspace_id) > 160:
         raise EngineError(f'Invalid workspace_id {workspace_id!r}: use the lowercase slug from ndim_list_workspaces.')
+    if journey_id is not None and not RUN_RE.fullmatch(journey_id):
+        raise EngineError(f'Invalid journey_id {journey_id!r}: expected the UUID returned by ndim_journey_start.')
     if run_id is not None and not RUN_RE.fullmatch(run_id):
         raise EngineError(f'Invalid run_id {run_id!r}: expected the UUID returned by ndim_plan_experiment.')
 

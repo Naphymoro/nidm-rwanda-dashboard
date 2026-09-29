@@ -1,7 +1,8 @@
 """FastMCP server. Agents propose and read; only the engine's allowlisted tools produce scientific results.
 
 Deliberately not exposed: deleting runs, saving researcher review notes, creating or editing workspaces, and
-lesson answers. Those are researcher decisions or destructive, so they stay in the engine UI.
+lesson answers. Those are researcher decisions or destructive, so they stay in the engine UI. Journey decisions that
+belong to the researcher (evidence review, field observations, the export) need their quoted words.
 """
 import asyncio
 import time
@@ -9,13 +10,14 @@ from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from . import audit, sweeps
 from .client import EngineClient, EngineError, check_ids
 from .config import Settings
+from .journey import GUIDE, JOURNEY_PHASES, LIMITS, journey_view
 from .summaries import (DEFAULT_STRENGTH, ELIGIBLE, EXISTING_RUNS, NOTICE, REPORTING_RULES, TERMINAL, compare_runs,
-                        existing_run_note, ineligible, summarize_plan, summarize_run)
+                        existing_run_note, ineligible, summarize_plan, summarize_run, tutorial)
 
 INSTRUCTIONS = """NDIM scientific engine: a deterministic digital twin of narrative diffusion and adoption.
 Workflow: ndim_engine_status -> ndim_list_workspaces -> ndim_plan_experiment -> SHOW THE PLAN TO THE RESEARCHER AND GET
@@ -25,8 +27,13 @@ Choose the workflow yourself (see ndim_plan_experiment's skill argument): a ques
 condition might change, affect, increase, reduce or improve adoption is a "scenario", not "evidence".
 Results are illustrative and uncalibrated. Never present them as forecasts, estimated effects or validated findings, and
 scope every claim to "this narrative" and "this model". Pass the researcher's question verbatim; never rephrase it.
-A new question needs a new plan. Runs from ndim_list_runs are existing work: if you report one, say so and when it ran.
-Never approve a plan or write a review on the researcher's behalf."""
+A new question needs a new plan. Runs from ndim_list_runs are existing work: never present one as an answer; offer
+its matching tutorial (an engine lesson) instead, and a new experiment on the researcher's own evidence.
+Full journey: for a researcher who wants to go from their own field evidence through capture, encoding, models, the
+digital twin, strategy and a policy export, use the 13-stage journey: ndim_journey_guide -> ndim_journey_start ->
+ndim_journey_add_evidence -> ndim_journey_record_decisions (researcher decides) -> ndim_journey_run_stage for each stage
+in order, explaining each result and asking before the next. ndim_journey_status shows where a journey stands.
+Never approve a plan, accept evidence, supply field observations or write a review on the researcher's behalf."""
 
 # Shown with the plan tool, where the agent decides the workflow. Keep in step with SKILL.md "Choose the workflow".
 WORKFLOW_GUIDE = (
@@ -51,6 +58,26 @@ Question = Annotated[str, Field(min_length=8, max_length=1000, description=(
 Approval = Annotated[str, Field(min_length=12, max_length=1000, description=(
     "The researcher's own words approving THIS plan, quoted from the conversation. Only call this tool after the "
     'researcher has actually approved; never write this text yourself. It is stored in an audit log.'))]
+JourneyId = Annotated[str, Field(description='Journey UUID returned by ndim_journey_start.')]
+Stage = Literal['encoding', 'compartmental', 'agents', 'digital', 'bayes', 'rl', 'regional', 'graph', 'inoculation', 'policy']
+
+
+class EvidenceRecord(BaseModel):
+    text: Annotated[str, Field(min_length=1, max_length=20000, description='The story or field note, unchanged. English '
+        'only: the encoder reads English keywords. If you translate, say so and get the researcher\'s confirmation.')]
+    admin_unit: Annotated[str, Field(min_length=1, max_length=240, description='Place, as the researcher gave it, e.g. "Kicukiro / Niboye".')]
+    source_name: Annotated[str, Field(min_length=1, max_length=240, description='Who or what the record came from, e.g. "Field team interview 4".')]
+    period: Annotated[str, Field(min_length=1, max_length=60, description='When it was collected, e.g. "2026-Q2". Ask; do not guess.')]
+    source_type: Literal['field_note', 'interview', 'focus_group', 'survey_open_text', 'citizen_report', 'document'] = 'field_note'
+    language: Literal['en', 'rw', 'fr', 'other'] = 'en'
+    consent: Annotated[Literal['synthetic', 'research_use', 'unconfirmed'], Field(description=(
+        '"research_use" only if the researcher confirmed permission; "synthetic" for demo data; otherwise "unconfirmed".'))] = 'unconfirmed'
+
+
+class EvidenceDecision(BaseModel):
+    record_id: str
+    decision: Literal['accept', 'reject']
+    reason: Annotated[str | None, Field(max_length=400, description="The researcher's reason, if they gave one.")] = None
 
 
 def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
@@ -61,6 +88,48 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
     async def fetch_run(workspace_id, run_id):
         check_ids(workspace_id, run_id)
         return await engine.request('GET', f'/engine/workspaces/{workspace_id}/runs/{run_id}')
+
+    lesson_cache = {}
+
+    async def tutorial_for(skill, workspace_id):
+        """The engine lesson for a workflow; None if the engine has none (tutorials are an offer, never a blocker)."""
+        if not lesson_cache:
+            try:
+                lesson_cache.update({lesson['skill']: lesson for lesson in (await engine.request('GET', '/engine/lessons'))['lessons']})
+            except Exception:  # noqa: BLE001 - an unreachable or odd lessons endpoint must not break the caller
+                return None
+        lesson = lesson_cache.get(skill)
+        return tutorial(lesson, workspace_id, settings.public_url or settings.engine_url) if lesson else None
+
+    async def lost_journey(workspace_id, journey_id, error):
+        """A live agent dropped a segment of the UUID, then started a second journey and re-entered the evidence.
+        Name the journey it most likely meant and say the original is intact."""
+        check_ids(workspace_id)
+        given = journey_id.strip().lower()
+        try:
+            rows = (await engine.request('GET', f'/engine/workspaces/{workspace_id}/journeys'))['journeys']
+        except Exception:  # noqa: BLE001 - the hint is a courtesy; the original error still stands
+            rows = []
+        matches = [row for row in rows if given[:8] == row['journey_id'][:8] or given[-12:] == row['journey_id'][-12:]]
+        keep = ' The journey and every stage already run are unchanged. Do not start a new journey to recover from this.'
+        if len(matches) == 1:
+            row = matches[0]
+            return EngineError(f'{error} Did you mean {row["journey_id"]!r} (question: "{row["question"]}", '
+                               f'{row["stages_done"]} stage(s) done)? Copy that id exactly, character for character.' + keep)
+        return EngineError(f'{error} Take the journey_id exactly from the last journey tool result, or call '
+                           'ndim_journey_list.' + keep)
+
+    async def journey_call(method, workspace_id, journey_id, suffix='', audit_fields=None, **kwargs):
+        try:
+            check_ids(workspace_id, journey_id=journey_id)
+            body = await engine.request(method, f'/engine/workspaces/{workspace_id}/journeys/{journey_id}{suffix}', **kwargs)
+        except EngineError as exc:
+            if str(exc).startswith('Invalid journey_id') or exc.status == 404:
+                raise await lost_journey(workspace_id, journey_id, str(exc)) from exc
+            raise
+        if audit_fields:  # after the engine accepted it: a refused stage or review must leave no approval behind
+            audit.record(settings, workspace_id=workspace_id, journey_id=journey_id, **audit_fields)
+        return journey_view(body)
 
     async def wait(workspace_id, run_id, seconds):
         seconds = max(0, min(seconds, settings.max_wait_seconds))
@@ -97,10 +166,16 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
 
     @mcp.tool(annotations=READ)
     async def ndim_list_lessons() -> dict:
-        """Return the engine's teaching lessons and its synthetic sample field notes.
+        """Return the engine's teaching lessons (tutorials) and its synthetic sample field notes.
 
-        The sample is synthetic and safe for smoke-testing a pipeline (use consent="synthetic"). It is not real data."""
-        return await engine.request('GET', '/engine/lessons')
+        Each lesson teaches one workflow (evidence, scenario, sensitivity). To run one here, plan it with its lesson_id,
+        its question and the synthetic sample (consent="synthetic"); the researcher answers its check in the web app.
+        The sample is synthetic, not real data."""
+        data = await engine.request('GET', '/engine/lessons')
+        public = settings.public_url or settings.engine_url
+        for lesson in data.get('lessons', []):
+            lesson['link'] = tutorial(lesson, 'ndim-core', public)['link']
+        return data
 
     @mcp.tool(annotations=WRITE)
     async def ndim_plan_experiment(
@@ -130,6 +205,9 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         strength_reason: Annotated[str | None, Field(min_length=8, max_length=400, description=(
             'Optional: why this intervention_strength. Quote the researcher only if they actually gave a value or level; '
             'never attribute the default to them. Shown to the researcher before approval and kept in the audit log.'))] = None,
+        lesson_id: Annotated[Literal['evidence', 'scenario', 'sensitivity'] | None, Field(description=(
+            'Only when running a tutorial from ndim_list_lessons: its id. skill must match the lesson, and the run then '
+            'counts as that lesson in the web app, where the researcher answers its check.'))] = None,
     ) -> dict:
         """Create a reviewable experiment plan. Nothing executes until ndim_start_experiment.
 
@@ -145,6 +223,8 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                    'intervention_strength': intervention_strength, 'initial_adoption': initial_adoption,
                    'narrative_influence': narrative_influence, 'language': language, 'expertise': expertise,
                    'source_name': source_name, 'prior_run_ids': prior_run_ids}
+        if lesson_id:
+            payload['lesson_id'] = lesson_id
         plan = summarize_plan(await engine.request('POST', '/engine/plans', json=payload), strength_reason)
         if plan['intervention_mapping']:  # the engine forbids extra fields, so the stated reason lives in the audit log
             audit.record(settings, 'ndim_plan_experiment', workspace_id=workspace_id, run_id=plan['run_id'],
@@ -157,7 +237,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         # old completed run it had found with ndim_list_runs). The engine still enforces this if the status changes.
         run = await fetch_run(workspace_id, run_id)
         if run['status'] not in ELIGIBLE[action]:
-            raise EngineError(ineligible(run, action))
+            raise EngineError(ineligible(run, action, await tutorial_for(run['skill'], workspace_id)))
         audit.record(settings, tool, workspace_id=workspace_id, run_id=run_id, approval_statement=approval_statement)
         await engine.request('POST', f'/engine/workspaces/{workspace_id}/runs/{run_id}/{action}', retry_busy=True)
         return summarize_run(await wait(workspace_id, run_id, wait_seconds))
@@ -204,21 +284,31 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
     @mcp.tool(annotations=READ)
     async def ndim_list_runs(workspace_id: Workspace, offset: Annotated[int, Field(ge=0)] = 0,
                              limit: Annotated[int, Field(ge=1, le=100)] = 30) -> dict:
-        """List a workspace's existing runs, newest first. Not a way to answer a new question: plan a new experiment."""
+        """List what has already been run in a workspace, newest first, each with its matching tutorial.
+
+        Not a way to answer a question: plan a new experiment. Run ids are withheld on purpose."""
         check_ids(workspace_id)
         listing = await engine.request('GET', f'/engine/workspaces/{workspace_id}/runs', params={'offset': offset, 'limit': limit})
-        return {**listing, 'next': EXISTING_RUNS}
+        # Told not to, live agents still fetched an old run found here and presented its results. Without the id they
+        # cannot; a researcher who wants a specific run can paste its id from the web app.
+        rows = [{key: row.get(key) for key in ('title', 'skill', 'status', 'created_at', 'reviewed', 'lesson_id')}
+                | {'matching_tutorial': await tutorial_for(row.get('skill'), workspace_id)} for row in listing.get('runs', [])]
+        return {'runs': rows, 'total': listing.get('total'), 'next': EXISTING_RUNS}
 
     @mcp.tool(annotations=READ)
     async def ndim_get_brief(workspace_id: Workspace, run_id: RunId) -> dict:
-        """Return the engine-generated research brief (Markdown) for a completed run, marked as an exploratory draft."""
+        """Return the engine-generated research brief (Markdown) for a completed run planned in this conversation.
+
+        For an earlier run the researcher did not plan here, offer the matching tutorial instead of this brief."""
         check_ids(workspace_id, run_id)
         markdown = await engine.request('GET', f'/engine/workspaces/{workspace_id}/runs/{run_id}/artifacts/brief', text=True)
         run = await fetch_run(workspace_id, run_id)
         # The brief can stand in for a report, so it carries the same instructions, plus where the run came from.
         return {'run_id': run_id, 'question': run['title'], 'created_at': run.get('created_at'), 'markdown': markdown,
                 'notice': NOTICE, 'reporting_rules': REPORTING_RULES,
-                'next': existing_run_note(run) + ' ' + summarize_run(run).get('next', REPORTING_RULES)}
+                'matching_tutorial': (found := await tutorial_for(run['skill'], workspace_id)),
+                'next': existing_run_note(run, found) + ' If it was planned and approved in this conversation, report '
+                        'it as follows. ' + summarize_run(run).get('next', REPORTING_RULES)}
 
     async def compare(workspace_id, run_ids, reference_id=None):
         check_ids(workspace_id)
@@ -324,7 +414,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                 try:
                     run = await fetch_run(workspace_id, run_id)
                     if run['status'] not in ELIGIBLE['start']:  # as in gated(): no approval logged for a refused run
-                        raise EngineError(ineligible(run, 'start'))
+                        raise EngineError(ineligible(run, 'start', await tutorial_for(run['skill'], workspace_id)))
                     audit.record(settings, 'ndim_run_sweep', workspace_id=workspace_id, run_id=run_id,
                                  approval_statement=approval_statement)
                     await engine.request('POST', f'/engine/workspaces/{workspace_id}/runs/{run_id}/start', retry_busy=True)
@@ -338,6 +428,119 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                 'still_running': [run['run_id'] for run in finished if run['status'] not in TERMINAL],
                 'next': 'Report with the comparability notes; a grid shows sensitivity, not uncertainty. If runs are '
                         'still running, call ndim_wait_for_run then ndim_compare_runs. ' + REPORTING_RULES}
+
+    # --- The 13-stage journey: capture -> analysis -> digital twin -> strategy -> export -----------------------------
+
+    @mcp.tool(annotations=READ)
+    async def ndim_journey_guide() -> dict:
+        """Explain the 13-stage NDIM journey: what each stage does, what it needs, and which need the researcher.
+
+        Use it to describe the journey before starting, or when the researcher asks what a stage is."""
+        guide = await engine.request('GET', '/engine/journey/stages')
+        public = settings.public_url or settings.engine_url
+        return {'stages': [{key: stage[key] for key in ('number', 'id', 'phase', 'title', 'does', 'needs', 'researcher_decision')}
+                           | {'optional': stage.get('optional', False), 'limits': LIMITS[stage['id']]} for stage in guide['stages']],
+                'principles': guide['principles'],
+                'web_app': f'{public}/classic-workbench',
+                'next': 'Describe the journey briefly (the six phases and that the researcher decides at stages 3, 7 and '
+                        '13), then ask for their question and start with ndim_journey_start. ' + GUIDE}
+
+    @mcp.tool(annotations=READ)
+    async def ndim_journey_list(workspace_id: Workspace) -> dict:
+        """List a workspace's journeys, newest first. Resume one only if the researcher says it is theirs."""
+        check_ids(workspace_id)
+        data = await engine.request('GET', f'/engine/workspaces/{workspace_id}/journeys')
+        return {**data, 'next': 'These may belong to other researchers or conversations. Continue one only when the '
+                                'researcher confirms it is theirs; otherwise start a new journey.'}
+
+    @mcp.tool(annotations=WRITE)
+    async def ndim_journey_start(workspace_id: Workspace, question: Question,
+                                 country: Annotated[str, Field(min_length=2, max_length=80)] = 'Rwanda') -> dict:
+        """Start a 13-stage journey for the researcher's question. Nothing is scored or modelled yet."""
+        check_ids(workspace_id)
+        body = await engine.request('POST', f'/engine/workspaces/{workspace_id}/journeys',
+                                    json={'question': question, 'country': country})
+        view = journey_view(body)
+        # A live agent skipped ndim_journey_guide and asked for evidence without saying where the journey goes. Given only
+        # the phase names, it described the twin as "to validate findings" and the export as "actionable policy outputs".
+        view['next'] = (f'Use journey_id {view["journey_id"]} exactly for every later call in this journey; start only one '
+                        'journey per question. Before asking for evidence, tell the researcher what lies ahead, using '
+                        f'these descriptions as written: {JOURNEY_PHASES} They decide at three points: accepting or '
+                        'rejecting each record (stage 3), giving their own field observations for the digital twin '
+                        '(stage 7), and approving the policy export (stage 13). ' + view['next'])
+        return view
+
+    @mcp.tool(annotations=READ)
+    async def ndim_journey_status(workspace_id: Workspace, journey_id: JourneyId) -> dict:
+        """Where a journey stands: each stage's status, the records and their gate results, and the next stage."""
+        return await journey_call('GET', workspace_id, journey_id)
+
+    @mcp.tool(annotations=WRITE)
+    async def ndim_journey_add_evidence(workspace_id: Workspace, journey_id: JourneyId,
+                                        records: Annotated[list[EvidenceRecord], Field(min_length=1, max_length=50)]) -> dict:
+        """Stages 1-2: add the researcher's records and run the SDMX gate on each (metadata, English, personal data,
+        instruction-like text, duplicates). Records are stored unchanged; one record per story or note."""
+        return await journey_call('POST', workspace_id, journey_id, '/evidence',
+                                  json={'records': [record.model_dump() for record in records]})
+
+    @mcp.tool(annotations=WRITE)
+    async def ndim_journey_record_decisions(workspace_id: Workspace, journey_id: JourneyId,
+                                           decisions: Annotated[list[EvidenceDecision], Field(min_length=1, max_length=50)],
+                                           approval_statement: Annotated[str, Field(min_length=2, max_length=1000, description=(
+                                               "The researcher's message giving these accept/reject decisions. Never decide "
+                                               'for them. Copy it character for character from the researcher\'s message, however short ("Yes, continue." is fine). '
+            'Never compose or expand it: a live agent recorded "Please proceed with drafting the policy output." when the '
+            'researcher had written only "Yes, continue."'))]) -> dict:
+        """Stage 3: record the researcher's accept or reject decision for each record. Only accepted records reach a model."""
+        return await journey_call('POST', workspace_id, journey_id, '/review',
+                                  audit_fields={'tool': 'ndim_journey_record_decisions', 'approval_statement': approval_statement,
+                                                'decisions': [d.model_dump() for d in decisions]},
+                                  json={'decisions': [d.model_dump() for d in decisions], 'approval_statement': approval_statement})
+
+    @mcp.tool(annotations=WRITE)
+    async def ndim_journey_run_stage(
+        workspace_id: Workspace, journey_id: JourneyId, stage: Stage,
+        approval_statement: Annotated[str | None, Field(min_length=2, max_length=1000, description=(
+            "Required for digital and policy: the researcher's message giving their field observations (digital) or "
+            'answering yes to the export question (policy). Copy it character for character from the researcher\'s message, however short ("Yes, continue." is fine). '
+            'Never compose or expand it: a live agent recorded "Please proceed with drafting the policy output." when the '
+            'researcher had written only "Yes, continue."'))] = None,
+        observed_adoption: Annotated[float | None, Field(ge=0, le=1, description='digital: adoption share the researcher '
+            'observed in the field (0-1). Ask for it; there is no default.')] = None,
+        trust_shift: Annotated[float | None, Field(ge=-1, le=1, description='digital: change in trust the researcher observed '
+            'since the evidence was collected, -1 to 1; 0 if they saw none. Ask.')] = None,
+        barrier_shift: Annotated[float | None, Field(ge=-1, le=1, description='digital: change in adoption barriers observed, '
+            '-1 to 1; 0 if none. Ask.')] = None,
+        observed_series: Annotated[list[float] | None, Field(min_length=3, max_length=365, description='digital, optional: '
+            'observed adoption shares over time (at least 3), from the researcher\'s data. Lets the Bayesian stage fit the '
+            'adoption curve; never fill it from model output.')] = None,
+        feedback_note: Annotated[str | None, Field(max_length=1000, description='digital: where the observations come from.')] = None,
+        horizon_days: Annotated[int, Field(ge=7, le=365, description='Days simulated by compartmental, agents, digital.')] = 180,
+        peer_effect: Annotated[float, Field(ge=0, le=1, description='agents: peer influence.')] = 0.08,
+        media_effect: Annotated[float, Field(ge=0, le=1, description='agents: media influence.')] = 0.05,
+        priors: Annotated[dict[str, float] | None, Field(description='bayes, optional: trust_a, trust_b, barrier_a, barrier_b '
+            '(Beta priors; defaults 6, 4, 4, 6).')] = None,
+        regional_mode: Literal['isolated', 'grouped'] = 'isolated',
+        regional_target: Literal['barrier', 'trust', 'diffusion'] = 'barrier',
+        audience: Literal['households', 'health_workers', 'community_leaders', 'policy_makers'] = 'households',
+        tone: Literal['clear', 'warm', 'formal'] = 'clear',
+        apply_to_twin: Annotated[bool, Field(description='inoculation: also re-run the digital twin with the estimated '
+            'message strength. Only if the researcher asks for it.')] = False,
+    ) -> dict:
+        """Run one journey stage (4-13) after the researcher agreed to continue. Stages must go in order.
+
+        Order: encoding, compartmental, agents, digital (researcher's field observations), bayes, rl, regional
+        (optional), graph, inoculation, policy (researcher approves the export). Re-running a stage clears the later
+        stages that read it."""
+        body = {'horizon_days': horizon_days, 'peer_effect': peer_effect, 'media_effect': media_effect,
+                'regional_mode': regional_mode, 'regional_target': regional_target, 'audience': audience, 'tone': tone,
+                'apply_to_twin': apply_to_twin}
+        optional = {'approval_statement': approval_statement, 'observed_adoption': observed_adoption,
+                    'trust_shift': trust_shift, 'barrier_shift': barrier_shift, 'observed_series': observed_series,
+                    'feedback_note': feedback_note, 'priors': priors}
+        body |= {key: value for key, value in optional.items() if value is not None}
+        return await journey_call('POST', workspace_id, journey_id, f'/stages/{stage}', json=body, audit_fields={
+            'tool': 'ndim_journey_run_stage', 'stage': stage, 'approval_statement': approval_statement} if approval_statement else None)
 
     return mcp
 

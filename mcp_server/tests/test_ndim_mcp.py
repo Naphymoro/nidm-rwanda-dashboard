@@ -1,6 +1,7 @@
 """Offline tests: the engine is replaced by httpx.MockTransport, so no server is needed."""
 import asyncio
 import json
+import re
 
 import httpx
 import pytest
@@ -373,12 +374,12 @@ def test_brief_says_whose_run_it_is_and_carries_the_report_instructions():
     body = call(build(brief_engine), 'ndim_get_brief', workspace_id=WS, run_id=RID)
     assert body['created_at'].startswith('2026-09-28') and body['question'] == 'Does it work?'
     assert f'This is run {RID}, created on 2026-09-28 13:44 UTC' in body['next']
-    assert 'tell the researcher it is an existing run' in body['next'] and 'Open your report with this sentence' in body['next']
+    assert 'tell the researcher only that an earlier run exists' in body['next'] and 'Open your report with this sentence' in body['next']
 
 
 def test_list_runs_marks_them_as_existing_work():
     listing = call(build(lambda request: httpx.Response(200, json={'runs': [], 'total': 0})), 'ndim_list_runs', workspace_id=WS)
-    assert listing['total'] == 0 and 'A new question needs a new plan' in listing['next']
+    assert listing['total'] == 0 and 'plan a new experiment on their evidence' in listing['next']
     assert 'Never call ndim_start_experiment on a run you did not plan' in listing['next']
 
 
@@ -547,3 +548,188 @@ def test_run_sweep_keeps_going_when_one_run_cannot_start():
     # A run that could not start is reported once, in errors, and is not compared.
     assert body['comparison']['excluded'] == []
     assert ids[1] not in [row['run_id'] for row in body['comparison']['rows']] and len(body['comparison']['rows']) == 2
+
+
+# ---- tutorials for existing runs ---------------------------------------------------------------
+
+LESSONS = {'lessons': [{'id': skill, 'number': number, 'title': title, 'subtitle': subtitle, 'duration': '12 min',
+                        'skill': skill, 'question': 'q?'}
+                       for skill, number, title, subtitle in (
+                           ('evidence', '01', 'From story to evidence', 'Understand what a heuristic can and cannot tell you.'),
+                           ('scenario', '02', 'Build a controlled comparison', 'Change one assumption. Inspect both trajectories.'),
+                           ('sensitivity', '03', 'Test the assumptions', 'Explore sensitivity without mistaking it for uncertainty.'))],
+           'sample': 'SYNTHETIC'}
+
+
+def lessons_or(handler):
+    def wrapped(request):
+        if request.url.path == '/engine/lessons':
+            return httpx.Response(200, json=LESSONS)
+        return handler(request)
+    return wrapped
+
+
+def test_existing_runs_come_with_their_matching_tutorial():
+    # The researcher's choice: an old run is met with the tutorial for its workflow, never with the old run itself.
+    runs = {'runs': [{'run_id': RID, 'skill': 'scenario', 'title': 'Does it work?'},
+                     {'run_id': RID2, 'skill': 'evidence', 'title': 'What is in it?'}], 'total': 2}
+    listing = call(build(lessons_or(lambda request: httpx.Response(200, json=runs)), public_url='http://127.0.0.1:8010'),
+                   'ndim_list_runs', workspace_id=WS)
+    scenario, evidence = (row['matching_tutorial'] for row in listing['runs'])
+    assert scenario['title'] == 'Lesson 02: Build a controlled comparison'
+    assert scenario['link'] == 'http://127.0.0.1:8010/academy?workspace=ndim-core&lesson=scenario'
+    assert evidence['lesson_id'] == 'evidence'
+    assert 'Never present one as the answer' in listing['next'] and 'offer its matching_tutorial' in listing['next']
+    assert all('run_id' not in row for row in listing['runs']), 'ids let agents fetch and present old results'
+
+
+def test_brief_of_an_earlier_run_offers_the_tutorial_first():
+    body = call(build(lessons_or(brief_engine)), 'ndim_get_brief', workspace_id=WS, run_id=RID)
+    assert body['matching_tutorial']['lesson_id'] == 'scenario'
+    assert 'do not present it or its brief as an answer' in body['next']
+    assert body['next'].index('Build a controlled comparison') < body['next'].index('Open your report with this sentence')
+
+
+def test_starting_a_completed_run_points_to_the_tutorial():
+    with pytest.raises(ToolError, match='Build a controlled comparison'):
+        call(build(lessons_or(lambda request: httpx.Response(200, json=make_run(status='completed')))),
+             'ndim_start_experiment', workspace_id=WS, run_id=RID, approval_statement='Yes, I approve this plan as shown.')
+
+
+def test_tutorial_offer_survives_an_engine_without_lessons():
+    body = call(build(brief_engine), 'ndim_get_brief', workspace_id=WS, run_id=RID)  # /engine/lessons answers a run here
+    assert body['matching_tutorial'] is None and 'plan a new experiment' in body['next']
+
+
+def test_a_tutorial_can_be_planned_in_chat_with_its_lesson_id():
+    sent = []
+
+    def handler(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(201, json=make_run(status='planned'))
+    call(build(handler), 'ndim_plan_experiment', workspace_id=WS, question='How does an intervention change adoption?',
+         evidence='SYNTHETIC INTERVIEW SET for demonstration', skill='scenario', consent='synthetic', lesson_id='scenario')
+    assert sent[0]['lesson_id'] == 'scenario'
+
+
+# ---- the 13-stage journey ----------------------------------------------------------------------
+
+JID = '0f5b1f7e-4c1a-4a7b-9a55-3d1c2e9b8a70'
+STAGE_ROWS = [(1, 'intake', 'Narrative intake', 'Evidence', False), (2, 'gate', 'SDMX gate', 'Evidence', False),
+              (3, 'repository', 'Repository', 'Evidence', True), (4, 'encoding', 'Encoding', 'Encode', False),
+              (5, 'compartmental', 'Compartmental model', 'Model', False), (6, 'agents', 'Agent-based model', 'Model', False),
+              (7, 'digital', 'Digital twin', 'Twin', True), (8, 'bayes', 'Bayesian update', 'Twin', False),
+              (9, 'rl', 'RL optimizer', 'Twin', False), (10, 'regional', 'Regional analysis', 'Strategy', False),
+              (11, 'graph', 'Knowledge graph', 'Strategy', False), (12, 'inoculation', 'Inoculation lab', 'Strategy', False),
+              (13, 'policy', 'Policy output', 'Export', True)]
+
+
+def journey_body(done=(), next_stage='intake', **extra):
+    stages = [{'number': n, 'id': i, 'title': t, 'phase': p, 'researcher_decision': d, 'optional': i == 'regional',
+               'status': 'done' if i in done else 'ready' if i == next_stage else 'waiting', 'needs': [], 'at': None}
+              for n, i, t, p, d in STAGE_ROWS]
+    record = {'record_id': RID2, 'admin_unit': 'Kicukiro / Niboye', 'source_name': 'Field team', 'period': '2026-Q2',
+              'consent': 'research_use', 'excerpt': 'Households say...', 'review': None,
+              'gate': {'gate': 'review_before_accepting', 'blockers': [], 'warnings': ['instruction-like text: review before accepting'],
+                       'pii_flags': ['phone-or-id-like number'], 'quality_flags': []}}
+    return {'journey_id': JID, 'workspace_id': WS, 'question': 'How might trusted messengers change clean cooking adoption?',
+            'country': 'Rwanda', 'created_at': '2026-09-29T10:00:00+00:00', 'records': [record], 'stages': stages,
+            'next_stage': next_stage, **extra}
+
+
+def test_journey_view_asks_for_the_researcher_decision_on_each_record():
+    view = call(build(lambda request: httpx.Response(200, json=journey_body(('intake', 'gate'), 'repository'))),
+                'ndim_journey_status', workspace_id=WS, journey_id=JID)
+    assert view['records'][0]['gate_flags'] == ['instruction-like text: review before accepting', 'phone-or-id-like number']
+    assert 'ask the researcher to accept or reject each one' in view['next'] and 'Never decide for them' in view['next']
+    assert ' 3. Repository (Evidence): ready [researcher decision]' in view['progress']
+    assert 'Ask the researcher whether to continue before running it' in view['next']
+
+
+def test_stage_result_is_compact_and_carries_its_limits_and_rules():
+    output = {'model': 'compartmental', 'horizon_days': 10, 'method_status': 'illustrative_uncalibrated',
+              'trajectory': trajectory(0.4), 'assumptions': {}, 'parameters': {'trust_score': 0.61234, 'barrier_score': 0.4,
+                                                                            'narrative_influence': 0.3, 'intervention_strength': 0.2}}
+    body = journey_body(('intake', 'gate', 'repository', 'encoding', 'compartmental'), 'agents', stage='compartmental', output=output)
+    view = call(build(lambda request: httpx.Response(200, json=body)), 'ndim_journey_run_stage',
+                workspace_id=WS, journey_id=JID, stage='compartmental')
+    assert 'trajectory' not in json.dumps(view['result'])
+    assert view['result']['stats']['shape'] == 'rises_to_end' and view['result']['inputs']['trust_score'] == 0.6123
+    assert 'Not a forecast' in view['limits']
+    assert 'Next stage: 6. Agent-based model.' in view['next'] and 'Write no recommendations' in view['next']
+
+
+def test_rl_and_policy_are_never_presented_as_advice():
+    rules = call(build(lambda request: httpx.Response(200, json=journey_body(stage='rl', output={
+        'ranking': [], 'top_action': 'consumer_subsidy', 'formula': 'f', 'method': 'm', 'trust_used': 0.6, 'barrier_used': 0.4}))),
+        'ndim_journey_run_stage', workspace_id=WS, journey_id=JID, stage='rl')
+    assert 'not advice' in rules['limits'] and 'never present them as what to do' in rules['next']
+
+
+def test_journey_decisions_are_audited_only_after_the_engine_accepts(tmp_path):
+    audit_file = tmp_path / 'audit.jsonl'
+    cfg = Settings(audit_log=audit_file, retry_base_delay=0)
+    responses = [httpx.Response(409, json={'detail': 'Digital twin needs these stages first: Compartmental model.'}),
+                 httpx.Response(200, json=journey_body(stage='digital', output={
+                     'model': 'hybrid', 'horizon_days': 10, 'method_status': 'illustrative_uncalibrated',
+                     'trajectory': trajectory(0.3), 'feedback': {'observed_adoption': 0.2}}))]
+    server = create_server(cfg, EngineClient(cfg, transport=httpx.MockTransport(lambda request: responses.pop(0))))
+    args = dict(workspace_id=WS, journey_id=JID, stage='digital', observed_adoption=0.2, trust_shift=0, barrier_shift=0,
+                approval_statement='These are our June field numbers.')
+    with pytest.raises(ToolError, match='needs these stages first'):
+        call(server, 'ndim_journey_run_stage', **args)
+    assert not audit_file.exists()
+    call(server, 'ndim_journey_run_stage', **args)
+    entry = json.loads(audit_file.read_text())
+    assert entry['tool'] == 'ndim_journey_run_stage' and entry['stage'] == 'digital'
+    assert entry['approval_statement'] == 'These are our June field numbers.'
+
+
+def test_journey_stage_sends_only_what_the_researcher_gave():
+    sent = []
+
+    def handler(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json=journey_body())
+    call(build(handler), 'ndim_journey_run_stage', workspace_id=WS, journey_id=JID, stage='encoding')
+    assert 'observed_adoption' not in sent[0] and 'approval_statement' not in sent[0]
+
+
+def test_invalid_journey_id_never_reaches_a_url():
+    paths = []
+
+    def handler(request):
+        paths.append(request.url.path)
+        return httpx.Response(200, json={'journeys': []})
+    with pytest.raises(ToolError, match='Invalid journey_id.*ndim_journey_list.*Do not start a new journey'):
+        call(build(handler), 'ndim_journey_status', workspace_id=WS, journey_id='../x')
+    assert paths == [f'/engine/workspaces/{WS}/journeys']
+
+
+def test_a_mangled_journey_id_names_the_journey_it_meant():
+    # A live agent dropped '-4a7b' from the UUID, then started a second journey and re-entered the evidence.
+    rows = [{'journey_id': JID, 'question': 'How might trusted messengers change clean cooking adoption?',
+             'created_at': '2026-09-29T10:00:00+00:00', 'updated_at': '2026-09-29T10:05:00+00:00', 'stages_done': 4}]
+    server = build(lambda request: httpx.Response(200, json={'journeys': rows}))
+    mangled = JID.replace('-4a7b', '')
+    with pytest.raises(ToolError, match=f"Did you mean '{JID}'.*4 stage.*Do not start a new journey"):
+        call(server, 'ndim_journey_run_stage', workspace_id=WS, journey_id=mangled, stage='compartmental')
+    unknown = build(lambda request: httpx.Response(404, json={'detail': 'Journey not found'})
+                    if request.url.path.endswith(JID) else httpx.Response(200, json={'journeys': rows}))
+    with pytest.raises(ToolError, match=f"404.*Did you mean '{JID}'"):
+        call(unknown, 'ndim_journey_status', workspace_id=WS, journey_id=JID)
+
+
+def test_journey_start_describes_the_path_and_pins_the_id():
+    view = call(build(lambda request: httpx.Response(201, json=journey_body())), 'ndim_journey_start',
+                workspace_id=WS, question='How might trusted messengers change clean cooking adoption?')
+    assert view['next'].startswith(f'Use journey_id {JID} exactly')
+    assert '6. Export: a policy draft of options' in view['next'] and 'stage 7' in view['next'] and 'field notes' in view['next']
+    # Given only phase names, a live agent called the twin "to validate findings" and the export "actionable".
+    assert not re.search(r'\b(validat|actionable|calibrat)', view['next'].split('They decide')[0], re.I)
+
+
+def test_compartments_come_with_the_engines_names():
+    # Given only S/M/T/I/R, a live agent called M "Messenger" and I "Influenced".
+    names = trajectory_stats(trajectory(0.5))['compartment_names']
+    assert names['M'] == 'misinformed' and names['I'] == 'inoculated' and names['T'] == 'truth-aligned'
