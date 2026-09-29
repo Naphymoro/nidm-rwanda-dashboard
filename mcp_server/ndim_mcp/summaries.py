@@ -8,8 +8,10 @@ REPORTING_RULES = ('When reporting: lead a scenario with the baseline vs interve
                    'adoption is X at day N", never "adoption will reach X". Call a delta the difference between two model '
                    'endpoints, never an effect of the intervention. Call scores what "the keyword heuristic scored this '
                    'narrative", never measured trust in a community. Never write validated, calibrated, confirmed, '
-                   'significant or robust. Scope claims to this narrative and this model. If peak_day is the last day, '
-                   'the peak adds nothing; if both arms end near 1.0, say the model saturated.')
+                   'significant or robust. Scope claims to this narrative and this model. Only speak of a peak when '
+                   'stats.shape is "peaks_before_end"; when adoption rises to the last day there is no peak, so report '
+                   'fastest_growth_day (when adoption grew fastest) instead. If both arms end near 1.0, say the model '
+                   'saturated.')
 TERMINAL = {'completed', 'failed', 'cancelled', 'interrupted'}
 COMPARTMENTS = ('S', 'M', 'T', 'I', 'R')
 REQUEST_FIELDS = ('model', 'horizon_days', 'intervention_strength', 'initial_adoption', 'narrative_influence',
@@ -19,13 +21,30 @@ COMPARE_FACTORS = ('model', 'horizon_days', 'intervention_strength', 'initial_ad
 
 
 def trajectory_stats(trajectory):
+    """Endpoint statistics, plus a peak only where one exists.
+
+    Adoption in these models usually rises to the horizon, so the maximum is the last day and a "peak" there is
+    just the endpoint restated. The peak is reported only when adoption tops out before the end (at the 4-decimal
+    precision reported); otherwise fastest_growth_day is the informative timing."""
     if not trajectory:
         return {'points': 0}
     last = trajectory[-1]
-    peak = max(trajectory, key=lambda row: row['adoption'])
-    stats = {'points': len(trajectory), 'initial_adoption': round(trajectory[0]['adoption'], 4),
-             'final_adoption': round(last['adoption'], 4), 'peak_adoption': round(peak['adoption'], 4),
-             'peak_day': peak['day']}
+    final = round(last['adoption'], 4)
+    peak = max(trajectory, key=lambda row: row['adoption'])  # first maximum on ties
+    stats = {'points': len(trajectory), 'initial_adoption': round(trajectory[0]['adoption'], 4), 'final_adoption': final}
+    levels = [round(row['adoption'], 4) for row in trajectory]
+    if max(levels) == min(levels):
+        stats['shape'] = 'flat'
+    elif round(peak['adoption'], 4) > final:
+        stats['shape'] = 'peaks_before_end'
+        stats['peak_adoption'] = round(peak['adoption'], 4)
+        stats['peak_day'] = peak['day']
+    else:
+        stats['shape'] = 'rises_to_end'
+    steps = [(trajectory[i]['adoption'] - trajectory[i - 1]['adoption'], i) for i in range(1, len(trajectory))]
+    if steps and (fastest := max(steps, key=lambda step: step[0]))[0] > 0:  # first day on ties
+        stats['fastest_growth_day'] = trajectory[fastest[1]]['day']
+        stats['fastest_growth'] = round(fastest[0], 4)
     if 'adoption_lower' in last:
         stats['final_heuristic_band'] = [round(last['adoption_lower'], 4), round(last['adoption_upper'], 4)]
     if all(name in last for name in COMPARTMENTS):
@@ -138,8 +157,9 @@ def _headline(run):
     step, output = next(((s, o) for s, o in sims if s['id'] == 'intervention'), sims[-1])
     stats = trajectory_stats(output['trajectory'])
     base = next((o for s, o in sims if s['id'] == 'baseline'), None)
-    row = {'step_id': step['id'], 'final_adoption': stats['final_adoption'], 'peak_adoption': stats['peak_adoption'],
-           'peak_day': stats['peak_day']}
+    row = {'step_id': step['id'], 'final_adoption': stats['final_adoption'], 'shape': stats['shape'],
+           'peak_adoption': stats.get('peak_adoption'), 'peak_day': stats.get('peak_day'),
+           'fastest_growth_day': stats.get('fastest_growth_day')}
     if base is not None and step['id'] != 'baseline':
         base_final = base['trajectory'][-1]['adoption']
         row['baseline_final_adoption'] = round(base_final, 4)
@@ -192,7 +212,8 @@ def compare_runs(runs, reference_id=None):
     else:
         comparability = {'varied_factors': [], 'notes': ['Fewer than two comparable runs.'], 'controlled': False,
                          'reference_run_id': None}
-    columns = ['run_id', *COMPARE_FACTORS, 'final_adoption', 'peak_adoption', 'peak_day', 'delta_final_adoption']
+    columns = ['run_id', *COMPARE_FACTORS, 'final_adoption', 'shape', 'peak_day', 'fastest_growth_day',
+               'delta_final_adoption']
     table = ['| ' + ' | '.join(columns) + ' |', '|' + '---|' * len(columns)]
     for row in rows:
         table.append('| ' + ' | '.join('' if row.get(col) is None else str(row[col])[:8] if col == 'run_id' else str(row[col])

@@ -66,10 +66,56 @@ def call(server, name, **args):
     return result
 
 
-def test_trajectory_stats_reports_peak_and_band():
+def curve(*levels):
+    return [{'day': float(day), 'adoption': level} for day, level in enumerate(levels)]
+
+
+def test_trajectory_stats_reports_endpoints_and_band():
     stats = trajectory_stats(trajectory(0.9))
-    assert stats['final_adoption'] == 0.9 and stats['peak_day'] == 9.0 and stats['points'] == 10
+    assert stats['final_adoption'] == 0.9 and stats['points'] == 10
     assert stats['final_heuristic_band'] == [0.0, 1.0]
+
+
+def test_rising_curve_has_no_peak_only_fastest_growth():
+    # A live chat reported the last day as the "peak": for adoption that only rises, max() is the endpoint restated.
+    stats = trajectory_stats(curve(0.1, 0.2, 0.5, 0.7, 0.8))
+    assert stats['shape'] == 'rises_to_end' and 'peak_day' not in stats and 'peak_adoption' not in stats
+    assert stats['fastest_growth_day'] == 2.0 and stats['fastest_growth'] == 0.3
+
+
+def test_plateau_that_only_differs_below_reporting_precision_is_not_a_peak():
+    stats = trajectory_stats(curve(0.1, 0.5, 0.9, 0.900001, 0.9000004))
+    assert stats['shape'] == 'rises_to_end' and 'peak_day' not in stats
+
+
+def test_curve_that_falls_before_the_end_reports_its_peak():
+    stats = trajectory_stats(curve(0.1, 0.4, 0.6, 0.5, 0.45))
+    assert stats['shape'] == 'peaks_before_end' and stats['peak_day'] == 2.0 and stats['peak_adoption'] == 0.6
+    assert stats['fastest_growth_day'] == 1.0
+
+
+def test_flat_and_single_point_curves_report_no_peak_or_growth():
+    for levels in [(0.3, 0.3, 0.3), (0.3,)]:
+        stats = trajectory_stats(curve(*levels))
+        assert stats['shape'] == 'flat' and 'peak_day' not in stats and 'fastest_growth_day' not in stats
+
+
+def test_fastest_growth_ties_resolve_to_the_first_day():
+    assert trajectory_stats(curve(0.0, 0.25, 0.5, 0.75))['fastest_growth_day'] == 1.0
+
+
+def test_compare_does_not_show_the_last_day_as_a_peak():
+    result = compare_runs([make_run(RID)])
+    row = result['rows'][0]
+    assert row['shape'] == 'rises_to_end' and row['peak_day'] is None and row['fastest_growth_day'] is not None
+    header, _, line = result['markdown_table'].splitlines()
+    cells = dict(zip(header.strip('| ').split(' | '), line.strip('| ').split(' | ')))
+    assert cells['shape'] == 'rises_to_end' and cells['peak_day'] == ''
+
+
+def test_reporting_rules_forbid_calling_the_endpoint_a_peak():
+    next_step = summarize_run(make_run())['next']
+    assert 'fastest_growth_day' in next_step and 'peaks_before_end' in next_step
 
 
 def test_summary_drops_long_text_and_trajectories_by_default():
