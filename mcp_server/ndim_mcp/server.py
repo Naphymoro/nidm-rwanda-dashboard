@@ -477,11 +477,16 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         view = journey_view(body)
         # A live agent skipped ndim_journey_guide and asked for evidence without saying where the journey goes. Given only
         # the phase names, it described the twin as "to validate findings" and the export as "actionable policy outputs".
+        # Told to quote the question and add nothing, live agents still wrote "how trusted messengers can change ...
+        # adoption in Rwanda": a paraphrase with the country folded in. A finished sentence names the country apart.
+        view['opening'] = (f'The journey has started with your question, exactly as you confirmed it: "{view["question"]}" '
+                           f'The setting is {view["country"]}.')
         view['next'] = (f'Use journey_id {view["journey_id"]} exactly for every later call in this journey; start only one '
-                        'journey per question. Before asking for evidence, tell the researcher what lies ahead, using '
-                        'the text below word for word, unless you already showed it from ndim_journey_guide; do not '
-                        'list the stages any other way. When you mention the question, quote it as written, adding '
-                        'nothing (the country is not part of it).\n\n' + INTRO + '\n\n' + view['next'])
+                        'journey per question. Begin your reply with the opening sentence word for word; after it, refer '
+                        'to the question only by quoting it exactly, never by paraphrase. Before asking for evidence, '
+                        'tell the researcher what lies ahead, using the text below word for word, unless you already '
+                        'showed it from ndim_journey_guide; do not list the stages any other way.\n\n' + INTRO + '\n\n'
+                        + view['next'])
         return view
 
     @mcp.tool(annotations=READ)

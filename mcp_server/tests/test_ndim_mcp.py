@@ -724,7 +724,9 @@ def test_journey_start_describes_the_path_and_pins_the_id():
     view = call(build(lambda request: httpx.Response(201, json=journey_body())), 'ndim_journey_start',
                 workspace_id=WS, question='How might trusted messengers change clean cooking adoption?',
                 question_confirmation='Yes, that is my question.')
-    assert view['next'].startswith(f'Use journey_id {JID} exactly')
+    assert view['next'].startswith(f'Use journey_id {JID} exactly') and 'opening sentence word for word' in view['next']
+    assert view['opening'] == ('The journey has started with your question, exactly as you confirmed it: "How might trusted '
+                               'messengers change clean cooking adoption?" The setting is Rwanda.')
     assert '6. Export: a policy draft of options' in view['next'] and '(stage 7)' in view['next'] and 'field notes' in view['next']
     # Given only phase names, a live agent called the twin "to validate findings" and the export "actionable".
     assert not re.search(r'\b(validat|actionable|calibrat)', view['next'].split('They decide')[0], re.I)
