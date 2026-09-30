@@ -47,14 +47,22 @@ GUIDE = ('Guide the researcher one stage at a time. After each stage, explain in
          '(approval_statement) and, for the digital twin, their own field observations: ask for them, never invent or '
          'default them.')
 
-# The phases in words that claim nothing the stages cannot do (no "validate", no "actionable").
-JOURNEY_PHASES = ('1. Evidence: your field notes are stored as given, checked for metadata and personal data, and you '
-                  'accept or reject each one. 2. Encode: an English keyword heuristic scores trust, barriers and '
-                  'themes. 3. Model: illustrative, uncalibrated adoption curves from those scores. 4. Twin: the model '
-                  're-run from your own field observations, then a signal update and a ranking of actions under the '
-                  'tool\'s fixed assumptions. 5. Strategy: place summaries, a map of which themes occur together, and '
-                  'message drafts for your review. 6. Export: a policy draft of options for your team to discuss, not '
-                  'recommendations.')
+# The phases in words that claim nothing the stages cannot do (no "validate", no "actionable"), and the three points
+# where the journey waits for the researcher's own words. Live intros assembled from these parts printed empty phase
+# headings or dropped the decision points; the agent copies a finished text more faithfully than it builds one.
+INTRO = ('**The journey, in six phases**\n\n'
+         '1. Evidence: your field notes are stored as given, checked for metadata and personal data, and you accept or '
+         'reject each one.\n'
+         '2. Encode: an English keyword heuristic scores trust, barriers and themes.\n'
+         '3. Model: illustrative, uncalibrated adoption curves from those scores.\n'
+         '4. Twin: the model re-run from your own field observations, then a signal update and a ranking of actions under '
+         'the tool\'s fixed assumptions.\n'
+         '5. Strategy: place summaries, a map of which themes occur together, and message drafts for your review.\n'
+         '6. Export: a policy draft of options for your team to discuss, not recommendations.\n\n'
+         '**You decide at three points**\n\n'
+         '- Accepting or rejecting each record (stage 3)\n'
+         '- Giving your own field observations for the digital twin (stage 7)\n'
+         '- Approving the policy export (stage 13)')
 
 SATURATED = 0.9  # final adoption at or above this: the curve has little room left to show differences
 

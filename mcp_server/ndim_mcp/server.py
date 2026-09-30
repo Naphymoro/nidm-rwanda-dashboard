@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from . import audit, sweeps
 from .client import EngineClient, EngineError, check_ids
 from .config import Settings
-from .journey import GUIDE, JOURNEY_PHASES, LIMITS, journey_view
+from .journey import GUIDE, INTRO, LIMITS, journey_view
 from .summaries import (DEFAULT_STRENGTH, ELIGIBLE, EXISTING_RUNS, NOTICE, REPORTING_RULES, TERMINAL, compare_runs,
                         existing_run_note, ineligible, summarize_plan, summarize_run, tutorial)
 
@@ -30,8 +30,8 @@ scope every claim to "this narrative" and "this model". Pass the researcher's qu
 A new question needs a new plan. Runs from ndim_list_runs are existing work: never present one as an answer; offer
 its matching tutorial (an engine lesson) instead, and a new experiment on the researcher's own evidence.
 Full journey: for a researcher who wants to go from their own field evidence through capture, encoding, models, the
-digital twin, strategy and a policy export, use the 13-stage journey: ndim_journey_guide -> ndim_journey_start ->
-ndim_journey_add_evidence -> ndim_journey_record_decisions (researcher decides) -> ndim_journey_run_stage for each stage
+digital twin, strategy and a policy export, use the 13-stage journey: ndim_journey_guide -> the researcher confirms their question, quoted back
+verbatim -> ndim_journey_start -> ndim_journey_add_evidence -> ndim_journey_record_decisions (researcher decides) -> ndim_journey_run_stage for each stage
 in order, explaining each result and asking before the next. ndim_journey_status shows where a journey stands.
 Never approve a plan, accept evidence, supply field observations or write a review on the researcher's behalf."""
 
@@ -53,11 +53,17 @@ RunId = Annotated[str, Field(description='Run UUID returned by ndim_plan_experim
 # A live agent turned "clean cooking adoption" into "adoption of gas stoves"; the question is the researcher's, not ours.
 Question = Annotated[str, Field(min_length=8, max_length=1000, description=(
     "The researcher's question copied verbatim from their message. Do not rephrase, narrow, broaden or swap terms "
-    '(e.g. do not turn "clean cooking" into "gas stoves" or "CHWs" into "health workers"), and do not add a prefix. '
+    '(e.g. do not turn "clean cooking" into "gas stoves" or "CHWs" into "health workers"), and do not add a prefix or '
+    'context such as "in Rwanda" (the country has its own field). '
     'If it is too long or unclear, ask the researcher rather than rewriting it.'))]
 Approval = Annotated[str, Field(min_length=12, max_length=1000, description=(
     "The researcher's own words approving THIS plan, quoted from the conversation. Only call this tool after the "
     'researcher has actually approved; never write this text yourself. It is stored in an audit log.'))]
+# A live agent started a journey for "... adoption in Rwanda?" when the researcher had not said "in Rwanda".
+QuestionConfirmation = Annotated[str, Field(min_length=2, max_length=1000, description=(
+    "The researcher's reply after you showed them the question in quotes, exactly as you will pass it, and asked them to "
+    'confirm or correct it, e.g. "Yes, that is my question." Only call after they replied; never write this text '
+    'yourself. If they corrected it, pass their corrected wording as question. It is stored in an audit log.'))]
 JourneyId = Annotated[str, Field(description='Journey UUID returned by ndim_journey_start.')]
 Stage = Literal['encoding', 'compartmental', 'agents', 'digital', 'bayes', 'rl', 'regional', 'graph', 'inoculation', 'policy']
 
@@ -442,8 +448,11 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                            | {'optional': stage.get('optional', False), 'limits': LIMITS[stage['id']]} for stage in guide['stages']],
                 'principles': guide['principles'],
                 'web_app': f'{public}/classic-workbench',
-                'next': 'Describe the journey briefly (the six phases and that the researcher decides at stages 3, 7 and '
-                        '13), then ask for their question and start with ndim_journey_start. ' + GUIDE}
+                'intro': INTRO,
+                'next': ('Show the researcher the intro field word for word, as markdown. Then show their question back in '
+                         'quotes, exactly as you will pass it to ndim_journey_start (ask for it if they have not given '
+                         'one), and ask them to confirm or correct it. Call ndim_journey_start only after they reply, with '
+                         'that reply as question_confirmation. ' + GUIDE)}
 
     @mcp.tool(annotations=READ)
     async def ndim_journey_list(workspace_id: Workspace) -> dict:
@@ -454,20 +463,25 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                                 'researcher confirms it is theirs; otherwise start a new journey.'}
 
     @mcp.tool(annotations=WRITE)
-    async def ndim_journey_start(workspace_id: Workspace, question: Question,
+    async def ndim_journey_start(workspace_id: Workspace, question: Question, question_confirmation: QuestionConfirmation,
                                  country: Annotated[str, Field(min_length=2, max_length=80)] = 'Rwanda') -> dict:
-        """Start a 13-stage journey for the researcher's question. Nothing is scored or modelled yet."""
+        """Start a 13-stage journey for the researcher's question. Nothing is scored or modelled yet.
+
+        Call ndim_journey_guide first. Before this call, show the researcher the question in quotes exactly as you will
+        pass it and wait for them to confirm or correct it."""
         check_ids(workspace_id)
         body = await engine.request('POST', f'/engine/workspaces/{workspace_id}/journeys',
                                     json={'question': question, 'country': country})
+        audit.record(settings, 'ndim_journey_start', workspace_id=workspace_id, journey_id=body['journey_id'],
+                     question=question, question_confirmation=question_confirmation)
         view = journey_view(body)
         # A live agent skipped ndim_journey_guide and asked for evidence without saying where the journey goes. Given only
         # the phase names, it described the twin as "to validate findings" and the export as "actionable policy outputs".
         view['next'] = (f'Use journey_id {view["journey_id"]} exactly for every later call in this journey; start only one '
                         'journey per question. Before asking for evidence, tell the researcher what lies ahead, using '
-                        f'these descriptions as written: {JOURNEY_PHASES} They decide at three points: accepting or '
-                        'rejecting each record (stage 3), giving their own field observations for the digital twin '
-                        '(stage 7), and approving the policy export (stage 13). ' + view['next'])
+                        'the text below word for word, unless you already showed it from ndim_journey_guide; do not '
+                        'list the stages any other way. When you mention the question, quote it as written, adding '
+                        'nothing (the country is not part of it).\n\n' + INTRO + '\n\n' + view['next'])
         return view
 
     @mcp.tool(annotations=READ)

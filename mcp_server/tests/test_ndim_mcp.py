@@ -722,9 +722,10 @@ def test_a_mangled_journey_id_names_the_journey_it_meant():
 
 def test_journey_start_describes_the_path_and_pins_the_id():
     view = call(build(lambda request: httpx.Response(201, json=journey_body())), 'ndim_journey_start',
-                workspace_id=WS, question='How might trusted messengers change clean cooking adoption?')
+                workspace_id=WS, question='How might trusted messengers change clean cooking adoption?',
+                question_confirmation='Yes, that is my question.')
     assert view['next'].startswith(f'Use journey_id {JID} exactly')
-    assert '6. Export: a policy draft of options' in view['next'] and 'stage 7' in view['next'] and 'field notes' in view['next']
+    assert '6. Export: a policy draft of options' in view['next'] and '(stage 7)' in view['next'] and 'field notes' in view['next']
     # Given only phase names, a live agent called the twin "to validate findings" and the export "actionable".
     assert not re.search(r'\b(validat|actionable|calibrat)', view['next'].split('They decide')[0], re.I)
 
@@ -733,3 +734,24 @@ def test_compartments_come_with_the_engines_names():
     # Given only S/M/T/I/R, a live agent called M "Messenger" and I "Influenced".
     names = trajectory_stats(trajectory(0.5))['compartment_names']
     assert names['M'] == 'misinformed' and names['I'] == 'inoculated' and names['T'] == 'truth-aligned'
+
+
+def test_journey_start_needs_the_researchers_confirmation_of_the_question(tmp_path):
+    # A live agent started a journey for "... adoption in Rwanda?"; the researcher never saw the question it used.
+    tools = {tool.name: tool for tool in asyncio.run(build(FakeEngine()).list_tools())}
+    schema = tools['ndim_journey_start'].inputSchema
+    assert 'question_confirmation' in schema['required'] and 'in Rwanda' in schema['properties']['question']['description']
+    guide = {'stages': [{'number': n, 'id': i, 'title': t, 'phase': p, 'does': 'd', 'needs': [], 'researcher_decision': d}
+                        for n, i, t, p, d in STAGE_ROWS], 'principles': []}
+    view = call(build(lambda request: httpx.Response(200, json=guide)), 'ndim_journey_guide')
+    assert view['intro'].count('\n- ') == 3 and '\n6. Export: a policy draft' in view['intro'] and '(stage 13)' in view['intro']
+    assert view['next'].index('intro field word for word') < view['next'].index('show their question back in quotes') < view['next'].index(
+        'question_confirmation')
+    audit_file = tmp_path / 'audit.jsonl'
+    cfg = Settings(audit_log=audit_file, retry_base_delay=0)
+    server = create_server(cfg, EngineClient(cfg, transport=httpx.MockTransport(lambda request: httpx.Response(201, json=journey_body()))))
+    call(server, 'ndim_journey_start', workspace_id=WS, question='How might trusted messengers change clean cooking adoption?',
+         question_confirmation='Yes, that is my question.')
+    entry = json.loads(audit_file.read_text())
+    assert entry['tool'] == 'ndim_journey_start' and entry['journey_id'] == JID
+    assert entry['question_confirmation'] == 'Yes, that is my question.'
