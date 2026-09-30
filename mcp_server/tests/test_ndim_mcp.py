@@ -757,3 +757,19 @@ def test_journey_start_needs_the_researchers_confirmation_of_the_question(tmp_pa
     entry = json.loads(audit_file.read_text())
     assert entry['tool'] == 'ndim_journey_start' and entry['journey_id'] == JID
     assert entry['question_confirmation'] == 'Yes, that is my question.'
+
+
+def test_the_optional_regional_stage_is_offered_not_skipped_silently():
+    body = journey_body(('intake', 'gate', 'repository', 'encoding', 'compartmental', 'agents', 'digital', 'bayes', 'rl'), 'graph')
+    body['stages'][9]['status'] = 'ready'
+    view = call(build(lambda request: httpx.Response(200, json=body)), 'ndim_journey_status', workspace_id=WS, journey_id=JID)
+    assert 'Stage 10, Regional analysis, is optional and has not been run' in view['next']
+    body['stages'][9]['status'] = 'done'
+    view = call(build(lambda request: httpx.Response(200, json=body)), 'ndim_journey_status', workspace_id=WS, journey_id=JID)
+    assert 'Regional analysis, is optional' not in view['next']
+
+
+def test_the_policy_approval_question_is_the_agents_to_ask():
+    view = call(build(lambda request: httpx.Response(200, json=journey_body(next_stage='policy'))), 'ndim_journey_status',
+                workspace_id=WS, journey_id=JID)
+    assert '"Do you approve exporting the policy draft?" It is your question to them' in view['next']

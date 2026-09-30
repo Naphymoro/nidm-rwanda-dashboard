@@ -48,8 +48,9 @@ GUIDE = ('Guide the researcher one stage at a time. After each stage, explain in
          'default them.')
 
 # The phases in words that claim nothing the stages cannot do (no "validate", no "actionable"), and the three points
-# where the journey waits for the researcher's own words. Live intros assembled from these parts printed empty phase
-# headings or dropped the decision points; the agent copies a finished text more faithfully than it builds one.
+# where the journey waits for the researcher's own words. Live intros assembled from these parts changed their meaning
+# ("any personal data removed", when the gate only flags it) or dropped the decision points; the agent copies a finished
+# text more faithfully than it builds one.
 INTRO = ('**The journey, in six phases**\n\n'
          '1. Evidence: your field notes are stored as given, checked for metadata and personal data, and you accept or '
          'reject each one.\n'
@@ -164,9 +165,15 @@ def journey_view(body):
             parts.append('Ask for their field notes or stories, each with place (admin_unit), source, period, language and '
                          'whether they have permission to use it (consent), then call ndim_journey_add_evidence.')
         if nxt == 'policy':
+            # A live agent told the researcher to "confirm by stating" this question, as if it were a phrase for them to say.
             parts.append('Tell the researcher it assembles a draft for their team\'s review (options for discussion, not '
-                         'recommendations), then ask exactly: "Do you approve exporting the policy draft?" Run it only on a '
-                         'yes, and pass that reply verbatim as approval_statement.')
+                         'recommendations), then end your message by asking them, in these words: "Do you approve '
+                         'exporting the policy draft?" It is your question to them, not a phrase for them to repeat. Run '
+                         'it only on a yes, and pass their reply verbatim as approval_statement.')
+        if nxt == 'graph' and stages['regional']['status'] != 'done':
+            # The engine never makes an optional stage next_stage, so a live agent went from 9 to 11 without a word.
+            parts.append('Stage 10, Regional analysis, is optional and has not been run: tell the researcher it averages '
+                         'the keyword scores per place, and ask whether to run it before the knowledge graph or skip it.')
         if nxt == 'digital':
             parts.append('Ask for their field observations: the adoption share they observed (0-1), any change in trust and '
                          'in barriers (-1 to 1; 0 if none), and optionally an observed adoption series. Never fill these in.')
