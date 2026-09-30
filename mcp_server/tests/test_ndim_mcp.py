@@ -773,3 +773,20 @@ def test_the_policy_approval_question_is_the_agents_to_ask():
     view = call(build(lambda request: httpx.Response(200, json=journey_body(next_stage='policy'))), 'ndim_journey_status',
                 workspace_id=WS, journey_id=JID)
     assert '"Do you approve exporting the policy draft?" It is your question to them' in view['next']
+
+
+def test_inoculation_curves_come_with_a_sentence_that_claims_no_message_effect():
+    # A live agent read saturated curves as "marginal effects due to saturation".
+    rise = lambda final: [{'day': 0.0, 'adoption': 0.1}, {'day': 1.0, 'adoption': final}]
+    output = {'audience': 'households', 'tone': 'clear', 'messenger': 'health_worker', 'drafts': [], 'review_status': 'r',
+              'curve_method': 'm', 'estimated_strength': 0.60834, 'twin': None,
+              'curves': {'compartmental': {'before': rise(0.9891), 'during': rise(0.9897), 'after': rise(0.99)},
+                         'agents': {'before': rise(0.878), 'during': rise(0.8865), 'after': rise(0.8904)}}}
+    view = call(build(lambda request: httpx.Response(200, json=journey_body(stage='inoculation', output=output))),
+                'ndim_journey_run_stage', workspace_id=WS, journey_id=JID, stage='inoculation')
+    sentence = view['result']['curves_sentence']
+    assert sentence == ('In the illustrative models, final adoption before, during and after the message is 0.9891, 0.9897 '
+                        'and 0.99 (compartmental) and 0.878, 0.8865 and 0.8904 (agent-based). These gaps come from the '
+                        "tool's fixed lift formula, not from any model of how messages work, so they say nothing about what "
+                        'the messages would do. The compartmental curves have also saturated (0.9 or more of 1.0).')
+    assert f'word for word, and add nothing else about what the messages would do' in view['next'] and sentence in view['next']

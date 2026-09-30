@@ -78,6 +78,23 @@ def _curve(output):
     return view
 
 
+MODEL_NAMES = {'compartmental': 'compartmental', 'agents': 'agent-based'}
+
+
+def curves_sentence(curves):
+    """The one thing the before/during/after curves can support. Told not to read saturated curves as a small message
+    effect, a live agent still wrote that they "suggest marginal effects due to saturation"; it quotes a sentence better."""
+    parts = [f"{', '.join(str(phases[key]) for key in ('before', 'during'))} and {phases['after']} ({MODEL_NAMES.get(model, model)})"
+             for model, phases in curves.items()]
+    sentence = ('In the illustrative models, final adoption before, during and after the message is '
+                + ' and '.join(parts) + '. These gaps come from the tool\'s fixed lift formula, not from any model of how '
+                'messages work, so they say nothing about what the messages would do.')
+    saturated = [MODEL_NAMES.get(model, model) for model, phases in curves.items() if min(phases.values()) >= SATURATED]
+    if saturated:
+        sentence += f" The {' and '.join(saturated)} curves have also saturated (0.9 or more of 1.0)."
+    return sentence
+
+
 def stage_view(stage, output):
     """Compact view of one stage's output."""
     if stage == 'encoding':
@@ -117,10 +134,7 @@ def stage_view(stage, output):
         view['estimated_strength'] = round(output['estimated_strength'], 4)
         view['curves'] = {model: {phase: trajectory_stats(rows)['final_adoption'] for phase, rows in phases.items()}
                           for model, phases in output['curves'].items()}
-        view['curves_note'] = 'Final adoption per model before, during and after the message, from the fixed lift formula.'
-        if any(value >= SATURATED for phases in view['curves'].values() for value in phases.values()):
-            view['curves_note'] += (' The curves are saturated (0.9 or more), so the gaps between them are small by '
-                                    'construction; do not read them as a small message effect.')
+        view['curves_sentence'] = curves_sentence(view['curves'])
         if output.get('twin'):
             view['twin_with_inoculation'] = _curve(output['twin'])
         return view
@@ -152,6 +166,10 @@ def journey_view(body):
             parts.append('Re-running this stage cleared these later stages, which must be run again: '
                          + ', '.join(body['cleared_later_stages']) + '.')
         parts.append(f"Explain the {stages[stage]['title']} result in plain words with its limits (the limits field).")
+        if stage == 'inoculation':
+            parts.append('Report the before, during and after curves with this sentence, word for word, and add nothing '
+                         'else about what the messages would do (no "marginal", "small", "limited" or "suggests"): "'
+                         + view['result']['curves_sentence'] + '"')
     if undecided := body.get('undecided'):
         parts.append(f'{len(undecided)} record(s) still need an accept or reject decision from the researcher before '
                      'the repository is complete.')
