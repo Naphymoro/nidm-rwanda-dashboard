@@ -1,0 +1,29 @@
+# The NDIM engine (backend/Dockerfile) on Cloudflare Containers, behind a Worker. Needs the Workers Paid plan.
+# The Pages site calls it as https://nidm-engine.pages.dev/engine/?api=<this Worker's URL>.
+name = "ndim-engine"
+main = "src/index.ts"
+compatibility_date = "2026-09-30"
+
+[[containers]]
+class_name = "NdimEngine"
+image = "../../backend/Dockerfile"
+# backend/Dockerfile copies from the repo root; the root .dockerignore keeps the context to what it copies.
+image_build_context = "../.."
+# PyTorch and Pyro need more than basic's 1 GiB; the image is about 1.9 GB of standard-1's 8 GB disk.
+instance_type = "standard-1"
+# The engine keeps workspaces and journeys as files on its own disk, so every user must reach the same instance.
+max_instances = 1
+
+[[durable_objects.bindings]]
+name = "ENGINE"
+class_name = "NdimEngine"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["NdimEngine"]
+
+[vars]
+NDIM_ALLOWED_ORIGINS = "https://nidm-engine.pages.dev"
+
+# Secrets (set with `npx wrangler secret put NAME`, never in this file):
+#   DATABASE_URL  optional Postgres connection string
