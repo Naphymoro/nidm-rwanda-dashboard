@@ -11,7 +11,7 @@ NUMBER = re.compile(r'(?<![\w.])[-−]?\d+(?:[.,]\d+)?\s*%?')
 CLAIMS = re.compile(r'\b(will (?:reach|increase|rise|grow|improve|boost)|caus(?:es|ed|ing)|cause|dr(?:ive|ives|iving|iven|ove)|'
                     r'leads? to|boost(?:s|ed|ing)?|accelerat\w*|predict\w*|forecasts?(?!\w)|validat\w*|(?<!un)calibrated|'
                     r'significant(?:ly)?|robust|recommend\w*|actionable|most (?:effective|efficient|scalable))\b', re.I)
-NEGATION = re.compile(r"\b(not|cannot|can't|never|no|nor|without|isn't|aren't|doesn't|don't)\b[^.]{0,40}$", re.I)
+NEGATION = re.compile(r"\b(not|cannot|can't|never|no|nor|nothing|without|isn't|aren't|doesn't|don't)\b[^.]{0,40}$", re.I)
 TRIVIAL = {str(n) for n in range(0, 14)}  # stage numbers, counts of records and the like
 
 

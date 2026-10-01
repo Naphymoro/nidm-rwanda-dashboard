@@ -463,8 +463,8 @@ function details(run){
 // ---------- journey card ----------
 // The 13-stage journey's controls. The assistant can only propose a question or records and run the stages that
 // compute; starting the journey, adding records, accepting or rejecting them, entering field observations and approving
-// the export happen only here, through the researcher's clicks. The key sentences and limits are the engine's, shown as
-// written. After each click the app tells the assistant what happened, as it does when a run finishes.
+// the export happen only here, through the researcher's clicks. Each stage's explanation and limits are the engine's,
+// shown as written; the assistant is not asked to explain results (small models invented them) but answers questions.
 const NOTE = '(Note from the app, not typed by the researcher) ';
 const journeyURL = (path='') => threadURL(state.threadId)+'/journey'+path;
 const CONSENTS = [['','Choose permission…'],['research_use','Permission confirmed for research use'],['synthetic','Synthetic / demo data'],['unconfirmed','Permission not confirmed']];
@@ -490,7 +490,7 @@ async function journeyAction(call,note){
     state.journeyProposal=null;
   }catch(err){state.journeyError=err.message;state.journeyBusy=false;rerenderJourney();return;}
   state.journeyBusy=false;state.journeyDraft={};rerenderJourney();loadThreads();
-  if(agentOn())await sendAgent(NOTE+note,{hidden:true});
+  if(note&&agentOn())await sendAgent(NOTE+note,{hidden:true});
 }
 const post=(path,body)=>api(journeyURL(path),{method:'POST',body:JSON.stringify(body)});
 function field(label,input,hint){return el('label',{class:'jc-field'},el('span',{text:label}),input,hint?el('small',{class:'muted',text:hint}):null);}
@@ -510,7 +510,7 @@ function journeyCard(){
   const latest=latestStage(j);
   if(latest)card.append(stageResult(j,latest,true));
   card.append(...nextPart(j));
-  const earlier=j.stages.filter(row=>row.status==='done'&&j.presentation.stages[row.id]?.sentences.length&&row.id!==latest);
+  const earlier=j.stages.filter(row=>row.status==='done'&&(j.presentation.stages[row.id]?.explanation||j.presentation.stages[row.id]?.sentences.length)&&row.id!==latest);
   if(earlier.length)card.append(disclosure('more','journey:earlier',false,'Earlier stage results',...earlier.map(row=>stageResult(j,row.id,false))));
   return card;
 }
@@ -524,7 +524,7 @@ function proposalPart(){
       el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
         const question=(state.journeyDraft.question||'').trim();
         if(question.length<8){state.journeyError='The question needs at least 8 characters.';rerenderJourney();return;}
-        journeyAction(()=>post('',{question}),'The researcher confirmed the question in the journey card and the journey started; the card shows the opening sentence and the six phases. In two or three sentences, welcome them and ask for their field notes: each story with its place, source, period, and whether they have permission to use it. When they give them, call propose_journey_records.');
+        journeyAction(()=>post('',{question}),'The researcher confirmed the question in the journey card and the journey started. In two sentences, ask for their field notes, pasted in this chat: each story with its place, source and period. When they give them, call propose_journey_records; they set permission in the card.');
       }},icon('check'),'Confirm question')))];
 }
 function progressPart(j){
@@ -532,13 +532,13 @@ function progressPart(j){
     row.status==='done'?el('span',{class:'st done'},icon('check')):el('span',{class:'st'}),el('span',{text:`${row.number} ${row.title}`}))));
 }
 function latestStage(j){
-  const done=j.stages.filter(row=>row.status==='done'&&row.at&&j.presentation.stages[row.id]?.sentences.length);
+  const done=j.stages.filter(row=>row.status==='done'&&row.at&&(j.presentation.stages[row.id]?.explanation||j.presentation.stages[row.id]?.sentences.length));
   return done.length?done.reduce((a,b)=>a.at>b.at?a:b).id:null;
 }
 function stageResult(j,id,current){
   const row=j.stages.find(item=>item.id===id), view=j.presentation.stages[id];
   return el('div',{class:'jc-result'+(current?' current':'')},el('b',{text:`${row.number}. ${row.title}`}),
-    ...view.sentences.map(sentence=>el('p',{text:sentence})),callout('warn','alert',view.limits));
+    ...(view.explanation?[el('p',{text:view.explanation})]:view.sentences.map(sentence=>el('p',{text:sentence}))),callout('warn','alert',view.limits));
 }
 function nextPart(j){
   if(!j.records.length)return [evidenceForm()];
@@ -547,7 +547,7 @@ function nextPart(j){
   const parts=[];
   if(next==='digital')parts.push(observationsForm());
   else if(next==='policy')parts.push(el('div',{class:'review-form'},el('p',{text:'The policy output assembles a draft for your team\'s review: options for discussion, not recommendations. It runs only when you approve it.'}),
-    el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/stages/policy',{}),'The researcher clicked Approve export in the journey card and the policy draft was assembled. Call journey_status and explain the draft in plain words: options for discussion, not recommendations.')},icon('check'),'Approve export'))));
+    el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/stages/policy',{}),null)},icon('check'),'Approve export'))));
   else if(next){const row=j.stages.find(item=>item.id===next);parts.push(el('div',{class:'actions'},runButton(row,true)));}
   else parts.push(el('p',{class:'muted',text:'All required stages are done.'}));
   if(regional.status!=='done'&&!['intake','gate','repository','encoding'].includes(next||'')&&j.stages.find(row=>row.id==='encoding').status==='done')
@@ -555,8 +555,7 @@ function nextPart(j){
   return parts;
 }
 function runButton(row,primary,label){
-  return el('button',{type:'button',class:'btn'+(primary?' primary':''),disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/stages/'+row.id,{}),
-    `The researcher clicked Run for stage ${row.number}, ${row.title}, in the journey card. Call journey_status and explain the result in plain words; the card already shows its key sentences and limits.`)},icon('play'),label||`Run ${row.number}. ${row.title}`);
+  return el('button',{type:'button',class:'btn'+(primary?' primary':''),disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/stages/'+row.id,{}),null)},icon('play'),label||`Run ${row.number}. ${row.title}`);
 }
 function evidenceForm(){
   const d=state.journeyDraft;
@@ -572,7 +571,7 @@ function evidenceForm(){
           'The encoder reads English only; other languages are blocked at the gate.')));
   });
   return el('div',{class:'review-form'},el('b',{text:'Add your field notes'}),
-    state.recordsProposal?el('p',{class:'muted',text:'NDIM filled this form from your message. Check every field: nothing is added until you click Add to journey.'}):null,
+    el('p',{class:'muted',text:state.recordsProposal?'NDIM filled this form from your message. Check every field: nothing is added until you click Add to journey.':'Type your notes here, or paste them in the chat and NDIM fills this form for you to check.'}),
     ...rows,
     el('div',{class:'actions'},
       el('button',{type:'button',class:'btn',onclick:()=>{d.records.push({text:'',admin_unit:'',source_name:'',period:'',consent:'',language:'en'});rerenderJourney();}},icon('plus'),'Another record'),
@@ -580,7 +579,7 @@ function evidenceForm(){
         const missing=d.records.findIndex(r=>!r.text.trim()||!r.admin_unit.trim()||!r.source_name.trim()||!r.period.trim()||!r.consent);
         if(missing>=0){state.journeyError=`Record ${missing+1} needs its text, place, source, period and permission.`;rerenderJourney();return;}
         const records=d.records.map(r=>({...r,text:r.text.trim()}));
-        journeyAction(()=>post('/records',{records}),`The researcher added ${records.length} record(s) in the journey card. Call journey_status, explain any gate flags in plain words, and ask them to accept or reject each record with the card's buttons.`);
+        journeyAction(()=>post('/records',{records}),null);
       }},icon('check'),'Add to journey')));
 }
 function decisionsForm(j){
@@ -598,7 +597,7 @@ function decisionsForm(j){
     el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
       const decisions=j.records.filter(r=>!r.review&&d[r.record_id]).map(r=>({record_id:r.record_id,decision:d[r.record_id]}));
       if(!decisions.length){state.journeyError='Choose Accept or Reject for at least one record.';rerenderJourney();return;}
-      journeyAction(()=>post('/review',decisions),`The researcher recorded ${decisions.length} accept/reject decision(s) in the journey card. Call journey_status and say what happens next.`);
+      journeyAction(()=>post('/review',decisions),null);
     }},icon('check'),'Save decisions')));
 }
 function observationsForm(){
@@ -612,7 +611,7 @@ function observationsForm(){
       const body={observed_adoption:read('obs'),trust_shift:read('trust'),barrier_shift:read('barrier')};
       if(Object.values(body).some(v=>v===null||!Number.isFinite(v))){state.journeyError='Enter all three observations: adoption share, change in trust and change in barriers.';rerenderJourney();return;}
       if(String(d.series||'').trim()){const s=String(d.series).split(',').map(x=>Number(x.trim()));if(s.length<3||s.some(v=>!Number.isFinite(v))){state.journeyError='The series needs 3 or more numbers separated by commas.';rerenderJourney();return;}body.observed_series=s;}
-      journeyAction(()=>post('/stages/digital',body),'The researcher entered their field observations in the journey card and the digital twin ran. Call journey_status and explain the result in plain words; the card already shows its key sentences and limits.');
+      journeyAction(()=>post('/stages/digital',body),null);
     }},icon('play'),'Run the digital twin with these observations')));
 }
 // The engine checks each reply against its own results: numbers it never produced and claims its models cannot make.

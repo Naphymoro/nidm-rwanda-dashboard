@@ -1,4 +1,5 @@
 """13-stage journey API tests; isolated workspace data and real stage execution."""
+import json
 import os
 from pathlib import Path
 import sys
@@ -193,6 +194,14 @@ class JourneyTests(unittest.TestCase):
         text = ' '.join(sentence for view in shown.values() for sentence in view['sentences'])
         for banned in ('will reach', 'recommend ', 'causes', 'validated'):
             self.assertNotIn(banned, text)
+        # The engine's own explanations must pass the check applied to the assistant's replies.
+        from app import agent_checks
+        known = agent_checks.known_numbers(json.dumps(self.client.get(f'{self.base}?full=true').json()['outputs']))
+        for stage, view in shown.items():
+            if stage in ('intake', 'gate', 'repository'):
+                continue
+            self.assertTrue(view['explanation'], stage)
+            self.assertIsNone(agent_checks.check(view['explanation'], known), (stage, view['explanation']))
         # The same text comes back on a plain read, so a reloaded chat shows the same card.
         self.assertEqual(self.client.get(self.base).json()['presentation'], body['presentation'])
 

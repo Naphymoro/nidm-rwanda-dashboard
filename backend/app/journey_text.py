@@ -109,10 +109,114 @@ def stage_sentences(stage, output):
     return []
 
 
+def _num(value, digits=3):
+    return round(value, digits) if isinstance(value, (int, float)) else value
+
+
+def _places(journey):
+    return {record['record_id']: record['admin_unit'] for record in journey['records']}
+
+
+def _fastest_day(trajectory):
+    steps = [(trajectory[i]['adoption'] - trajectory[i - 1]['adoption'], trajectory[i]['day']) for i in range(1, len(trajectory))]
+    return int(round(max(steps)[1])) if steps else None
+
+
+def _curve_story(output, intro):
+    rows = output['trajectory']
+    initial, final, day = round(rows[0]['adoption'], 4), final_adoption(rows), int(round(rows[-1]['day']))
+    fastest = _fastest_day(rows)
+    timing = 'at the start' if fastest is not None and fastest <= 5 else f'around day {fastest}'
+    text = (f'{intro} In this illustrative model, adoption starts at {initial} and is {final} at day {day} '
+            f'(0 means nobody, 1 means everyone); it grows fastest {timing}.')
+    if final >= SATURATED:
+        text += (' Because it ends close to 1.0, the curve has run out of room: it cannot show differences between '
+                 'settings, and a shorter time horizon would show more.')
+    return text
+
+
+def explanation(stage, output, journey):
+    """Plain-language explanation of a finished stage, written by the engine from its own numbers.
+
+    Small local models explained stages with numbers and effects no tool produced; these explanations are what the
+    card shows instead, and what the assistant's corrections and fine-tuning examples are measured against."""
+    outputs = {key: entry['output'] for key, entry in journey['stages'].items()}
+    if stage == 'encoding':
+        places = _places(journey)
+        rows = [(places.get(e['narrative_id'], 'a record'), e['trust_score'], e['adoption_barrier_score']) for e in output['encoded']]
+        most_trust, most_barrier = max(rows, key=lambda r: r[1]), max(rows, key=lambda r: r[2])
+        mean = output['mean']
+        if most_trust[0] == most_barrier[0]:
+            where = (f'Both trust and barrier words scored highest in {most_trust[0]} (trust {_num(most_trust[1])}, barrier '
+                     f'{_num(most_barrier[2])})')
+        else:
+            where = (f'Trust words scored highest in {most_trust[0]} ({_num(most_trust[1])}) and barrier words highest in '
+                     f'{most_barrier[0]} ({_num(most_barrier[2])})')
+        themes = ', '.join(theme.replace('_', ' ') for theme in output['themes']) or 'none'
+        return (f"The English keyword heuristic read {len(rows)} accepted record(s). {where}, on a scale from 0 (none) to 1 "
+                f"(strong). Across all records the average trust score is {_num(mean['trust'])}, barrier "
+                f"{_num(mean['barrier'])}, with encoder confidence {_num(mean['confidence'])}. The themes found most often: "
+                f'{themes}. These are counts of keywords in the text, not measurements of what people think.')
+    if stage == 'compartmental':
+        return _curve_story(output, 'The compartmental model treats everyone as one population moving between states: '
+                                    'not yet persuaded, misinformed, truth-aligned, inoculated, and adopting.')
+    if stage == 'agents':
+        text = _curve_story(output, 'The agent-based model follows households one by one, letting neighbours and media '
+                                    'nudge each other.')
+        if outputs.get('compartmental'):
+            text += f" For comparison, the compartmental model ends at {final_adoption(outputs['compartmental']['trajectory'])}."
+        return text
+    if stage == 'digital':
+        fb = output['feedback']
+        return _curve_story(output, f"You reported an observed adoption of {fb['observed_adoption']}, a trust change of "
+                                    f"{fb['trust_shift']} and a barrier change of {fb['barrier_shift']}. The digital twin "
+                                    'restarted the model from your observed adoption and shifted the scores by your '
+                                    'observations.') + ' One observed level does not fit the model to reality.'
+    if stage == 'bayes':
+        text = (f"The signal update combined the tool's starting assumptions with the keyword scores, counted as "
+                f"{output['pseudo_trials']} pseudo-observations (a tool convention). Trust is now {_num(output['trust_mean'], 4)} "
+                f"and barrier {_num(output['barrier_mean'], 4)}; later stages use these values.")
+        return text + (' An adoption curve was also fitted to the series you supplied.' if output.get('adoption_fit') else
+                       ' No adoption curve was fitted, because you gave no observed series over time.')
+    if stage == 'rl':
+        ranking = '; '.join(f"{i}. {r['action'].replace('_', ' ')} ({_num(r['score'], 4)})" for i, r in enumerate(output['ranking'], 1))
+        return (f"Under the tool's fixed assumed lifts and costs, the actions rank: {ranking}. Each score is "
+                f"{output['formula']}, using trust {_num(output['trust_used'], 4)} and barrier {_num(output['barrier_used'], 4)}. "
+                'No data estimated these lifts and costs, so the ranking restates the assumptions; it is not advice '
+                'on what to do.')
+    if stage == 'regional':
+        rows = '; '.join(f"{r['region']}: {r['count']} record(s), trust {r['trust']}, barrier {r['barrier']}, rule of thumb: "
+                         f"{r['rule_of_thumb'].split(' (')[0]}" for r in output['rows'])
+        return (f'Average keyword scores per place: {rows}. A place with one or two records says little about the place, '
+                'and the rule of thumb is a threshold rule, not a model result.')
+    if stage == 'graph':
+        places = [n['label'] for n in output['nodes'] if n['kind'] == 'location']
+        themes = [n['label'].replace('_', ' ') for n in output['nodes'] if n['kind'] == 'theme']
+        signals = [n['label'] for n in output['nodes'] if n['kind'] == 'signal']
+        return (f"The graph links {len(places)} place(s) ({', '.join(places)}) with {len(themes)} theme(s) "
+                f"({', '.join(themes)}) and the signals {', '.join(signals)}, through {len(output['edges'])} link(s). A link "
+                'means they occur together in the records; it says nothing about cause.')
+    if stage == 'inoculation':
+        titles = '; '.join(f"{d['type']}: {d['title']}" for d in output['drafts'])
+        return (f"Three message drafts for {output['audience'].replace('_', ' ')}, to be delivered by {output['messenger'].replace('_', ' ')}: "
+                f'{titles}. They need your team\'s review before any use with people. ' + curves_sentence(output['curves']))
+    if stage == 'policy':
+        summary, grade = output['summary'], output['evidence_grade']
+        return (f"The draft brings together {summary['accepted_records']} accepted and {summary['rejected_records']} rejected "
+                f"record(s); evidence grade {grade['grade']} ({grade['readiness'].replace('_', ' ')}), which depends only on "
+                f"the number of records and encoder confidence; the twin's final adoption of {_num(summary['final_twin_adoption'], 4)} "
+                f"({summary['twin_model']} model); and {summary['top_ranked_action_under_assumptions'].replace('_', ' ')} as the "
+                "top-ranked action under the tool's assumptions. It is a draft of options for your team to discuss, not "
+                'recommendations.')
+    return ''
+
+
 def presentation(journey):
     """Everything the app shows as written: the intro, the opening and, per finished stage, its sentences and limits."""
     stages = {}
     for stage, entry in journey['stages'].items():
+        computed = stage not in ('intake', 'gate', 'repository')
         stages[stage] = {'limits': LIMITS[stage],
-                         'sentences': stage_sentences(stage, entry['output']) if stage not in ('intake', 'gate', 'repository') else []}
+                         'sentences': stage_sentences(stage, entry['output']) if computed else [],
+                         'explanation': explanation(stage, entry['output'], journey) if computed else ''}
     return {'intro': INTRO, 'opening': opening(journey), 'stages': stages}
