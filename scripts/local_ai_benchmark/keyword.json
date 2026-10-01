@@ -1,0 +1,22 @@
+{
+ "kin/keyword": {
+  "accuracy": 0.333,
+  "macro_f1": 0.167,
+  "sec_per_item": 0.00016,
+  "thresholds": [
+   0.0,
+   0.0
+  ],
+  "neutral_share": 1.0
+ },
+ "en/keyword": {
+  "accuracy": 0.397,
+  "macro_f1": 0.32,
+  "sec_per_item": 0.00015,
+  "thresholds": [
+   0.0,
+   0.0
+  ],
+  "neutral_share": 0.86
+ }
+}

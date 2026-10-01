@@ -1,0 +1,46 @@
+{
+ "kin/Davlan/afrisenti-twitter-sentiment-afroxlmr-large": {
+  "accuracy": 0.743,
+  "macro_f1": 0.744,
+  "sec_per_item_cpu": 0.0736,
+  "params_m": 560,
+  "labels": [
+   "positive",
+   "neutral",
+   "negative"
+  ]
+ },
+ "kin/cardiffnlp/twitter-xlm-roberta-base-sentiment": {
+  "accuracy": 0.46,
+  "macro_f1": 0.415,
+  "sec_per_item_cpu": 0.016,
+  "params_m": 278,
+  "labels": [
+   "negative",
+   "neutral",
+   "positive"
+  ]
+ },
+ "en/Davlan/afrisenti-twitter-sentiment-afroxlmr-large": {
+  "accuracy": 0.677,
+  "macro_f1": 0.678,
+  "sec_per_item_cpu": 0.0282,
+  "params_m": 560,
+  "labels": [
+   "positive",
+   "neutral",
+   "negative"
+  ]
+ },
+ "en/cardiffnlp/twitter-xlm-roberta-base-sentiment": {
+  "accuracy": 0.71,
+  "macro_f1": 0.709,
+  "sec_per_item_cpu": 0.0079,
+  "params_m": 278,
+  "labels": [
+   "negative",
+   "neutral",
+   "positive"
+  ]
+ }
+}
