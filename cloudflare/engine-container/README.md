@@ -3,6 +3,9 @@
 Runs the NDIM engine (`backend/Dockerfile`, unchanged) in a Cloudflare Container behind a small Worker, so the
 Pages site can use it: `https://nidm-engine.pages.dev/engine/?api=<Worker URL>`.
 
+Live (demo, see the warning below): https://ndim-engine.couma.workers.dev, so the public engine page is
+https://nidm-engine.pages.dev/engine/?api=https://ndim-engine.couma.workers.dev
+
 ## Warning: data does not survive a restart yet
 
 The engine keeps workspaces, journeys and run logs as files on the container's own disk. Cloudflare discards
@@ -35,7 +38,15 @@ The first request after a deploy or a sleep starts the container, which takes a 
 - `instance_type = "standard-1"` (1/2 vCPU, 4 GiB): PyTorch and Pyro need more memory than `basic`.
 - `max_instances = 1`: with files on local disk, every user must reach the same instance.
 
-## Tested locally
+## Bot check
 
-`npx wrangler dev` runs the Worker and the container in local Docker; `/health`, `/workspaces`, CORS for the Pages
+Cloudflare's default bot protection answers some scripted clients with `error code: 1010` (403); Python's
+`urllib` user agent is one. Browsers and curl pass. Scripts should send their own `User-Agent`.
+
+## Tested
+
+Deployed 2026-10-01: the container started in about 20 seconds, a full 13-stage journey ran over HTTP (about a second
+per stage), and CORS allows the Pages origin.
+
+Before that, locally: `npx wrangler dev` runs the Worker and the container in local Docker; `/health`, `/workspaces`, CORS for the Pages
 origin (and refusal for other origins), and starting a journey all worked through the Worker.
