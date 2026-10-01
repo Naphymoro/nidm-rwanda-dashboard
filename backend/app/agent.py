@@ -17,7 +17,10 @@ from fastapi import APIRouter, Header, HTTPException, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from . import agent_checks
+from . import agent_journey as journey_chat
 from . import agent_library as library
+from . import journey as engine_journey
 from . import engine_store as store
 from .engine_harness import ExperimentRequest, build_plan, harness, public
 from .engine_lessons import LESSONS
@@ -152,7 +155,8 @@ TOOLS = [
      'description': 'List the guided labs (id, title, skill, question) the researcher can take.',
      'parameters': {'type': 'object', 'properties': {}}},
 ]
-LABELS = {'plan_experiment': 'Planning an experiment', 'get_run': 'Reading experiment results', 'compare_runs': 'Comparing experiments',
+TOOLS += journey_chat.TOOLS
+LABELS = {**journey_chat.LABELS, 'plan_experiment': 'Planning an experiment', 'get_run': 'Reading experiment results', 'compare_runs': 'Comparing experiments',
           'list_runs': 'Listing experiments', 'search_library': 'Searching the library', 'read_library': 'Reading the library',
           'list_lessons': 'Listing guided labs'}
 SETTING_KEYS = ('model', 'profile', 'horizon_days', 'intervention_strength', 'initial_adoption', 'narrative_influence', 'expertise', 'language')
@@ -253,6 +257,8 @@ def run_tool(name, args, thread, settings):
                 {'library': [{'id': section['id'], 'title': section['title'], 'source': section['source_label']}]}
         if name == 'list_lessons':
             return {'lessons': [{k: lesson[k] for k in ('id', 'number', 'title', 'skill', 'question', 'level')} for lesson in LESSONS]}, {}
+        if name in journey_chat.LABELS:
+            return journey_chat.run_tool(name, args, thread)
         return {'error': f'Unknown tool {name}'}, {}
     except HTTPException as err:
         return {'error': str(err.detail)}, {}
@@ -295,6 +301,18 @@ def system_prompt(thread, settings):
                   '<evidence>', text[:6000] + ('\n[…truncated]' if len(text) > 6000 else ''), '</evidence>']
     else:
         lines += ['', 'No evidence is attached to this chat yet.']
+    lines += ['', *journey_chat.PROMPT]
+    if thread.get('journey_id'):
+        # After clicks in the card, a live qwen3:8b explained stages without reading them and invented every number.
+        # The engine's current state is put here, so there is nothing to look up and nothing to guess.
+        try:
+            current = journey_chat.brief(engine_journey.get(thread['workspace_id'], thread['journey_id'], full=True))
+            lines += ['', 'THIS CHAT\'S JOURNEY, as the engine reports it now. Use only these facts and numbers; if '
+                      'something is not here, say the card or the engine does not show it.', json.dumps(current, ensure_ascii=False)]
+        except HTTPException:
+            lines.append('This chat has a journey (call journey_status to see where it stands).')
+    elif thread.get('journey_proposal'):
+        lines.append('A journey is proposed in the card and waits for the researcher to click Confirm question.')
     runs = _thread_runs(thread)
     if runs:
         lines += ['', 'Experiments in this chat (oldest first): ' + ', '.join(runs[-10:])]
@@ -546,6 +564,78 @@ def delete_thread(workspace: str, thread_id: str, x_ndim_agent_token: str | None
     _path(workspace, thread_id).unlink(missing_ok=True)
 
 
+# ---------------------------------------------------------------- journey card (the researcher's controls)
+# These are the only routes that start a chat's journey, add its records, record decisions and run the decision stages.
+# The model has no tool for them. The audit statement says how the decision was made, in the app's words.
+class JourneyStart(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    question: str = Field(min_length=8, max_length=1000)
+    country: str = Field(default='Rwanda', min_length=2, max_length=80)
+
+
+class JourneyStage(BaseModel):
+    model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
+    observed_adoption: float | None = Field(default=None, ge=0, le=1)
+    trust_shift: float | None = Field(default=None, ge=-1, le=1)
+    barrier_shift: float | None = Field(default=None, ge=-1, le=1)
+    observed_series: list[float] | None = Field(default=None, min_length=3, max_length=365)
+
+
+CARD_STATEMENTS = {'repository': 'Decisions made with the Accept and Reject buttons in the Research Studio journey card.',
+                   'digital': 'Field observations entered by the researcher in the Research Studio journey card form.',
+                   'policy': 'Approve export clicked by the researcher in the Research Studio journey card.'}
+
+
+def _card_thread(workspace, thread_id, token):
+    _authorize(token)
+    thread = load_thread(workspace, thread_id)
+    with _busy_lock:
+        if (workspace, thread_id) in _busy:
+            raise HTTPException(409, 'The assistant is answering in this chat. Wait for it to finish.')
+    return thread
+
+
+def _journey_of(thread):
+    if not thread.get('journey_id'):
+        raise HTTPException(409, 'This chat has no journey yet.')
+    return thread['journey_id']
+
+
+@router.post('/workspaces/{workspace}/threads/{thread_id}/journey')
+def journey_start(workspace: str, thread_id: str, payload: JourneyStart, x_ndim_agent_token: str | None = Header(default=None)):
+    thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
+    body = journey_chat.start(thread, payload.question, payload.country)
+    save_thread(thread)
+    return body
+
+
+@router.post('/workspaces/{workspace}/threads/{thread_id}/journey/records')
+def journey_records(workspace: str, thread_id: str, payload: engine_journey.EvidenceRequest, x_ndim_agent_token: str | None = Header(default=None)):
+    thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
+    body = engine_journey.add_evidence(workspace, _journey_of(thread), payload)
+    thread.pop('journey_records_proposal', None)
+    save_thread(thread)
+    return body
+
+
+@router.post('/workspaces/{workspace}/threads/{thread_id}/journey/review')
+def journey_review(workspace: str, thread_id: str, payload: list[engine_journey.Decision], x_ndim_agent_token: str | None = Header(default=None)):
+    thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
+    if not payload:
+        raise HTTPException(422, 'No decisions.')
+    return engine_journey.review(workspace, _journey_of(thread), engine_journey.ReviewRequest(
+        decisions=payload, approval_statement=CARD_STATEMENTS['repository']))
+
+
+@router.post('/workspaces/{workspace}/threads/{thread_id}/journey/stages/{stage}')
+def journey_stage(workspace: str, thread_id: str, stage: str, payload: JourneyStage, x_ndim_agent_token: str | None = Header(default=None)):
+    thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
+    if stage != 'digital' and payload.model_dump(exclude_none=True):
+        raise HTTPException(422, 'Field observations belong to the digital twin stage only.')
+    request = engine_journey.StageRequest(**payload.model_dump(exclude_none=True), approval_statement=CARD_STATEMENTS.get(stage))
+    return engine_journey.run(workspace, _journey_of(thread), stage, request)
+
+
 @router.post('/chat')
 def chat(payload: ChatRequest, x_ndim_agent_token: str | None = Header(default=None)):
     _authorize(x_ndim_agent_token)
@@ -573,7 +663,19 @@ def chat(payload: ChatRequest, x_ndim_agent_token: str | None = Header(default=N
             for _ in range(MAX_STEPS):
                 system = system_prompt(thread, settings)
                 text, calls = yield from _relay(provider_stream(cfg, system, _history(thread)))
-                thread['messages'].append(_message('assistant', text, tool_calls=calls or None))
+                reply = _message('assistant', text, tool_calls=calls or None)
+                if not calls and text:
+                    sources = [system, *(m['content'] for m in thread['messages'] if m['role'] in ('tool', 'user'))]
+                    if thread.get('journey_id'):  # every stage's numbers, not only the latest one in the prompt
+                        try:
+                            sources.append(json.dumps(journey_chat.all_facts(engine_journey.get(thread['workspace_id'], thread['journey_id'], full=True))))
+                        except HTTPException:
+                            pass
+                    known = agent_checks.known_numbers(*sources)
+                    if (found := agent_checks.check(text, known)):
+                        reply['check'] = found
+                        yield _event({'type': 'check', **found})
+                thread['messages'].append(reply)
                 save_thread(thread)
                 if not calls:
                     break

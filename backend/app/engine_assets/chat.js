@@ -32,6 +32,7 @@ const DEFAULTS = {model:'compartmental', profile:'auto', horizon_days:90, interv
 const state = {workspace:'', threads:[], threadId:null, runs:[], messages:[], local:[], evidence:null, skill:'auto', lesson:null, pending:null,
   settings:{...DEFAULTS}, autorun:false, lessons:[], sample:'', online:false, busy:false, streaming:false, poll:null, gen:0,
   open:new Map(), reviewing:new Set(), notify:new Set(), queuedNotes:[], agent:null, token:'',
+  journey:null, journeyProposal:null, recordsProposal:null, journeyGuide:null, journeyBusy:false, journeyError:null, journeyDraft:{}, journeyAnchor:null,
   panel:{open:false, tab:'workbench', runId:null, section:null, query:'', toc:null}};
 const agentOn = () => !!state.agent?.available;
 
@@ -180,7 +181,8 @@ async function deleteThread(thread){
 function closeSidebarOnMobile(){if(matchMedia('(max-width:820px)').matches)setSidebar(false);}
 function newChat(){
   stopPoll();state.gen++;
-  Object.assign(state,{threadId:null,runs:[],messages:[],local:[],evidence:null,lesson:null,pending:null,skill:'auto',streaming:false,busy:false,queuedNotes:[]});
+  Object.assign(state,{threadId:null,runs:[],messages:[],local:[],evidence:null,lesson:null,pending:null,skill:'auto',streaming:false,busy:false,queuedNotes:[],
+    journey:null,journeyProposal:null,recordsProposal:null,journeyError:null,journeyDraft:{}});
   state.open.clear();state.reviewing.clear();state.panel.runId=null;setStreaming(false);
   render();setURL();closeSidebarOnMobile();$('prompt').focus();
 }
@@ -190,6 +192,8 @@ async function openThread(id){
   if(!thread){pushLocal({role:'ai',tone:'error',text:'That chat is not in this project any more.'});return;}
   try{
     const [runs,chat]=await Promise.all([Promise.all(thread.runs.map(row=>api(runsURL(row.run_id)))),thread.agent?api(threadURL(id)):null]);
+    if(gen!==state.gen)return;
+    Object.assign(state,{journeyDraft:{},journeyError:null,recordsProposal:null});await syncJourney(chat);
     if(gen!==state.gen)return;
     runs.sort((a,b)=>a.created_at.localeCompare(b.created_at));
     const last=runs.at(-1);
@@ -215,6 +219,7 @@ function render(){
   renderMessages();renderAttachments();renderSkill();renderThreads();renderPanel();
 }
 function renderMessages(){
+  state.journeyAnchor=state.messages.filter(m=>m.role==='tool'&&m.meta?.journey).at(-1)?.id||null;
   $('main').classList.toggle('empty',!hasContent());
   $('thread').replaceChildren(...timeline(),...state.local.map(localMessage));
 }
@@ -246,17 +251,20 @@ function aiBlock(parts){
     if(message.role!=='assistant')continue;
     if(message.content)body.append(el('div',{class:'md',html:markdown(message.content)}));
     if(message.error)body.append(callout('error','alert',message.error));
+    if(message.check)body.append(checkCallout(message.check));
     for(const call of message.tool_calls||[]){
       const result=results.get(call.id);
       body.append(toolChip(call.name,result?(result.content.includes('"error"')&&!result.meta?'err':'done'):'done',toolLabel(call)));
       const meta=result?.meta||{};
       if(meta.library)body.append(refs(meta.library));
+      if(meta.journey&&result.id===state.journeyAnchor)body.append(journeyCard());
       if(meta.run_id&&!meta.reference){const run=state.runs.find(item=>item.run_id===meta.run_id);if(run)body.append(runCard(run));}
     }
   }
   return el('div',{class:'msg ai'},avatar(),body);
 }
-const TOOL_LABELS={plan_experiment:'Planned an experiment',get_run:'Read experiment results',compare_runs:'Compared experiments',list_runs:'Listed experiments',search_library:'Searched the library',read_library:'Read the library',list_lessons:'Listed guided labs'};
+const TOOL_LABELS={plan_experiment:'Planned an experiment',get_run:'Read experiment results',compare_runs:'Compared experiments',list_runs:'Listed experiments',search_library:'Searched the library',read_library:'Read the library',list_lessons:'Listed guided labs',
+  propose_journey:'Proposed a journey',propose_journey_records:'Filled the evidence form',journey_status:'Read the journey',run_journey_stage:'Ran a journey stage'};
 function toolLabel(call){
   const a=call.arguments||{};
   if(call.name==='search_library'&&a.query)return `Searched the library for “${a.query}”`;
@@ -451,6 +459,168 @@ function details(run){
     el('dl',{class:'prov'},prov.map(([k,v])=>[el('dt',{text:k}),el('dd',{text:v})])),
     disclosure('more',run.run_id+':raw',false,'Tool outputs (JSON)',el('pre',{text:JSON.stringify(o,null,2)})),
     disclosure('more',run.run_id+':log',false,'Execution log',el('ol',{},run.events.map(event=>el('li',{text:`${new Date(event.at).toLocaleTimeString()} · ${event.message}`})))));
+}
+// ---------- journey card ----------
+// The 13-stage journey's controls. The assistant can only propose a question or records and run the stages that
+// compute; starting the journey, adding records, accepting or rejecting them, entering field observations and approving
+// the export happen only here, through the researcher's clicks. The key sentences and limits are the engine's, shown as
+// written. After each click the app tells the assistant what happened, as it does when a run finishes.
+const NOTE = '(Note from the app, not typed by the researcher) ';
+const journeyURL = (path='') => threadURL(state.threadId)+'/journey'+path;
+const CONSENTS = [['','Choose permission…'],['research_use','Permission confirmed for research use'],['synthetic','Synthetic / demo data'],['unconfirmed','Permission not confirmed']];
+const GATE_LABEL = {eligible:'Passed the gate',review_before_accepting:'Check before accepting',blocked:'Blocked'};
+async function syncJourney(chat){
+  state.journeyProposal=chat?.journey_proposal||null;
+  const proposed=chat?.journey_records_proposal||null;
+  if(JSON.stringify(proposed)!==JSON.stringify(state.recordsProposal)){state.recordsProposal=proposed;delete state.journeyDraft.records;}
+  if(chat?.journey_id){
+    try{state.journey=await api(`/engine/workspaces/${encodeURIComponent(state.workspace)}/journeys/${encodeURIComponent(chat.journey_id)}`);}
+    catch(err){state.journeyError=err.message;}
+  }else state.journey=null;
+  if((state.journeyProposal||state.journey)&&!state.journeyGuide){try{state.journeyGuide=await api('/engine/journey/stages');}catch{}}
+}
+function rerenderJourney(){const old=$('journey-card');if(old)old.replaceWith(journeyCard());}
+function journeyLocked(){return state.journeyBusy||state.streaming;}
+async function journeyAction(call,note){
+  if(journeyLocked())return;
+  state.journeyBusy=true;state.journeyError=null;rerenderJourney();
+  try{
+    const body=await call();
+    if(body?.journey_id)state.journey=body;
+    state.journeyProposal=null;
+  }catch(err){state.journeyError=err.message;state.journeyBusy=false;rerenderJourney();return;}
+  state.journeyBusy=false;state.journeyDraft={};rerenderJourney();loadThreads();
+  if(agentOn())await sendAgent(NOTE+note,{hidden:true});
+}
+const post=(path,body)=>api(journeyURL(path),{method:'POST',body:JSON.stringify(body)});
+function field(label,input,hint){return el('label',{class:'jc-field'},el('span',{text:label}),input,hint?el('small',{class:'muted',text:hint}):null);}
+function draftInput(key,props={}){
+  const value=state.journeyDraft[key]??props.value??'';
+  const input=el(props.tag||'input',{...props,tag:null,value:null,oninput:e=>{state.journeyDraft[key]=e.target.value;}});
+  input.value=value;
+  return input;
+}
+function journeyCard(){
+  const j=state.journey, card=el('div',{class:'run-card ai-body journey-card',id:'journey-card'});
+  card.append(el('div',{class:'skill-line'},el('span',{class:'skill'},icon('flask'),'NDIM journey'),el('span',{text:j?'13 stages · field notes to policy draft':'proposed, not started'})));
+  if(state.journeyError)card.append(callout('error','alert',state.journeyError));
+  if(!j){card.append(...proposalPart());return card;}
+  card.append(callout('','check',j.presentation.opening));
+  card.append(progressPart(j));
+  const latest=latestStage(j);
+  if(latest)card.append(stageResult(j,latest,true));
+  card.append(...nextPart(j));
+  const earlier=j.stages.filter(row=>row.status==='done'&&j.presentation.stages[row.id]?.sentences.length&&row.id!==latest);
+  if(earlier.length)card.append(disclosure('more','journey:earlier',false,'Earlier stage results',...earlier.map(row=>stageResult(j,row.id,false))));
+  return card;
+}
+function proposalPart(){
+  const p=state.journeyProposal;
+  if(!p)return [el('p',{class:'muted',text:'No journey in this chat yet.'})];
+  if(state.journeyDraft.question===undefined)state.journeyDraft.question=p.question;
+  const area=draftInput('question',{tag:'textarea',rows:'2',maxlength:'1000','aria-label':'Research question'});
+  return [el('div',{class:'md',html:markdown(state.journeyGuide?.intro||'')}),
+    el('div',{class:'review-form'},field('Your question, as the journey will use it (edit if needed)',area),
+      el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
+        const question=(state.journeyDraft.question||'').trim();
+        if(question.length<8){state.journeyError='The question needs at least 8 characters.';rerenderJourney();return;}
+        journeyAction(()=>post('',{question}),'The researcher confirmed the question in the journey card and the journey started; the card shows the opening sentence and the six phases. In two or three sentences, welcome them and ask for their field notes: each story with its place, source, period, and whether they have permission to use it. When they give them, call propose_journey_records.');
+      }},icon('check'),'Confirm question')))];
+}
+function progressPart(j){
+  return el('ol',{class:'jc-progress'},j.stages.map(row=>el('li',{class:'jc-'+row.status,title:`${row.title}: ${row.status}${row.optional?' (optional)':''}`},
+    row.status==='done'?el('span',{class:'st done'},icon('check')):el('span',{class:'st'}),el('span',{text:`${row.number} ${row.title}`}))));
+}
+function latestStage(j){
+  const done=j.stages.filter(row=>row.status==='done'&&row.at&&j.presentation.stages[row.id]?.sentences.length);
+  return done.length?done.reduce((a,b)=>a.at>b.at?a:b).id:null;
+}
+function stageResult(j,id,current){
+  const row=j.stages.find(item=>item.id===id), view=j.presentation.stages[id];
+  return el('div',{class:'jc-result'+(current?' current':'')},el('b',{text:`${row.number}. ${row.title}`}),
+    ...view.sentences.map(sentence=>el('p',{text:sentence})),callout('warn','alert',view.limits));
+}
+function nextPart(j){
+  if(!j.records.length)return [evidenceForm()];
+  if(j.records.some(record=>!record.review)||j.next_stage==='repository')return [decisionsForm(j)];
+  const next=j.next_stage, regional=j.stages.find(row=>row.id==='regional');
+  const parts=[];
+  if(next==='digital')parts.push(observationsForm());
+  else if(next==='policy')parts.push(el('div',{class:'review-form'},el('p',{text:'The policy output assembles a draft for your team\'s review: options for discussion, not recommendations. It runs only when you approve it.'}),
+    el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/stages/policy',{}),'The researcher clicked Approve export in the journey card and the policy draft was assembled. Call journey_status and explain the draft in plain words: options for discussion, not recommendations.')},icon('check'),'Approve export'))));
+  else if(next){const row=j.stages.find(item=>item.id===next);parts.push(el('div',{class:'actions'},runButton(row,true)));}
+  else parts.push(el('p',{class:'muted',text:'All required stages are done.'}));
+  if(regional.status!=='done'&&!['intake','gate','repository','encoding'].includes(next||'')&&j.stages.find(row=>row.id==='encoding').status==='done')
+    parts.push(el('div',{class:'actions'},runButton(regional,false,'Run regional analysis (optional)')));
+  return parts;
+}
+function runButton(row,primary,label){
+  return el('button',{type:'button',class:'btn'+(primary?' primary':''),disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/stages/'+row.id,{}),
+    `The researcher clicked Run for stage ${row.number}, ${row.title}, in the journey card. Call journey_status and explain the result in plain words; the card already shows its key sentences and limits.`)},icon('play'),label||`Run ${row.number}. ${row.title}`);
+}
+function evidenceForm(){
+  const d=state.journeyDraft;
+  if(!d.records)d.records=(state.recordsProposal||[{text:''}]).map(r=>({text:r.text||'',admin_unit:r.admin_unit||'',source_name:r.source_name||'',period:r.period||'',consent:'',language:'en'}));
+  const rows=d.records.map((record,index)=>{
+    const bind=(key,props)=>{const input=el(props.tag||'input',{...props,tag:null,oninput:e=>{record[key]=e.target.value;}});input.value=record[key];return input;};
+    return el('div',{class:'jc-record'},el('b',{text:`Record ${index+1}`}),
+      field('Story or field note, unchanged',bind('text',{tag:'textarea',rows:'3',maxlength:'20000'})),
+      el('div',{class:'jc-row'},field('Place',bind('admin_unit',{placeholder:'e.g. Kicukiro / Niboye'})),field('Source',bind('source_name',{placeholder:'e.g. Field team interview 4'})),
+        field('Period',bind('period',{placeholder:'e.g. 2026-Q2'}))),
+      el('div',{class:'jc-row'},field('Permission',(()=>{const s=el('select',{onchange:e=>{record.consent=e.target.value;}},CONSENTS.map(([v,t])=>el('option',{value:v,text:t})));s.value=record.consent;return s;})()),
+        field('Language',(()=>{const s=el('select',{onchange:e=>{record.language=e.target.value;}},[['en','English'],['rw','Kinyarwanda'],['fr','French'],['other','Other']].map(([v,t])=>el('option',{value:v,text:t})));s.value=record.language;return s;})(),
+          'The encoder reads English only; other languages are blocked at the gate.')));
+  });
+  return el('div',{class:'review-form'},el('b',{text:'Add your field notes'}),
+    state.recordsProposal?el('p',{class:'muted',text:'NDIM filled this form from your message. Check every field: nothing is added until you click Add to journey.'}):null,
+    ...rows,
+    el('div',{class:'actions'},
+      el('button',{type:'button',class:'btn',onclick:()=>{d.records.push({text:'',admin_unit:'',source_name:'',period:'',consent:'',language:'en'});rerenderJourney();}},icon('plus'),'Another record'),
+      el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
+        const missing=d.records.findIndex(r=>!r.text.trim()||!r.admin_unit.trim()||!r.source_name.trim()||!r.period.trim()||!r.consent);
+        if(missing>=0){state.journeyError=`Record ${missing+1} needs its text, place, source, period and permission.`;rerenderJourney();return;}
+        const records=d.records.map(r=>({...r,text:r.text.trim()}));
+        journeyAction(()=>post('/records',{records}),`The researcher added ${records.length} record(s) in the journey card. Call journey_status, explain any gate flags in plain words, and ask them to accept or reject each record with the card's buttons.`);
+      }},icon('check'),'Add to journey')));
+}
+function decisionsForm(j){
+  const d=state.journeyDraft.decisions||(state.journeyDraft.decisions={});
+  const rows=j.records.map(record=>{
+    const g=record.gate, flags=[...g.blockers,...g.warnings,...g.pii_flags,...g.quality_flags];
+    const blocked=g.gate==='blocked', value=record.review?.decision||d[record.record_id]||'';
+    const choice=(v,label)=>el('label',{class:'jc-choice'},el('input',{type:'radio',name:'decide-'+record.record_id,value:v,disabled:(blocked&&v==='accept')||!!record.review,checked:value===v,onchange:()=>{d[record.record_id]=v;}}),el('span',{text:label}));
+    return el('div',{class:'jc-record'},el('div',{},el('b',{text:record.admin_unit}),el('small',{class:'muted',text:` · ${record.source_name} · ${record.period} · ${human(record.consent)}`})),
+      el('p',{text:record.excerpt+(record.excerpt.length>=160?'…':'')}),
+      el('div',{class:'small',text:`${GATE_LABEL[g.gate]||g.gate}${flags.length?': '+flags.join('; '):''}`}),
+      el('div',{class:'jc-row'},choice('accept','Accept'),choice('reject','Reject')));
+  });
+  return el('div',{class:'review-form'},el('b',{text:'Accept or reject each record'}),el('p',{class:'muted',text:'Only accepted records reach any model. Decisions are frozen once encoding runs.'}),...rows,
+    el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
+      const decisions=j.records.filter(r=>!r.review&&d[r.record_id]).map(r=>({record_id:r.record_id,decision:d[r.record_id]}));
+      if(!decisions.length){state.journeyError='Choose Accept or Reject for at least one record.';rerenderJourney();return;}
+      journeyAction(()=>post('/review',decisions),`The researcher recorded ${decisions.length} accept/reject decision(s) in the journey card. Call journey_status and say what happens next.`);
+    }},icon('check'),'Save decisions')));
+}
+function observationsForm(){
+  const num=(key,min,max,step)=>draftInput(key,{type:'number',min,max,step,inputmode:'decimal'});
+  return el('div',{class:'review-form'},el('b',{text:'7. Digital twin: your field observations'}),
+    el('p',{class:'muted',text:'The twin re-runs the model from what you observed. There are no defaults: enter your own numbers (0 for a shift you did not see).'}),
+    el('div',{class:'jc-row'},field('Observed adoption share (0 to 1)',num('obs','0','1','0.01')),field('Change in trust (−1 to 1)',num('trust','-1','1','0.01')),field('Change in barriers (−1 to 1)',num('barrier','-1','1','0.01'))),
+    field('Observed adoption over time (optional, 3 or more values, comma-separated)',draftInput('series',{placeholder:'e.g. 0.05, 0.08, 0.12, 0.2'})),
+    el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
+      const d=state.journeyDraft, read=key=>d[key]===undefined||String(d[key]).trim()===''?null:Number(d[key]);
+      const body={observed_adoption:read('obs'),trust_shift:read('trust'),barrier_shift:read('barrier')};
+      if(Object.values(body).some(v=>v===null||!Number.isFinite(v))){state.journeyError='Enter all three observations: adoption share, change in trust and change in barriers.';rerenderJourney();return;}
+      if(String(d.series||'').trim()){const s=String(d.series).split(',').map(x=>Number(x.trim()));if(s.length<3||s.some(v=>!Number.isFinite(v))){state.journeyError='The series needs 3 or more numbers separated by commas.';rerenderJourney();return;}body.observed_series=s;}
+      journeyAction(()=>post('/stages/digital',body),'The researcher entered their field observations in the journey card and the digital twin ran. Call journey_status and explain the result in plain words; the card already shows its key sentences and limits.');
+    }},icon('play'),'Run the digital twin with these observations')));
+}
+// The engine checks each reply against its own results: numbers it never produced and claims its models cannot make.
+function checkCallout(found){
+  const parts=[];
+  if(found.unverified_numbers?.length)parts.push(`mentions numbers the engine did not produce (${found.unverified_numbers.join(', ')})`);
+  if(found.claim_words?.length)parts.push(`uses claims the illustrative models cannot support (${found.claim_words.map(w=>'“'+w+'”').join(', ')})`);
+  return callout('warn','alert',`Check this reply: it ${parts.join(' and ')}. Rely on the journey card and the engine's results, not on these.`);
 }
 function localMessage(message){
   if(message.role==='user')return el('div',{class:'msg user'},el('div',{class:'bubble'},el('p',{text:message.text})));
@@ -666,7 +836,7 @@ async function planDirect(params,ev,{bubble}={}){
   }
 }
 // While NDIM is answering, the send button is disabled, as in other chat apps; typing ahead is still allowed.
-function setStreaming(on){state.streaming=on;$('send').disabled=on;$('send').title=on?'NDIM is answering…':'Send (Enter)';}
+function setStreaming(on){state.streaming=on;$('send').disabled=on;$('send').title=on?'NDIM is answering…':'Send (Enter)';rerenderJourney();}
 // Stream one assistant turn. Text arrives as deltas; tool steps and planned experiments render as they happen.
 async function sendAgent(text,{hidden=false}={}){
   // A run can finish while a reply is still streaming; its note waits for that reply instead of being dropped.
@@ -694,6 +864,7 @@ async function sendAgent(text,{hidden=false}={}){
       const [chat]=await Promise.all([api(threadURL(threadId)),loadThreads()]);
       if(gen!==state.gen)return;
       state.messages=chat.messages;
+      await syncJourney(chat);
       if(ev)state.evidence={...ev,fromChat:true};
       const known=new Set(state.runs.map(run=>run.run_id));
       const ids=[...new Set(chat.messages.filter(m=>m.meta?.run_id&&!m.meta.reference).map(m=>m.meta.run_id))].filter(id=>!known.has(id));
@@ -741,9 +912,13 @@ async function sendAgent(text,{hidden=false}={}){
           const entry=chips.get(event.id);
           if(entry){const done=toolChip(event.name,event.ok?'done':'err',event.ok?toolLabel(entry.call):(event.error||'Tool error'));entry.chip.replaceWith(done);entry.chip=done;}
           if(event.meta?.library)body.append(refs(event.meta.library));
+          if(event.meta?.journey){try{await syncJourney(await api(threadURL(threadId)));}catch{}$('journey-card')?.remove();body.append(journeyCard());}
           if(event.meta?.run_id&&!event.meta.reference){
             try{const run=await api(runsURL(event.meta.run_id));if(!state.runs.some(item=>item.run_id===run.run_id))state.runs.push(run);body.append(runCard(run));}catch{}
           }
+        }else if(event.type==='check'){
+          if(segment)segment.innerHTML=markdown(segmentText);
+          body.append(checkCallout(event));
         }else if(event.type==='error'){
           typing.remove();body.append(callout('error','alert',event.message));
         }

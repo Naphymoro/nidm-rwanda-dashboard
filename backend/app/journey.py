@@ -26,6 +26,7 @@ from . import engine_store as store
 from .encoding import encode_rule_based
 from .engine_tools import LIMITS, fingerprint, scientific_checks
 from .inoculation import aggregate_inoculation_parameters, diagnose_inoculation_rule_based
+from .journey_text import INTRO, presentation
 from .modelling import model_assumptions, run_digital_twin
 from .pipeline import evidence_grade
 from .schemas import EncodedNarrative, EncodingMode, InoculationEncoding, ModelMode, NarrativeMetadata, NarrativeRecord
@@ -514,6 +515,7 @@ def public(journey, full=False):
                        for record in journey['records']]
     body['stages'] = rows
     body['next_stage'] = next_stage
+    body['presentation'] = presentation(journey)
     if full:
         body['outputs'] = {key: value['output'] for key, value in journey['stages'].items()}
         body['events'] = journey['events']
@@ -522,7 +524,7 @@ def public(journey, full=False):
 
 @router.get('/journey/stages')
 def stage_guide():
-    return {'stages': STAGES, 'runnable': list(RUNNABLE),
+    return {'stages': STAGES, 'runnable': list(RUNNABLE), 'intro': INTRO,
             'principles': ['Only records the researcher accepted reach a model.',
                            'Field feedback, evidence decisions and the export need the researcher\'s own words.',
                            'All scores are keyword heuristics and all curves are illustrative and uncalibrated.']}

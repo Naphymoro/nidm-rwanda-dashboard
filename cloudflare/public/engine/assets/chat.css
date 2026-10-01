@@ -337,3 +337,22 @@ dl.prov dd{margin:0;overflow-wrap:anywhere}
 .panel .form textarea{border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:6px 8px;font-size:13.5px;color:var(--ink);resize:vertical}
 .run-pick button{min-width:0}
 .lib-section .math{font:13px ui-monospace,SFMono-Regular,monospace;background:var(--soft);border-radius:8px;padding:8px 10px;white-space:pre-wrap}
+/* journey card: the researcher's controls for the 13-stage journey */
+.journey-card{display:grid;gap:10px}
+.jc-progress{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 6px;font-size:12.5px}
+.jc-progress li{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px;border:1px solid var(--line);border-radius:999px;color:var(--muted,inherit)}
+.jc-progress li.jc-done{background:var(--soft)}
+.jc-progress li.jc-ready{border-color:var(--primary);color:inherit;font-weight:500}
+.jc-progress .st{width:14px;height:14px}
+.jc-result{display:grid;gap:6px;border-left:3px solid var(--line);padding:2px 0 2px 12px}
+.jc-result.current{border-left-color:var(--primary)}
+.jc-result p{margin:0}
+.jc-record{display:grid;gap:6px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.jc-record p{margin:0;font-size:13.5px}
+.jc-row{display:flex;flex-wrap:wrap;gap:8px 12px}
+.jc-row>.jc-field{flex:1 1 160px}
+.jc-field{display:grid;gap:4px;font-size:13px}
+.jc-field input,.jc-field select,.jc-field textarea{border:1px solid var(--input);border-radius:10px;background:var(--bg);padding:6px 10px;min-width:0;width:100%;box-sizing:border-box}
+.jc-field textarea{resize:vertical}
+.jc-choice{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:13.5px;cursor:pointer}
+.jc-choice:has(input:disabled){opacity:.5;cursor:not-allowed}

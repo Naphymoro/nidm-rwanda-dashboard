@@ -166,6 +166,36 @@ class JourneyTests(unittest.TestCase):
         self.assertIn('policy', dependents('encoding'))
         self.assertEqual(len(STAGES), 13)
 
+    def test_presentation_is_fixed_text_for_every_finished_stage(self):
+        # Live agents reworded the key sentences ("adoption will reach", "increases slightly after the message"), so the
+        # engine owns the wording and the app shows it as written.
+        self.assertEqual(self.journey['presentation']['opening'], 'The journey has started with your question, exactly as '
+                         'you confirmed it: "How might trusted messengers change clean cooking adoption?" The setting is Rwanda.')
+        self.assertIn('(stage 13)', self.journey['presentation']['intro'])
+        self.capture()
+        for name in ('encoding', 'compartmental', 'agents'):
+            self.stage(name)
+        self.stage('digital', observed_adoption=0.2, trust_shift=0.0, barrier_shift=0.05, approval_statement='June numbers.')
+        for name in ('bayes', 'rl', 'graph'):
+            self.stage(name)
+        body = self.stage('inoculation')
+        shown = body['presentation']['stages']
+        self.assertEqual(set(shown), set(body['outputs']) if 'outputs' in body else {row['id'] for row in body['stages'] if row['status'] == 'done'})
+        for stage, view in shown.items():
+            self.assertTrue(view['limits'], stage)
+        final = body['output']['curves']['compartmental']['before'][-1]['adoption']
+        self.assertEqual(shown['compartmental']['sentences'][0], f'In the illustrative compartmental model, adoption is {round(final, 4)} at day 179.')
+        if final >= 0.9:
+            self.assertIn('the model has saturated', shown['compartmental']['sentences'][1])
+        curves = shown['inoculation']['sentences'][0]
+        self.assertTrue(curves.startswith('In the illustrative models, final adoption before, during and after the message is '))
+        self.assertIn('say nothing about what the messages would do', curves)
+        text = ' '.join(sentence for view in shown.values() for sentence in view['sentences'])
+        for banned in ('will reach', 'recommend ', 'causes', 'validated'):
+            self.assertNotIn(banned, text)
+        # The same text comes back on a plain read, so a reloaded chat shows the same card.
+        self.assertEqual(self.client.get(self.base).json()['presentation'], body['presentation'])
+
     def test_unknown_journey_is_404(self):
         self.assertEqual(self.client.get(f'/engine/workspaces/{self.ws}/journeys/not-a-uuid').status_code, 404)
 
