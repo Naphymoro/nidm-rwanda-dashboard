@@ -33,6 +33,7 @@ const state = {workspace:'', threads:[], threadId:null, runs:[], messages:[], lo
   settings:{...DEFAULTS}, autorun:false, lessons:[], sample:'', online:false, busy:false, streaming:false, poll:null, gen:0,
   open:new Map(), reviewing:new Set(), notify:new Set(), queuedNotes:[], agent:null, token:'',
   journey:null, journeyProposal:null, recordsProposal:null, journeyGuide:null, journeyBusy:false, journeyError:null, journeyDraft:{}, journeyAnchor:null,
+  correcting:new Set(), correctionDrafts:new Map(), feedbackError:new Map(),
   panel:{open:false, tab:'workbench', runId:null, section:null, query:'', toc:null}};
 const agentOn = () => !!state.agent?.available;
 
@@ -261,6 +262,8 @@ function aiBlock(parts){
       if(meta.run_id&&!meta.reference){const run=state.runs.find(item=>item.run_id===meta.run_id);if(run)body.append(runCard(run));}
     }
   }
+  const last=[...parts].reverse().find(m=>m.role==='assistant'&&m.content);
+  if(last)body.append(feedbackBar(last));
   return el('div',{class:'msg ai'},avatar(),body);
 }
 const TOOL_LABELS={plan_experiment:'Planned an experiment',get_run:'Read experiment results',compare_runs:'Compared experiments',list_runs:'Listed experiments',search_library:'Searched the library',read_library:'Read the library',list_lessons:'Listed guided labs',
@@ -975,6 +978,70 @@ function poll(runId){
   },500);
 }
 
+// ---------- learning: researchers teach the assistant ----------
+// A thumbs-up approves a reply as written, Correct replaces it with the researcher's words, a thumbs-down alone is only
+// logged. NDIM recalls what it was taught in its next answers; nothing is learned from replies nobody checked. With
+// online sync on, only answers marked for sharing leave this computer, never questions or evidence.
+const feedbackURL = id => threadURL(state.threadId)+'/messages/'+encodeURIComponent(id)+'/feedback';
+async function sendFeedback(message,body){
+  state.feedbackError.delete(message.id);
+  try{
+    const result=await api(feedbackURL(message.id),{method:'POST',body:JSON.stringify(body)});
+    message.feedback={rating:body.rating,kind:result.kind,share:result.share,blocked:result.share_blocked};
+    state.correcting.delete(message.id);
+    if(state.panel.open&&state.panel.tab==='learning')renderLearning();
+  }catch(err){state.feedbackError.set(message.id,err.message);}
+  renderMessages();
+}
+function feedbackBar(message){
+  if(!agentOn())return null;
+  const fb=message.feedback, error=state.feedbackError.get(message.id);
+  if(state.correcting.has(message.id)){
+    const draft=state.correctionDrafts.get(message.id)??message.content;
+    const area=el('textarea',{rows:'5',maxlength:'8000','aria-label':'Corrected answer',oninput:e=>state.correctionDrafts.set(message.id,e.target.value)});area.value=draft;
+    const share=el('input',{type:'checkbox'});
+    return el('div',{class:'review-form'},el('b',{text:'Write the answer NDIM should have given'}),
+      el('small',{class:'muted',text:'NDIM uses your answer for similar questions from now on, and it becomes a training example.'}),area,
+      el('label',{class:'jc-choice'},share,el('span',{text:'Share this answer when online sync is on (your question and notes never leave this computer)'})),
+      error?callout('error','alert',error):null,
+      el('div',{class:'actions'},el('button',{type:'button',class:'btn ghost',onclick:()=>{state.correcting.delete(message.id);renderMessages();}},'Cancel'),
+        el('button',{type:'button',class:'btn primary',onclick:()=>{const text=(state.correctionDrafts.get(message.id)??message.content).trim();
+          if(text.length<2)return;sendFeedback(message,{rating:'down',correction:text,share:share.checked});}},icon('check'),'Save correction')));
+  }
+  if(fb){
+    const label=fb.kind==='correction'?'Your correction was learned':fb.kind==='answer'?'Approved: NDIM will reuse this answer':'Marked not helpful (not learned)';
+    return el('div',{class:'fb-bar done'},icon(fb.kind==='flagged'?'x':'check'),el('span',{text:label+(fb.share?' · shared when online':'')}),
+      fb.blocked?el('small',{class:'muted',text:' '+fb.blocked}):null,
+      el('button',{type:'button',class:'btn ghost',onclick:()=>{state.correcting.add(message.id);renderMessages();}},icon('pencil'),'Correct'));
+  }
+  return el('div',{class:'fb-bar'},
+    el('button',{type:'button',class:'btn ghost',title:message.check?'This reply has a warning: correct it instead':'Approve this answer',disabled:!!message.check,onclick:()=>sendFeedback(message,{rating:'up'})},'👍'),
+    el('button',{type:'button',class:'btn ghost',title:'Not helpful',onclick:()=>sendFeedback(message,{rating:'down'})},'👎'),
+    el('button',{type:'button',class:'btn ghost',onclick:()=>{state.correcting.add(message.id);renderMessages();}},icon('pencil'),'Correct'),
+    error?el('small',{class:'muted',text:error}):null);
+}
+async function renderLearning(){
+  const box=$('panel-learning');
+  let data;
+  try{data=await api('/agent/learning');}catch(err){box.replaceChildren(callout('error','alert',err.message));return;}
+  const term=el('input',{placeholder:'Term, e.g. imbabura',maxlength:'120'}), meaning=el('input',{placeholder:'Meaning, e.g. improved cookstove',maxlength:'600'});
+  const usable=data.usable_examples, ready=data.fine_tune_ready_at;
+  box.replaceChildren(
+    el('p',{text:`NDIM has learned ${data.lessons.answer} approved answer(s) and ${data.lessons.correction} correction(s) from your team, and ${data.terms} term(s). It recalls them in its answers straight away.`}),
+    el('p',{class:'muted',text:usable>=ready?'There are enough examples to fine-tune a new model version.':`Fine-tuning a new model version needs about ${ready} examples (${usable} so far).`}),
+    el('b',{text:'Your team’s terms'}),
+    el('div',{class:'jc-row'},el('label',{class:'jc-field'},term),el('label',{class:'jc-field'},meaning),
+      el('button',{type:'button',class:'btn',onclick:async()=>{if(!term.value.trim()||meaning.value.trim().length<2)return;
+        await api('/agent/learning/terms',{method:'POST',body:JSON.stringify({term:term.value,meaning:meaning.value})});renderLearning();}},icon('plus'),'Add')),
+    el('ul',{class:'learn-list'},data.term_list.map(t=>el('li',{},el('span',{},el('b',{text:t.term}),' = '+t.meaning),forgetButton(t.id)))),
+    el('b',{text:'What NDIM learned from replies'}),
+    data.items.length?el('ul',{class:'learn-list'},data.items.map(item=>el('li',{},
+      el('span',{},el('span',{class:'tag',text:{answer:'approved',correction:'corrected',flagged:'not helpful'}[item.kind]}),item.share?el('span',{class:'tag',text:'shared online'}):null,
+        el('small',{class:'muted',text:' '+(item.question||'(after a journey step)').slice(0,120)}),el('p',{text:item.answer.slice(0,400)})),forgetButton(item.id)))):
+      el('p',{class:'muted',text:'Nothing yet. Use 👍, 👎 or Correct under NDIM’s replies.'}));
+}
+function forgetButton(id){return el('button',{type:'button',class:'icon-btn',title:'Forget this','aria-label':'Forget this',onclick:async()=>{await api('/agent/learning/'+encodeURIComponent(id),{method:'DELETE'});renderLearning();}},icon('trash'));}
+
 // ---------- side panel: workbench and library ----------
 function openPanel(tab){
   state.panel.open=true;if(tab)state.panel.tab=tab;
@@ -989,11 +1056,11 @@ function renderPanel(){
   $('panel-toggle').setAttribute('aria-expanded',String(open));
   document.querySelectorAll('[data-open-panel]').forEach(button=>button.classList.toggle('on',open&&state.panel.tab===button.dataset.openPanel));
   if(!open)return;
-  for(const tab of ['workbench','library']){
+  for(const tab of ['workbench','library','learning']){
     $('tab-'+tab).setAttribute('aria-selected',String(state.panel.tab===tab));
     $('panel-'+tab).hidden=state.panel.tab!==tab;
   }
-  if(state.panel.tab==='workbench')renderWorkbench();else renderLibrary();
+  if(state.panel.tab==='workbench')renderWorkbench();else if(state.panel.tab==='learning')renderLearning();else renderLibrary();
 }
 function paramForm(values,{skill}={}){
   const range=(name,label,value)=>{const out=el('output',{text:Number(value).toFixed(2)});const input=el('input',{type:'range',name,min:'0',max:'1',step:'0.01',value:String(value),oninput:()=>out.textContent=Number(input.value).toFixed(2)});return el('label',{class:'full'},el('span',{},label,' ',out),input);};

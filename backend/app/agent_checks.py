@@ -24,27 +24,25 @@ def _parse(token):
 
 
 def _candidates(token):
-    """What a number in the reply can stand for, at the precision it was written: 98.91% is 98.91 or 0.9891."""
+    """What a number in the reply can stand for, at the precision it was written: 98.91% is 0.9891. Only a number
+    written with % is read as a percentage: otherwise "14 days" would match any score that rounds to 0.14."""
     value, decimals = _parse(token)
     if value is None:
         return set()
-    found = {round(value, decimals)}
-    if '%' in token or value > 1:
-        found.add(round(value / 100, decimals + 2))
-    return found
+    return {round(value / 100, decimals + 2)} if '%' in token else {round(value, decimals)}
 
 
 def known_numbers(*texts):
     """Every number in the engine's tool results, the system context and the researcher's messages, rounded to every
-    precision a reply might fairly use (0.9891 may be written 0.99, 0.989 or 98.9%)."""
+    precision a reply might fairly use (0.9891 may be written 0.99 or 0.989, and as a percentage 98.9%)."""
     known = set()
     for text in texts:
         for token in NUMBER.findall(text or ''):
             value, _ = _parse(token)
             if value is None:
                 continue
-            for base in (value, value * 100, value / 100):
-                known |= {round(base, k) for k in range(5)}
+            base = value / 100 if '%' in token else value
+            known |= {round(base, k) for k in range(5)}
     return known
 
 

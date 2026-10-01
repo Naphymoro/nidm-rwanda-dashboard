@@ -356,3 +356,11 @@ dl.prov dd{margin:0;overflow-wrap:anywhere}
 .jc-field textarea{resize:vertical}
 .jc-choice{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:13.5px;cursor:pointer}
 .jc-choice:has(input:disabled){opacity:.5;cursor:not-allowed}
+/* learning: feedback under replies and the Learning panel */
+.fb-bar{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:13px;color:var(--muted)}
+.fb-bar .btn{padding:3px 10px;font-size:13px}
+.fb-bar.done svg{width:14px;height:14px;color:var(--ok)}
+.learn-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.learn-list li{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13.5px}
+.learn-list li p{margin:4px 0 0}
+#panel-learning{display:grid;gap:10px;align-content:start}

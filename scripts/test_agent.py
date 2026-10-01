@@ -344,5 +344,91 @@ class JourneyChatTests(unittest.TestCase):
             agent._busy.discard((self.workspace, THREAD))
 
 
+
+class LearningTests(unittest.TestCase):
+    """The assistant learns only from what researchers checked, recalls it at once, and shares only answers."""
+    setUp_base, chat = AgentTests.setUp, AgentTests.chat
+
+    @classmethod
+    def setUpClass(cls):
+        cls.client = TestClient(app)
+        cls.client.__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.client.__exit__(None, None, None)
+
+    def setUp(self):
+        self.setUp_base()
+        from app import agent_learning
+        agent_learning.save({'lessons': [], 'terms': []})
+
+    def replies(self):
+        thread = self.client.get(f'/agent/workspaces/{self.workspace}/threads/{THREAD}').json()
+        return [m for m in thread['messages'] if m['role'] == 'assistant' and m.get('content')]
+
+    def rate(self, message, **body):
+        return self.client.post(f"/agent/workspaces/{self.workspace}/threads/{THREAD}/messages/{message['id']}/feedback", json=body)
+
+    def test_approved_and_corrected_answers_are_recalled_for_similar_questions(self):
+        fake, seen = scripted(('Encoding counts English keywords in each note.', []),
+                              ('It peaks 14 days earlier.', []),
+                              ('Here is the method.', []))
+        with patch.object(agent, 'provider_stream', fake):
+            self.chat('What does the encoding stage do with my notes?')
+            self.chat('When does adoption peak in the twin?')
+            first, flagged = self.replies()
+            self.assertEqual(self.rate(first, rating='up').json()['kind'], 'answer')
+            self.assertIn('check', flagged)
+            self.assertEqual(self.rate(flagged, rating='up').status_code, 422)  # a flagged reply cannot be approved as written
+            corrected = self.rate(flagged, rating='down', correction='The engine does not show a peak; adoption rises to day 179.')
+            self.assertEqual(corrected.json()['kind'], 'correction')
+            self.chat('Can you explain what the encoding stage does with notes?')
+        system = seen[-1]['system']
+        self.assertIn('Approved answer: Encoding counts English keywords in each note.', system)
+        self.assertNotIn('It peaks 14 days earlier', system)
+        rows = self.client.get('/agent/learning/dataset').text.strip().splitlines()
+        answers = [json.loads(row)['messages'][-1]['content'] for row in rows]
+        self.assertEqual(answers, ['Encoding counts English keywords in each note.', 'The engine does not show a peak; adoption rises to day 179.'])
+
+    def test_a_thumbs_down_alone_is_never_learned(self):
+        fake, seen = scripted(('Something unhelpful about encoding notes.', []), ('ok', []))
+        with patch.object(agent, 'provider_stream', fake):
+            self.chat('What does encoding do with notes?')
+            self.assertEqual(self.rate(self.replies()[0], rating='down').json()['kind'], 'flagged')
+            self.chat('What does encoding do with notes again?')
+        self.assertNotIn('Something unhelpful', seen[-1]['system'])
+        self.assertEqual(self.client.get('/agent/learning/dataset').text.strip(), '')
+        self.assertEqual(self.client.get('/agent/learning').json()['lessons']['flagged'], 1)
+
+    def test_only_answers_are_shared_and_never_the_evidence(self):
+        quote = 'the gas stove is expensive but I trust the community health worker who showed us'
+        fake, _ = scripted((f'Your note says {quote}.', []), ('Trust scored higher than barrier in this note.', []))
+        with patch.object(agent, 'provider_stream', fake):
+            self.chat('Summarise my note please.', evidence=EVIDENCE)
+            self.chat('Which scored higher in my note?')
+        quoting, plain = self.replies()
+        blocked = self.rate(quoting, rating='up', share=True).json()
+        self.assertFalse(blocked['share'])
+        self.assertIn('quotes the evidence', blocked['share_blocked'])
+        self.assertTrue(self.rate(plain, rating='up', share=True).json()['share'])
+        shared = [json.loads(row) for row in self.client.get('/agent/learning/dataset?shared_only=true').text.strip().splitlines()]
+        self.assertEqual(len(shared), 1)
+        text = json.dumps(shared[0])
+        self.assertNotIn('Which scored higher', text)  # the question stays local
+        self.assertNotIn('expensive', text)
+        self.assertIn('Trust scored higher than barrier', text)
+
+    def test_terms_are_recalled_and_can_be_forgotten(self):
+        term = self.client.post('/agent/learning/terms', json={'term': 'imbabura', 'meaning': 'improved cookstove (Kinyarwanda)'}).json()
+        fake, seen = scripted(('ok', []), ('ok', []))
+        with patch.object(agent, 'provider_stream', fake):
+            self.chat('Hello')
+            self.assertIn('imbabura = improved cookstove (Kinyarwanda)', seen[-1]['system'])
+            self.assertEqual(self.client.delete(f"/agent/learning/{term['id']}").status_code, 204)
+            self.chat('Hello again')
+        self.assertNotIn('imbabura', seen[-1]['system'])
+
+
 if __name__ == '__main__':
     unittest.main()

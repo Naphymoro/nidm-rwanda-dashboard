@@ -10,15 +10,17 @@ import re
 import threading
 import time
 from pathlib import Path
+from typing import Literal
 from uuid import uuid4
 
 import httpx
 from fastapi import APIRouter, Header, HTTPException, Query
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import agent_checks
 from . import agent_journey as journey_chat
+from . import agent_learning as learning
 from . import agent_library as library
 from . import journey as engine_journey
 from . import engine_store as store
@@ -301,6 +303,10 @@ def system_prompt(thread, settings):
                   '<evidence>', text[:6000] + ('\n[…truncated]' if len(text) > 6000 else ''), '</evidence>']
     else:
         lines += ['', 'No evidence is attached to this chat yet.']
+    asked = next((m['content'] for m in reversed(thread['messages']) if m['role'] == 'user' and not m.get('hidden')), '')
+    taught = learning.recall(asked, thread['workspace_id'])
+    if taught:
+        lines += ['', *taught]
     lines += ['', *journey_chat.PROMPT]
     if thread.get('journey_id'):
         # After clicks in the card, a live qwen3:8b explained stages without reading them and invented every number.
@@ -634,6 +640,80 @@ def journey_stage(workspace: str, thread_id: str, stage: str, payload: JourneySt
         raise HTTPException(422, 'Field observations belong to the digital twin stage only.')
     request = engine_journey.StageRequest(**payload.model_dump(exclude_none=True), approval_statement=CARD_STATEMENTS.get(stage))
     return engine_journey.run(workspace, _journey_of(thread), stage, request)
+
+
+# ---------------------------------------------------------------- learning (what researchers teach the assistant)
+class Feedback(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    rating: Literal['up', 'down']
+    correction: str | None = Field(default=None, max_length=8000)
+    share: bool = False
+
+
+class Term(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    term: str = Field(min_length=1, max_length=120)
+    meaning: str = Field(min_length=2, max_length=600)
+    workspace_id: str | None = Field(default=None, pattern=r'^[a-z0-9]+(?:-[a-z0-9]+)*$', max_length=160)
+
+
+def _lesson_context(thread):
+    """The engine's numbers at the time of the reply, without any evidence text, for recall and fine-tuning."""
+    if not thread.get('journey_id'):
+        return None
+    try:
+        brief = journey_chat.brief(engine_journey.get(thread['workspace_id'], thread['journey_id'], full=True))
+    except HTTPException:
+        return None
+    return {key: brief[key] for key in ('question', 'next_stage', 'card_shows', 'key_facts') if key in brief}
+
+
+def _evidence_texts(thread):
+    texts = [(thread.get('evidence') or {}).get('text', '')]
+    if thread.get('journey_id'):
+        try:
+            texts += [record['text'] for record in engine_journey.load(thread['workspace_id'], thread['journey_id'])['records']]
+        except HTTPException:
+            pass
+    return texts
+
+
+@router.post('/workspaces/{workspace}/threads/{thread_id}/messages/{message_id}/feedback')
+def feedback(workspace: str, thread_id: str, message_id: str, payload: Feedback, x_ndim_agent_token: str | None = Header(default=None)):
+    thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
+    lesson = learning.record_feedback(thread, message_id, payload.rating, payload.correction, payload.share,
+                                      _lesson_context(thread), _evidence_texts(thread))
+    save_thread(thread)
+    return {key: lesson[key] for key in ('id', 'kind', 'share')} | ({'share_blocked': lesson['share_blocked']} if lesson.get('share_blocked') else {})
+
+
+@router.get('/learning')
+def learning_overview(x_ndim_agent_token: str | None = Header(default=None)):
+    _authorize(x_ndim_agent_token)
+    data = learning.load()
+    lessons = [{key: item.get(key) for key in ('id', 'kind', 'question', 'answer', 'workspace_id', 'created_at', 'share')}
+               for item in reversed(data['lessons'])]
+    return JSONResponse(learning.summary() | {'items': lessons, 'term_list': data['terms']}, headers={'Cache-Control': 'no-store'})
+
+
+@router.post('/learning/terms')
+def learning_term(payload: Term, x_ndim_agent_token: str | None = Header(default=None)):
+    _authorize(x_ndim_agent_token)
+    return learning.add_term(payload.term, payload.meaning, payload.workspace_id)
+
+
+@router.delete('/learning/{item_id}', status_code=204)
+def learning_forget(item_id: str, x_ndim_agent_token: str | None = Header(default=None)):
+    _authorize(x_ndim_agent_token)
+    learning.forget(item_id)
+
+
+@router.get('/learning/dataset', response_class=PlainTextResponse)
+def learning_dataset(shared_only: bool = False, x_ndim_agent_token: str | None = Header(default=None)):
+    """Fine-tuning examples as JSON lines; shared_only gives what online sync may send (answers and engine numbers)."""
+    _authorize(x_ndim_agent_token)
+    return PlainTextResponse('\n'.join(json.dumps(row, ensure_ascii=False) for row in learning.dataset(shared_only)) + '\n',
+                             headers={'Cache-Control': 'no-store'})
 
 
 @router.post('/chat')
