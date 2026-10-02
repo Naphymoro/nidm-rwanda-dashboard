@@ -734,18 +734,31 @@ function renderAISettings(){
     const provider=el('select',{'aria-label':'AI provider'},a.providers.map(name=>el('option',{value:name,text:name})));
     provider.value=a.provider||'anthropic';
     const key=el('input',{type:'password',placeholder:a.available?'API key (leave blank to keep)':'API key','aria-label':'API key',autocomplete:'off'});
-    const model=el('input',{placeholder:'Model (optional)','aria-label':'Model',value:a.available?a.model:''});
+    let model=el('input',{placeholder:'Model (optional)','aria-label':'Model',value:a.available?a.model:''});
     const note=el('span',{class:'small muted'});
-    box.append(el('label',{},'Provider',provider),el('div',{class:'row'},key),el('div',{class:'row'},model,el('button',{type:'button',class:'btn primary',onclick:async()=>{
-      try{state.agent=await api('/agent/config',{method:'POST',body:JSON.stringify({provider:provider.value,api_key:key.value.trim()||null,model:model.value.trim()||null})});note.textContent=state.agent.available?'Saved. The assistant is on.':state.agent.reason;render();loadThreads();renderAISettings();}
+    // With a local Ollama, pick from the models it has, labelled from NDIM's benchmarks (Tiny ... NDIM-tuned).
+    if(a.provider==='ollama')api('/agent/models').then(data=>{
+      if(!data.models?.length){if(data.error)note.textContent=data.error;return;}
+      const hint=el('span',{class:'small muted'});
+      const pick=el('select',{'aria-label':'Model',onchange:()=>{hint.textContent=data.models.find(m=>m.name===pick.value)?.note||'';}},
+        data.models.map(m=>el('option',{value:m.name,text:`${m.label?m.label+' · ':''}${m.name} (${m.size_gb} GB)`})));
+      pick.value=data.current;pick.dispatchEvent(new Event('change'));
+      model.replaceWith(pick);model=pick;pick.closest('.row').after(hint);
+    }).catch(()=>{});
+    const keyRow=el('div',{class:'row'},key);
+    const keyNote=el('span',{class:'small muted',text:'The key stays on this computer, in the NDIM data folder.'});
+    const local=()=>{keyRow.hidden=keyNote.hidden=['ollama','lmstudio'].includes(provider.value);};  // local models need no key
+    provider.addEventListener('change',local);local();
+    box.append(el('label',{},'Provider',provider),keyRow,el('div',{class:'row'},model,el('button',{type:'button',class:'btn primary',onclick:async()=>{
+      try{state.agent=await api('/agent/config',{method:'POST',body:JSON.stringify({provider:provider.value,api_key:key.value.trim()||null,model:model.value.trim()||null})});loadAgent();note.textContent=state.agent.available?'Saved. The assistant is on.':state.agent.reason;render();loadThreads();renderAISettings();}
       catch(err){note.textContent=err.message;}
-    }},'Save')),note,el('span',{class:'small muted',text:'The key stays on this computer, in the NDIM data folder.'}));
+    }},'Save')),note,keyNote);
   }
 }
 async function loadAgent(){
   try{state.agent=await api('/agent/status');}catch{state.agent=null;}
   const on=agentOn();
-  $('model-badge').hidden=!on;$('model-badge').textContent=on?state.agent.model:'';
+  $('model-badge').hidden=!on;$('model-badge').textContent=on?(state.agent.model_label||state.agent.model):'';$('model-badge').title=on?state.agent.model:'';
   document.querySelector('.welcome p').textContent=on?'Ask a research question, explore the manual, or plan an experiment.':'What would you like to investigate?';
   document.querySelector('.disclaimer').textContent=on?`Answers are written by ${state.agent.model}. Scientific results come only from NDIM's local tools, and nothing runs until you click Run.`:'NDIM runs local scientific tools, not an AI model. Scores are heuristics and scenarios are illustrative, so check them against the evidence.';
 }

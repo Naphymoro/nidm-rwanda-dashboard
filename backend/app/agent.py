@@ -42,6 +42,17 @@ PROVIDERS = {
     'lmstudio': {'protocol': 'openai', 'env': None, 'base_url': 'http://127.0.0.1:1234/v1', 'model': 'local-model'},
 }
 AUTO_ORDER = ('anthropic', 'openai', 'openrouter', 'mistral')
+# Labels for local models, from the NDIM benchmarks (scripts/local_ai_benchmark, scripts/local_ai_training). First match
+# wins, so the NDIM fine-tunes come before the general families.
+MODEL_LABELS = [
+    ('ndim-qwen3-1.7b:v3', 'NDIM-tuned (small)', 'Qwen3 1.7B trained on NDIM journeys: cites the engine, fast; experimental'),
+    ('ndim-', 'NDIM-tuned (older test version)', 'An earlier NDIM training run, kept for comparison'),
+    ('qwen3:1.7b', 'Tiny', 'Fastest, least energy; often misses NDIM rules'),
+    ('llama3.2:3b', 'Small', 'Light and quick; weaker at following NDIM rules'),
+    ('qwen3:4b', 'Small', 'Light; slow when it reasons'),
+    ('qwen3:8b', 'Standard', 'Best general local model in the NDIM benchmark; needs about 8 GB of graphics memory'),
+    ('qwen3:14b', 'Large', 'Close to Standard, more memory and energy'),
+]
 MAX_STEPS = 8
 HISTORY = 40
 THREAD_ID = re.compile(r'^[0-9a-f][0-9a-f-]{7,63}$')
@@ -85,6 +96,10 @@ def resolve():
     if not local_mode() and not os.getenv('NDIM_AGENT_ACCESS_TOKEN'):
         return {'available': False, 'provider': name, 'reason': 'Hosted deployments need NDIM_AGENT_ACCESS_TOKEN before the assistant is enabled.'}
     return {'available': True, 'provider': name, 'protocol': spec['protocol'], 'model': model, 'base_url': base.rstrip('/'), 'api_key': key}
+
+
+def model_label(name):
+    return next(((label, note) for prefix, label, note in MODEL_LABELS if (name or '').startswith(prefix)), (None, None))
 
 
 def _authorize(token):
@@ -504,8 +519,29 @@ def _clean_settings(raw):
 def status():
     cfg = resolve()
     return JSONResponse({'available': cfg['available'], 'provider': cfg.get('provider'), 'model': cfg.get('model'),
+                         'model_label': model_label(cfg.get('model'))[0],
                          'reason': cfg.get('reason'), 'configurable': local_mode(), 'token_required': bool(os.getenv('NDIM_AGENT_ACCESS_TOKEN')),
                          'providers': sorted(PROVIDERS)}, headers={'Cache-Control': 'no-store'})
+
+
+@router.get('/models')
+def local_models():
+    """Models installed in the configured Ollama, with plain labels, for the model picker. Local installs only."""
+    cfg = resolve()
+    if not local_mode() or cfg.get('provider') != 'ollama':
+        return {'models': [], 'current': cfg.get('model')}
+    root = cfg['base_url'].removesuffix('/v1')
+    try:
+        tags = httpx.get(root + '/api/tags', timeout=10).json().get('models', [])
+    except (httpx.HTTPError, ValueError):
+        return {'models': [], 'current': cfg.get('model'), 'error': f'Could not reach Ollama at {root}.'}
+    rows = []
+    for tag in tags:
+        label, note = model_label(tag['name'])
+        rows.append({'name': tag['name'], 'label': label, 'note': note, 'size_gb': round(tag.get('size', 0) / 1e9, 1)})
+    order = {prefix: i for i, (prefix, *_) in enumerate(MODEL_LABELS)}
+    rows.sort(key=lambda row: (row['label'] is None, next((i for p, i in order.items() if row['name'].startswith(p)), 99), row['name']))
+    return JSONResponse({'models': rows, 'current': cfg['model']}, headers={'Cache-Control': 'no-store'})
 
 
 @router.post('/config')

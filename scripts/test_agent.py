@@ -167,6 +167,23 @@ class AgentTests(unittest.TestCase):
             self.assertIn('NDIM_AGENT_ACCESS_TOKEN', status['reason'])
             self.assertEqual(self.client.post('/agent/config', json={'provider': 'openai', 'api_key': 'x'}).status_code, 403)
 
+    def test_local_models_are_listed_with_plain_labels(self):
+        tags = {'models': [{'name': 'qwen3:8b', 'size': 5.2e9}, {'name': 'mystery:7b', 'size': 4e9},
+                           {'name': 'ndim-qwen3-1.7b:v3', 'size': 3.4e9}, {'name': 'qwen3:1.7b', 'size': 1.4e9}]}
+
+        class Reply:
+            def json(self):
+                return tags
+        with patch.dict(os.environ, {'NDIM_AGENT_PROVIDER': 'ollama', 'NDIM_AGENT_MODEL': 'ndim-qwen3-1.7b:v3'}), \
+                patch.object(agent.httpx, 'get', return_value=Reply()) as get:
+            data = self.client.get('/agent/models').json()
+            status = self.client.get('/agent/status').json()
+        get.assert_called_once_with('http://127.0.0.1:11434/api/tags', timeout=10)
+        self.assertEqual([m['name'] for m in data['models']], ['ndim-qwen3-1.7b:v3', 'qwen3:1.7b', 'qwen3:8b', 'mystery:7b'])
+        self.assertEqual([m['label'] for m in data['models']], ['NDIM-tuned (small)', 'Tiny', 'Standard', None])
+        self.assertEqual(status['model_label'], 'NDIM-tuned (small)')
+        self.assertEqual(self.client.get('/agent/models').json()['models'], [])  # other providers: nothing to pick
+
     def test_saved_config_wins_and_is_private(self):
         response = self.client.post('/agent/config', json={'provider': 'anthropic', 'api_key': 'sk-ant-test', 'model': 'claude-sonnet-5'})
         self.assertEqual(response.status_code, 200)
