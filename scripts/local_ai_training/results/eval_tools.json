@@ -1,0 +1,29 @@
+{
+ "qwen3:1.7b": {
+  "tool_propose": 0.7,
+  "no_fake_confirm": 0.0,
+  "tool_records": 1.0,
+  "tool_status": 0.6,
+  "tool_stage": 0.429,
+  "no_fake_decision": 0.0,
+  "all": 0.408
+ },
+ "ndim-qwen3-1.7b:v1": {
+  "tool_propose": 0.0,
+  "no_fake_confirm": 0.5,
+  "tool_records": 0.0,
+  "tool_status": 0.0,
+  "tool_stage": 0.0,
+  "no_fake_decision": 0.4,
+  "all": 0.1
+ },
+ "ndim-qwen3-1.7b:v2": {
+  "tool_propose": 1.0,
+  "no_fake_confirm": 0.0,
+  "tool_records": 1.0,
+  "tool_status": 0.6,
+  "tool_stage": 1.0,
+  "no_fake_decision": 0.65,
+  "all": 0.838
+ }
+}

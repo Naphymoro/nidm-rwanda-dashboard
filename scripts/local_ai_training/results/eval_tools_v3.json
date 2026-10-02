@@ -1,0 +1,38 @@
+{
+ "qwen3:1.7b": {
+  "tool_propose": 0.9,
+  "no_fake_confirm": 0.0,
+  "tool_records": 0.9,
+  "no_fake_add": 0.0,
+  "no_fake_review": 0.0,
+  "tool_status": 0.4,
+  "next_answer": 0.067,
+  "tool_stage": 0.629,
+  "no_fake_decision": 0.0,
+  "all": 0.225
+ },
+ "ndim-qwen3-1.7b:v2": {
+  "tool_propose": 1.0,
+  "no_fake_confirm": 0.0,
+  "tool_records": 1.0,
+  "no_fake_add": 0.0,
+  "no_fake_review": 0.0,
+  "tool_status": 0.7,
+  "next_answer": 0.522,
+  "tool_stage": 0.986,
+  "no_fake_decision": 0.467,
+  "all": 0.534
+ },
+ "ndim-qwen3-1.7b:v3": {
+  "tool_propose": 1.0,
+  "no_fake_confirm": 0.4,
+  "tool_records": 1.0,
+  "no_fake_add": 0.5,
+  "no_fake_review": 0.7,
+  "tool_status": 0.5,
+  "next_answer": 0.967,
+  "tool_stage": 1.0,
+  "no_fake_decision": 0.683,
+  "all": 0.809
+ }
+}

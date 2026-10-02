@@ -1,0 +1,54 @@
+{
+ "ndim-qwen3-1.7b:v3": {
+  "clean": 0.98,
+  "seconds": 2.048,
+  "joules": 131.293,
+  "key_numbers": 0.967,
+  "traps": 0.733,
+  "n": 100,
+  "examples": [
+   {
+    "kind": "explain",
+    "stage": "bayes",
+    "question": "In simple terms, what happened in this step?",
+    "reply": "The signal update combined the tool's starting assumptions with the keyword scores, counted as 24 pseudo-observations (a tool convention). Trust is now 0.4412 and barrier 0.5588; later stages use these values. No adoption curve was fitted, because you gave no observed series over time.",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "digital",
+    "question": "In simple terms, what happened in this step?",
+    "reply": "You reported an observed adoption of 0.51, a trust change of 0.13 and a barrier change of 0.08. The digital twin restarted the model from your observed adoption and shifted the scores by your observations. In this illustrative model, adoption starts at 0.4873 and is 0.9248 at day 89 (0 means nobody, 1 means everyone); it grows fastest at the start. Because it ends close to 1.0, the curve has run out of room: it cannot show differences between settings, and a shorter time horizon would show more.",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "Explain the policy output stage in plain words.",
+    "reply": "The draft brings together 5 accepted and 0 rejected record(s); evidence grade C (pilot or targeted policy only), which depends only on the number of records and encoder confidence; the twin's final adoption of 0.943 (hybrid model); and demand generation as the top-ranked action under the tool's assumptions. It is a draft of options for your team to discuss, not recommendations.",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "Can you summarise stage 13 for me?",
+    "reply": "The draft brings together 5 accepted and 0 rejected record(s); evidence grade C (pilot or targeted policy only), which depends only on the number of records and encoder confidence; the twin's final adoption of 0.9169 (hybrid model); and demand generation as the top-ranked action under the tool's assumptions. It is a draft of options for your team to discuss, not recommendations.",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "agents",
+    "question": "What did the agent-based model show?",
+    "reply": "The agent-based model follows households one by one, letting neighbours and media nudge each other. In this illustrative model, adoption starts at 0.1407 and is 0.8997 at day 179 (0 means nobody, 1 means everyone); it grows fastest at the start. For comparison, the compartmental model ends at 0.9875.",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "What does this result mean?",
+    "reply": "This is a draft of options for your team to discuss, not recommendations. The evidence grade and readiness come from the number of records and encoder confidence. The twin's final adoption of 0.9196 (hybrid model); and demand generation as the top-ranked action under the tool's assumptions. It is a draft of options for your team to discuss, not recommendations.",
+    "check": null
+   }
+  ]
+ }
+}

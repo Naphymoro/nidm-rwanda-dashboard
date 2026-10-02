@@ -12,7 +12,7 @@ LIMITS = {
     'repository': 'Only accepted records reach any model. Decisions are frozen once encoding runs.',
     'encoding': 'Scores come from English keywords in each record: interpretations for review, not measurements of '
                 'trust or barriers in a community.',
-    'compartmental': 'Illustrative, uncalibrated curve driven by the keyword scores. Not a forecast.',
+    'compartmental': 'Illustrative, uncalibrated curve computed from the keyword scores. Not a forecast.',
     'agents': 'A deterministic proxy for household behaviour, not a simulation of real households. Not a forecast.',
     'digital': 'Re-runs the hybrid model from the researcher\'s field observations. It is still uncalibrated: one '
                'observed level does not fit the model to reality.',

@@ -8,7 +8,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 FX = json.load(open(HERE / 'fixtures.json'))
 R, Q, TOOLS = FX['results'], FX['question'], FX['tools']
-OLLAMA = 'http://127.0.0.1:11434'
+OLLAMA = __import__('os').environ.get('OLLAMA', 'http://127.0.0.1:11434')
 SYSTEM = ('You are the NDIM research assistant, talking with a researcher in Rwanda. You run the NDIM engine through '
           'the ndim_* tools. Every tool result has a `next` field: follow it exactly, including any text it tells you '
           'to show word for word. Never invent the researcher\'s answers, approvals or observations.')

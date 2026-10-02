@@ -1,0 +1,131 @@
+{
+ "qwen3:1.7b": {
+  "clean": 0.84,
+  "seconds": 1.23,
+  "joules": 74.641,
+  "key_numbers": 0.36,
+  "traps": 0.45,
+  "n": 100,
+  "examples": [
+   {
+    "kind": "explain",
+    "stage": "bayes",
+    "question": "In simple terms, what happened in this step?",
+    "reply": "In this step, the engine performed a Bayesian update based on keyword scores, treating them as pseudo-observations. It combined the tool's starting assumptions with the keyword scores, counting them as 24 pseudo-trials. The update adjusted trust and barrier values, but no adoption curve was fitted because no observed series was provided. The next step is the RL optimizer, which will refine the model based on the current trust and barrier values. Ask if you want to continue.",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "digital",
+    "question": "In simple terms, what happened in this step?",
+    "reply": "In this step, the digital twin restarted the hybrid model from the researcher's observed adoption data (0.51) and adjusted the scores based on the observed trust and barrier shifts (0.13 and 0.08). It simulated adoption over 90 days, starting at 0.4873 and ending at 0.9248. The model has saturated, so the curve shows little difference between settings. The next step is to perform a Bayesian update to refine the estimates.",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "Explain the policy output stage in plain words.",
+    "reply": "In the policy output stage, the draft presents options for discussion rather than recommendations. It summarizes the findings from the evidence and the model, showing that 5 out of 13 records were accepted, indicating a strong signal for the intervention. The model predicts that adoption will reach 0.943 in the hybrid model, with demand generation as the top-ranked action under the tool's assumptions. This is a draft for the research team to discuss, not to make decisions about policy implementa",
+    "check": {
+     "unverified_numbers": [],
+     "claim_words": [
+      "recommendations",
+      "predicts",
+      "will reach"
+     ]
+    }
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "Can you summarise stage 13 for me?",
+    "reply": "Stage 13 of the journey, titled \"Policy output,\" presents a draft of options for discussion, not recommendations. It aggregates 5 accepted records and 0 rejected records, indicating a strong consensus among the records. The final twin adoption is 0.9169, based on a hybrid model, with mean trust at 0.5365 and mean barrier at 0.5594. The top-ranked action under the tool's assumptions is \"demand generation.\" The inoculation was not applied, and the output is a draft for the research team's review. ",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "agents",
+    "question": "What did the agent-based model show?",
+    "reply": "The agent-based model shows that in the illustrative scenario, adoption of improved cookstoves reaches 0.8997 at day 179. Adoption starts at 0.1407 and grows fastest at the beginning. This model simulates household behavior, with neighbors and media influencing each other. The final adoption rate is higher than the compartmental model, which ends at 0.9875. The model is a deterministic proxy for household behavior, not a simulation of real households. The researcher's decision is to move to the ",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "What does this result mean?",
+    "reply": "This result means that, in the illustrative model, a subsidy would help people switch to LPG, based on the evidence from the records. The model shows that 2 out of the records were accepted, indicating that the intervention is supported by some evidence. The final adoption rate in the twin model is 0.9196, which suggests that a large majority of people are adopting LPG. The top-ranked action under the tool's assumptions is \"demand generation,\" indicating that the main driver of adoption is the d",
+    "check": null
+   }
+  ]
+ },
+ "qwen3:8b": {
+  "clean": 0.7,
+  "seconds": 4.651,
+  "joules": 316.343,
+  "key_numbers": 0.363,
+  "traps": 0.517,
+  "n": 100,
+  "examples": [
+   {
+    "kind": "explain",
+    "stage": "bayes",
+    "question": "In simple terms, what happened in this step?",
+    "reply": "In this step (Bayesian update), the model combined its starting assumptions with the keyword scores from the field notes. These scores were treated as 24 pseudo-trials (a tool convention), which helped adjust the model's trust and barrier values. \n\n- **Trust** (how much people believe in clean cooking) is now **0.4412**.\n- **Barrier** (how much people resist clean cooking) is now **0.5588**.\n\nThese values will guide the next steps, like the RL optimizer. No adoption curve was fitted because no t",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "digital",
+    "question": "In simple terms, what happened in this step?",
+    "reply": "In this step, the model recreated the spread of narratives about clean cooking in the community, starting from the observed adoption level of 0.51. It showed how trust in clean cooking increased by 0.13 and barriers decreased by 0.08. The model predicted that adoption would reach 0.9248 by day 89, but since it's close to full adoption, it can't show much difference between different scenarios or settings. \n\nNext, the model will use the Bayesian update to refine its predictions based on the obser",
+    "check": {
+     "unverified_numbers": [],
+     "claim_words": [
+      "predicted",
+      "predictions"
+     ]
+    }
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "Explain the policy output stage in plain words.",
+    "reply": "In plain words, the **Policy Output** stage provides a draft of options for your research team to discuss, not as recommendations. Here's what it means:\n\n- **Evidence Grade**: The draft is labeled as **Grade C**, which means it’s based on a small number of records (5 accepted, 0 rejected) and moderate encoder confidence. This suggests it’s suitable for **pilot or targeted policy** only, not broad national strategies.\n  \n- **Final Adoption Estimate**: The model predicts that **94.3%** of people w",
+    "check": {
+     "unverified_numbers": [],
+     "claim_words": [
+      "predicts",
+      "most effective",
+      "drive"
+     ]
+    }
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "Can you summarise stage 13 for me?",
+    "reply": "Stage 13, \"Policy Output,\" provides a draft of options for the research team to discuss, not as recommendations. Based on the evidence collected (5 accepted records), the model estimates that adoption would reach **0.917** (or 91.7%) under a hybrid model. The top-ranked action under the tool's assumptions is **demand generation**, which suggests focusing on strategies that increase awareness and interest in LPG. \n\nThe evidence grade is **C**, indicating this is suitable for pilot or targeted pol",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "agents",
+    "question": "What did the agent-based model show?",
+    "reply": "The agent-based model showed that, in the illustrative model, adoption of improved cookstoves starts at 0.1407 and grows to 0.8997 by day 179. This means about 14% of households adopt at the start, and around 90% adopt by the end of the modeled period.\n\nAdoption grows fastest at the beginning, as households are influenced by neighbors and media. This is a deterministic proxy for household behavior, not a simulation of real households or a forecast.\n\nNext steps: You could explore how different in",
+    "check": null
+   },
+   {
+    "kind": "explain",
+    "stage": "policy",
+    "question": "What does this result mean?",
+    "reply": "The result shows that, in the illustrative model, a subsidy is not the top-ranked action for increasing adoption of LPG. Instead, **demand generation** is the top-ranked action under the tool's assumptions. This means that, based on the model, efforts focused on creating awareness, reducing perceived risks, or improving the appeal of LPG are more likely to drive adoption than subsidies.\n\nThe model also shows that, with the current evidence, the **evidence grade is D**, which means the findings a",
+    "check": {
+     "unverified_numbers": [],
+     "claim_words": [
+      "drive"
+     ]
+    }
+   }
+  ]
+ }
+}
