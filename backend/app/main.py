@@ -4,7 +4,8 @@ from html import escape as html_escape
 import os
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
+from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
@@ -43,10 +44,14 @@ from .engine_harness import router as engine_router, harness
 from .journey import router as journey_router
 from .agent import router as agent_router
 from .engine_ui import engine_html, ASSETS
+from . import durable_mirror
 
 if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
     ensure_app_dirs()
-ensure_default_workspaces()
+# On hosts that discard the disk, the host restores the data folder through /__mirror/restore and the default
+# workspaces are created after it (see durable_mirror); everywhere else nothing changes.
+if not durable_mirror.enabled():
+    ensure_default_workspaces()
 
 STRESS_TEST_INSTRUCTIONS_PATH = resource_path("docs", "ndim_stress_test_corpus_instructions.html")
 DEMO_VIDEO_HTML_PATH = resource_path("docs", "demo_video", "ndim_engine_demo_video.html")
@@ -71,6 +76,7 @@ Base.metadata.create_all(bind=engine)
 @asynccontextmanager
 async def engine_lifespan(app):
     harness.start()
+    durable_mirror.start()
     try:
         yield
     finally:
@@ -84,6 +90,45 @@ app.include_router(journey_router)
 app.include_router(agent_router)
 
 app.add_middleware(CORSMiddleware, **cors_options())
+
+
+@app.middleware("http")
+async def wait_for_restore(request, call_next):
+    """Until the host has restored the data folder, nothing reads it."""
+    path = request.url.path
+    if durable_mirror.enabled() and not durable_mirror.ready.is_set() and path != "/health" and not path.startswith("/__mirror/"):
+        return JSONResponse({"detail": "Restoring saved data. Try again in a few seconds."}, status_code=503,
+                            headers={"Retry-After": "5"})
+    return await call_next(request)
+
+
+class MirrorRestore(BaseModel):
+    files: dict[str, str] = {}
+    done: bool = False
+
+
+class MirrorAck(BaseModel):
+    id: str
+
+
+# The host's routes for keeping the data folder (durable_mirror). The token keeps them private; the Cloudflare Worker
+# also refuses /__mirror/ from visitors.
+@app.post("/__mirror/restore", include_in_schema=False)
+def mirror_restore(payload: MirrorRestore, x_ndim_mirror_token: str | None = Header(default=None)):
+    durable_mirror.authorize(x_ndim_mirror_token)
+    return durable_mirror.restore_batch(payload.files, payload.done, ensure_default_workspaces)
+
+
+@app.get("/__mirror/changes", include_in_schema=False)
+def mirror_changes(x_ndim_mirror_token: str | None = Header(default=None)):
+    durable_mirror.authorize(x_ndim_mirror_token)
+    return durable_mirror.changes()
+
+
+@app.post("/__mirror/ack", include_in_schema=False)
+def mirror_ack(payload: MirrorAck, x_ndim_mirror_token: str | None = Header(default=None)):
+    durable_mirror.authorize(x_ndim_mirror_token)
+    return durable_mirror.ack(payload.id)
 
 if analytics_router:
     app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
@@ -145,6 +190,7 @@ def health_check():
         "llm_fallback": provider_status,
         "deployment_mode": os.getenv("NDIM_DEPLOYMENT_MODE", "local"),
         "database_required": os.getenv("NDIM_REQUIRE_DATABASE") == "1",
+        "mirror": durable_mirror.status(),
         "warnings": [] if multipart_available else ["CSV/PDF upload parser is unavailable."],
     }
 

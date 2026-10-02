@@ -518,6 +518,8 @@ function journeyCard(){
   const j=state.journey, card=el('div',{class:'run-card ai-body journey-card',id:'journey-card'});
   card.append(el('div',{class:'skill-line'},el('span',{class:'skill'},icon('flask'),'NDIM journey'),el('span',{text:j?'13 stages · field notes to policy draft':'proposed, not started'})));
   if(state.journeyError)card.append(callout('error','alert',state.journeyError));
+  // Over the internet a stage takes seconds; say so, so nobody clicks again (every button is disabled meanwhile).
+  if(state.journeyBusy)card.append(el('div',{class:'callout'},el('span',{class:'st run'},icon('spin')),el('span',{text:'Working… this can take a few seconds.'})));
   if(!j){card.append(...proposalPart());return card;}
   card.append(callout('','check',j.presentation.opening));
   card.append(progressPart(j));

@@ -18,4 +18,5 @@ COPY VERSION ./VERSION
 
 EXPOSE 8080
 
-CMD exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8080}"
+# JSON form (no build warning); the shell is still needed to expand PORT, and exec hands signals to uvicorn.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port \"${PORT:-8080}\""]

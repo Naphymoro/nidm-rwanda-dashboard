@@ -22,8 +22,15 @@ class_name = "NdimEngine"
 tag = "v1"
 new_sqlite_classes = ["NdimEngine"]
 
+# The engine's data folder, mirrored here so it survives restarts (see src/index.ts and backend/app/durable_mirror.py).
+[[d1_databases]]
+binding = "DB"
+database_name = "ndim-engine-data"
+database_id = "2d92967b-dcc2-4649-99e5-fb36b6d85a94"
+
 [vars]
 NDIM_ALLOWED_ORIGINS = "https://nidm-engine.pages.dev"
 
 # Secrets (set with `npx wrangler secret put NAME`, never in this file):
-#   DATABASE_URL  optional Postgres connection string
+#   NDIM_MIRROR_TOKEN  required: shared by the Worker and the engine for the data-folder mirror (any long random string)
+#   DATABASE_URL       optional Postgres connection string (not needed for durability: the D1 mirror keeps the files)
