@@ -49,15 +49,12 @@ The first request after a deploy or a sleep starts the container, which takes a 
 - `max_instances = 1`: the engine works on local files, so every user must reach the same instance.
 - `sleepAfter = "30m"`: safe now that the data is kept.
 
-## Bot check and headless browsers
-
-Automated tests with a headless browser saw intermittent "Failed to fetch": Cloudflare's bot protection answered some
-requests from the `HeadlessChrome` user agent. With a normal browser user agent the full journey ran with no errors.
-
 ## Bot check
 
 Cloudflare's default bot protection answers some scripted clients with `error code: 1010` (403); Python's
-`urllib` user agent is one. Browsers and curl pass. Scripts should send their own `User-Agent`.
+`urllib` user agent is one. Browsers and curl pass. Scripts should send their own `User-Agent`. Headless browsers
+(`HeadlessChrome`) are refused intermittently too, which shows as "Failed to fetch" in the page; a normal browser user
+agent runs the full journey with no errors.
 
 ## Tested
 
