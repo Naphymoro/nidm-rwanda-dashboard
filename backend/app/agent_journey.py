@@ -107,7 +107,8 @@ def facts(stage, output):
     if stage == 'encoding':
         return {'mean': {k: None if v is None else round(v, 3) for k, v in output['mean'].items()}, 'themes': output['themes'],
                 'per_record': [{'trust': round(e['trust_score'], 3), 'barrier': round(e['adoption_barrier_score'], 3),
-                                'themes': e['themes']} for e in output['encoded']]}
+                                'themes': e['themes']} for e in output['encoded']],
+                'sentiment': output.get('sentiment')}
     if stage in ('compartmental', 'agents', 'digital'):
         out = {'model': output['model'], 'initial_adoption': round(output['trajectory'][0]['adoption'], 4),
                'final_adoption': _final(output), 'horizon_days': output['horizon_days']}

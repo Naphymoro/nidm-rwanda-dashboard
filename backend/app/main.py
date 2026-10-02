@@ -45,6 +45,7 @@ from .journey import router as journey_router
 from .agent import router as agent_router
 from .engine_ui import engine_html, ASSETS
 from . import durable_mirror
+from .sentiment import status as sentiment_status
 
 if os.getenv("NDIM_DESKTOP") == "1" or os.getenv("NDIM_DATA_DIR"):
     ensure_app_dirs()
@@ -191,6 +192,7 @@ def health_check():
         "deployment_mode": os.getenv("NDIM_DEPLOYMENT_MODE", "local"),
         "database_required": os.getenv("NDIM_REQUIRE_DATABASE") == "1",
         "mirror": durable_mirror.status(),
+        "sentiment": sentiment_status(),
         "warnings": [] if multipart_available else ["CSV/PDF upload parser is unavailable."],
     }
 

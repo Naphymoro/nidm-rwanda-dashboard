@@ -7,4 +7,5 @@
 !docs
 !stress_test_corpus
 !VERSION
+!models
 **/__pycache__

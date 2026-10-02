@@ -4,7 +4,9 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     NDIM_DEPLOYMENT_MODE=cloud \
-    NDIM_MAX_UPLOAD_MB=20
+    NDIM_MAX_UPLOAD_MB=20 \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=10
 
 COPY backend/requirements.lock.txt ./requirements.lock.txt
 # CPU-only torch first, at the locked version, so the lockfile's torch pin is already met and pip skips the CUDA build.
@@ -15,6 +17,9 @@ COPY backend/app ./app
 COPY docs ./docs
 COPY stress_test_corpus ./stress_test_corpus
 COPY VERSION ./VERSION
+# The sentiment classifier when present at build time (models/README.md); otherwise sentiment stays keyword-based.
+COPY models ./models
+ENV NDIM_SENTIMENT_MODEL=/app/models/sentiment
 
 EXPOSE 8080
 

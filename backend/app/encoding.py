@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 from .schemas import EncodedNarrative, EncodingMode, NarrativeRecord
 from .llm_prompts import NARRATIVE_ENCODING_SYSTEM_PROMPT, NARRATIVE_ENCODING_USER_TEMPLATE
+from .sentiment import METHOD as SENTIMENT_METHOD, classify as classify_sentiment
 
 try:
     from openai import OpenAI
@@ -176,6 +177,14 @@ def encode_rule_based(
     trust = clamp(0.48 + trust_positive * 0.060 + health * 0.025 + social * 0.010 + local_grounding * 0.018 - trust_negative * 0.070 - misinformation * 0.025)
     confidence = clamp(0.38 + confidence_bonus + min(local_grounding, 5) * 0.045 + min(len(text.split()), 140) / 1150 + min(len(themes), 6) * 0.025)
     sentiment = clamp((positive_stance + trust_positive + health * 0.4 + emotion * 0.12 - negative_stance - trust_negative - safety * 0.2 - misinformation * 0.15) / 10, -0.8, 0.8)
+    # The keyword sentiment read every Kinyarwanda tweet as neutral; the classifier, when installed, replaces it.
+    # Trust, barrier and themes stay keyword-based (English).
+    classified = classify_sentiment(record.text)
+    sentiment_note = (f"sentiment: {SENTIMENT_METHOD}, {classified['label']} "
+                      f"(positive {classified['probabilities'].get('positive')}, negative {classified['probabilities'].get('negative')})"
+                      if classified else "sentiment: English keyword heuristic")
+    if classified:
+        sentiment = classified['score']
 
     return EncodedNarrative(
         narrative_id=record.narrative_id,
@@ -189,7 +198,7 @@ def encode_rule_based(
             f"{note}; transparent content-sensitive heuristic used because no confirmed LLM result was available. "
             f"signals: barrier_terms={affordability + fuel_access + safety + habit}, trust_positive={trust_positive}, "
             f"trust_negative={trust_negative}, misinformation={misinformation}, emotion={emotion}, social={social}, "
-            f"stance_tags={tag_text or 'none'}, local_grounding={local_grounding}"
+            f"stance_tags={tag_text or 'none'}, local_grounding={local_grounding}; {sentiment_note}"
         ),
     )
 

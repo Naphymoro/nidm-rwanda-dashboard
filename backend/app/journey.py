@@ -27,6 +27,7 @@ from .encoding import encode_rule_based
 from .engine_tools import LIMITS, fingerprint, scientific_checks
 from .inoculation import aggregate_inoculation_parameters, diagnose_inoculation_rule_based
 from .journey_text import INTRO, presentation
+from .sentiment import classify as classify_sentiment, status as sentiment_status
 from .modelling import model_assumptions, run_digital_twin
 from .pipeline import evidence_grade
 from .schemas import EncodedNarrative, EncodingMode, InoculationEncoding, ModelMode, NarrativeMetadata, NarrativeRecord
@@ -268,6 +269,19 @@ def inoculation_signal(journey):
     return aggregate_inoculation_parameters(diagnoses)
 
 
+def sentiment_summary(records):
+    """How many records read positive, neutral and negative, and by which method (the classifier reads Kinyarwanda too)."""
+    status = sentiment_status()
+    if not status['available']:
+        return {'method': status['method'], 'counts': None}
+    counts = {'positive': 0, 'neutral': 0, 'negative': 0}
+    for record in records:
+        result = classify_sentiment(record.text)
+        if result:
+            counts[result['label']] = counts.get(result['label'], 0) + 1
+    return {'method': status['method'], 'counts': counts}
+
+
 def model_params(journey, **extra):
     """Port of the workbench's modelParams(): every later stage reads the stages before it."""
     encoded = (output(journey, 'encoding') or {}).get('encoded', [])
@@ -348,6 +362,7 @@ def run_stage(journey, stage, req):
                          'confidence': avg([e.confidence for e in encoded], None)},
                 'themes': top_items([theme for e in encoded for theme in e.themes], 6),
                 'inoculation_signal': aggregate_inoculation_parameters(diagnoses),
+                'sentiment': sentiment_summary(records),
                 'method': 'English keyword heuristics; interpretations, not measurements.'}
     if stage == 'compartmental':
         return simulate(ModelMode.compartmental, req.horizon_days, model_params(journey))

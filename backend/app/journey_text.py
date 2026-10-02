@@ -153,10 +153,16 @@ def explanation(stage, output, journey):
             where = (f'Trust words scored highest in {most_trust[0]} ({_num(most_trust[1])}) and barrier words highest in '
                      f'{most_barrier[0]} ({_num(most_barrier[2])})')
         themes = ', '.join(theme.replace('_', ' ') for theme in output['themes']) or 'none'
-        return (f"The English keyword heuristic read {len(rows)} accepted record(s). {where}, on a scale from 0 (none) to 1 "
+        text = (f"The English keyword heuristic read {len(rows)} accepted record(s). {where}, on a scale from 0 (none) to 1 "
                 f"(strong). Across all records the average trust score is {_num(mean['trust'])}, barrier "
                 f"{_num(mean['barrier'])}, with encoder confidence {_num(mean['confidence'])}. The themes found most often: "
                 f'{themes}. These are counts of keywords in the text, not measurements of what people think.')
+        counts = (output.get('sentiment') or {}).get('counts')
+        if counts:
+            text += (f" Sentiment, read by a classifier trained on African-language tweets (it reads Kinyarwanda too): "
+                     f"{counts['positive']} positive, {counts['neutral']} neutral, {counts['negative']} negative. It is a "
+                     'reading for review, not a measurement of how people feel.')
+        return text
     if stage == 'compartmental':
         return _curve_story(output, 'The compartmental model treats everyone as one population moving between states: '
                                     'not yet persuaded, misinformed, truth-aligned, inoculated, and adopting.')
