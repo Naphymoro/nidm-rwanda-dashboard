@@ -351,6 +351,18 @@ class JourneyChatTests(unittest.TestCase):
         self.assertNotIn('check', replies[-2])
         self.assertNotIn('check', replies[-1])
 
+    def test_a_journey_starts_from_the_button_without_any_ai(self):
+        # The Start a journey button opens the card in a new chat; with no provider the journey still runs.
+        fresh = '0d1e2f3a-2222-4333-8444-555566667777'
+        with patch.dict(os.environ, {'OPENAI_API_KEY': ''}):
+            self.assertFalse(self.client.get('/agent/status').json()['available'])
+            started = self.client.post(f'/agent/workspaces/{self.workspace}/threads/{fresh}/journey', json={'question': QUESTION})
+            self.assertEqual(started.status_code, 200, started.text)
+            listed = self.client.get(f'/agent/workspaces/{self.workspace}/threads').json()['threads']
+        self.assertEqual([t['title'] for t in listed if t['thread_id'] == fresh], [QUESTION])
+        thread = self.client.get(f'/agent/workspaces/{self.workspace}/threads/{fresh}').json()
+        self.assertEqual(thread['journey_id'], started.json()['journey_id'])
+
     def test_card_refuses_while_the_assistant_is_answering(self):
         self.started()
         with agent._busy_lock:

@@ -645,8 +645,14 @@ def _journey_of(thread):
 
 @router.post('/workspaces/{workspace}/threads/{thread_id}/journey')
 def journey_start(workspace: str, thread_id: str, payload: JourneyStart, x_ndim_agent_token: str | None = Header(default=None)):
-    thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
+    """Confirm question. Also starts a journey in a new chat from the Start a journey button, which needs no AI model."""
+    _authorize(x_ndim_agent_token)
+    thread = load_thread(workspace, thread_id, create=True)
+    with _busy_lock:
+        if (workspace, thread_id) in _busy:
+            raise HTTPException(409, 'The assistant is answering in this chat. Wait for it to finish.')
     body = journey_chat.start(thread, payload.question, payload.country)
+    thread['title'] = thread.get('title') or payload.question[:80]
     save_thread(thread)
     return body
 

@@ -76,7 +76,7 @@ const threadURL = (id) => `/agent/workspaces/${encodeURIComponent(state.workspac
 function pageURL(){
   const params=new URLSearchParams();
   if(state.workspace)params.set('workspace',state.workspace);
-  if(state.threadId&&(state.runs.length||state.messages.length))params.set('chat',state.threadId);
+  if(state.threadId&&(state.runs.length||state.messages.length||state.journey))params.set('chat',state.threadId);
   if(apiBase)params.set('api',apiBase);
   const query=params.toString();
   return location.pathname+(query?'?'+query:'');
@@ -163,7 +163,7 @@ function renderThreads(){
 async function loadThreads(){
   if(!state.online)return;
   try{
-    const [runs,chats]=await Promise.all([api(runsURL()+'?offset=0&limit=100'),agentOn()?api(threadURL()).catch(()=>({threads:[]})):{threads:[]}]);
+    const [runs,chats]=await Promise.all([api(runsURL()+'?offset=0&limit=100'),api(threadURL()).catch(()=>({threads:[]}))]);
     state.threads=groupThreads(runs.runs,chats.threads);renderThreads();
   }catch(err){console.warn(err);}
 }
@@ -210,7 +210,7 @@ async function openThread(id){
   }catch(err){if(gen===state.gen)pushLocal({role:'ai',tone:'error',text:err.message});}
 }
 function pushLocal(message){state.local.push(message);renderMessages();scrollToEnd();}
-function hasContent(){return !!(state.runs.length||state.messages.length||state.local.length);}
+function hasContent(){return !!(state.runs.length||state.messages.length||state.local.length||state.journey||state.journeyProposal);}
 
 // ---------- rendering ----------
 function render(){
@@ -237,6 +237,8 @@ function timeline(){
     else{if(!turnParts)turnParts={at:message.at,parts:[]};turnParts.parts.push(message);}
   }
   flush();
+  if((state.journey||state.journeyProposal)&&!state.journeyAnchor)
+    blocks.push({at:state.journey?.created_at||'',node:el('div',{class:'msg ai'},avatar(),el('div',{class:'ai-body'},journeyCard()))});
   state.runs.forEach((run,index)=>{if(!referenced.has(run.run_id))blocks.push({at:run.created_at,node:turn(run,state.runs[index-1])});});
   return blocks.sort((a,b)=>a.at.localeCompare(b.at)).map(block=>block.node);
 }
@@ -472,6 +474,15 @@ const NOTE = '(Note from the app, not typed by the researcher) ';
 const journeyURL = (path='') => threadURL(state.threadId)+'/journey'+path;
 const CONSENTS = [['','Choose permission…'],['research_use','Permission confirmed for research use'],['synthetic','Synthetic / demo data'],['unconfirmed','Permission not confirmed']];
 const GATE_LABEL = {eligible:'Passed the gate',review_before_accepting:'Check before accepting',blocked:'Blocked'};
+// Start a journey without the assistant: the card opens in a new chat; the researcher types the question.
+async function startJourney(question=''){
+  newChat();
+  state.threadId=newId();
+  state.journeyProposal={question};state.journeyDraft={question};
+  if(!state.journeyGuide){try{state.journeyGuide=await api('/engine/journey/stages');}catch{}}
+  render();
+  $('journey-card')?.querySelector('textarea')?.focus();
+}
 async function syncJourney(chat){
   state.journeyProposal=chat?.journey_proposal||null;
   const proposed=chat?.journey_records_proposal||null;
@@ -492,7 +503,7 @@ async function journeyAction(call,note){
     if(body?.journey_id)state.journey=body;
     state.journeyProposal=null;
   }catch(err){state.journeyError=err.message;state.journeyBusy=false;rerenderJourney();return;}
-  state.journeyBusy=false;state.journeyDraft={};rerenderJourney();loadThreads();
+  state.journeyBusy=false;state.journeyDraft={};rerenderJourney();loadThreads();setURL();
   if(note&&agentOn())await sendAgent(NOTE+note,{hidden:true});
 }
 const post=(path,body)=>api(journeyURL(path),{method:'POST',body:JSON.stringify(body)});
@@ -521,7 +532,7 @@ function proposalPart(){
   const p=state.journeyProposal;
   if(!p)return [el('p',{class:'muted',text:'No journey in this chat yet.'})];
   if(state.journeyDraft.question===undefined)state.journeyDraft.question=p.question;
-  const area=draftInput('question',{tag:'textarea',rows:'2',maxlength:'1000','aria-label':'Research question'});
+  const area=draftInput('question',{tag:'textarea',rows:'2',maxlength:'1000','aria-label':'Research question',placeholder:'e.g. How might trusted messengers change clean cooking adoption?'});
   return [el('div',{class:'md',html:markdown(state.journeyGuide?.intro||'')}),
     el('div',{class:'review-form'},field('Your question, as the journey will use it (edit if needed)',area),
       el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
@@ -657,6 +668,7 @@ function skillItems(filter=''){
   const items=[];
   for(const skill of SKILLS)items.push({section:'Skills',label:skill.name,desc:skill.desc,slash:'/'+skill.id,active:!state.lesson&&state.skill===skill.id,pick:()=>{state.skill=skill.id;state.lesson=null;}});
   for(const lesson of state.lessons)items.push({section:'Guided labs',label:`Lab ${lesson.number} · ${lesson.title}`,desc:`${lesson.subtitle} · ${lesson.duration}`,slash:'/lab'+Number(lesson.number),active:state.lesson?.id===lesson.id,pick:()=>startLab(lesson)});
+  items.push({section:'Tools',label:'Start a journey',desc:'Field notes to a policy draft, 13 stages, step by step',slash:'/journey',pick:()=>startJourney()});
   items.push({section:'Tools',label:'Workbench',desc:'Inspect, adjust and re-plan experiments',slash:'/workbench',pick:()=>openPanel('workbench')});
   items.push({section:'Tools',label:'Library',desc:'Field manual and reference curriculum',slash:'/library',pick:()=>openPanel('library')});
   return items.filter(item=>!query||item.slash.slice(1).startsWith(query)||item.label.toLowerCase().includes(query));
@@ -1191,6 +1203,7 @@ function suggestions(){
   ];
   for(const [name,label,skill,question] of quick)box.append(el('button',{type:'button',onclick:()=>{state.skill=skill;state.lesson=null;sample();renderSkill();send(question);}},icon(name),label));
   if(agentOn())box.append(el('button',{type:'button',onclick:()=>send('How does the Bayesian update in NDIM change confidence, and when should I use it?')},icon('book'),'Explain a method'));
+  box.append(el('button',{type:'button',onclick:()=>startJourney()},icon('flask'),'Start a journey'));
   if(state.lessons[0])box.append(el('button',{type:'button',onclick:()=>startLab(state.lessons[0])},icon('cap'),'Start a guided lab'));
 }
 function showConnect(message){
