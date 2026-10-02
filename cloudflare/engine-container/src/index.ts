@@ -40,6 +40,7 @@ export class NdimEngine extends Container<Env> {
   sleepAfter = "30m";
   private restored: Promise<void> | null = null;
   private pullPending = false;
+  private pulling: Promise<void> = Promise.resolve(); // one pull at a time: overlapping pulls would race on ack
 
   constructor(ctx: DurableObjectState<{}>, env: Env) {
     super(ctx, env);
@@ -89,8 +90,17 @@ export class NdimEngine extends Container<Env> {
     return this.restored;
   }
 
+  /** Save what changed, one pull after another; a failed save never fails the visitor's request (retried later). */
+  pull() {
+    this.pulling = this.pulling.then(() => this.pullOnce()).catch((error) => {
+      console.error("mirror pull failed; retrying shortly", error);
+      this.pullPending = false; // let the next request (or the scheduled pull below) try again
+    });
+    return this.pulling;
+  }
+
   /** Save what changed in the engine's data folder to D1, then acknowledge it. */
-  async pull() {
+  private async pullOnce() {
     for (let round = 0; round < 20; round++) {
       const response = await this.engine("/__mirror/changes");
       if (!response.ok) throw new Error(`changes failed: ${response.status}`);

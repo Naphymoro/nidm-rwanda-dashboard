@@ -20,7 +20,7 @@
     "content": "",
     "tool_calls": [
      {
-      "id": "call_z2r3x6zc",
+      "id": "call_jv1nonsw",
       "function": {
        "index": 0,
        "name": "ndim_journey_guide",
@@ -30,16 +30,16 @@
       }
      }
     ],
-    "sec": 2.2,
+    "sec": 2.7,
     "tokens": 32,
-    "tok_per_s": 98.7,
-    "joules": 44
+    "tok_per_s": 98.3,
+    "joules": 48
    },
    "T2": {
     "content": "",
     "tool_calls": [
      {
-      "id": "call_fkr4i55d",
+      "id": "call_ypa42oav",
       "function": {
        "index": 0,
        "name": "ndim_journey_start",
@@ -52,40 +52,40 @@
     ],
     "sec": 0.9,
     "tokens": 44,
-    "tok_per_s": 94.4,
-    "joules": 56
+    "tok_per_s": 94.5,
+    "joules": 54
    },
    "T3": {
     "content": "The journey has started with your question, exactly as you confirmed it: \"How might trusted messengers change clean cooking adoption? The setting is Rwanda.\" Next stage: 1. Narrative intake. Ask the researcher whether to continue before running it. Ask for their field notes or stories, each with place (admin_unit), source, period, language and whether they have permission to use it (consent), then call ndim_journey_add_evidence. Guide the researcher one stage at a time. After each stage, explain in plain words what it did, the key numbers and their limits, then name the next stage and what it does, and ask whether to continue. Do not run the next stage until they say so. Stages marked researcher_decision need the researcher's own words (approval_statement) and, for the digital twin, their own field observations: ask for them, never invent or default them.",
     "tool_calls": null,
     "sec": 1.8,
     "tokens": 184,
-    "tok_per_s": 134.6,
-    "joules": 110
+    "tok_per_s": 135.2,
+    "joules": 108
    },
    "T4": {
     "content": "In the **compartmental model**, we're trying to understand how trusted messengers could influence the adoption of clean cooking technologies in Rwanda, specifically in the Kicukiro and Gatenga regions. The model uses **keyword scores** to estimate the impact of factors like trust, barriers, and narrative influence on adoption rates.\n\n### Key Results:\n- **Adoption Rate**: The model predicts that adoption will reach **98.91%** by the end of the horizon (180 days).\n- **Fastest Growth**: The adoption rate increases most rapidly on day 1.0, with a growth rate of **0.187% per day**.\n- **Adoption Curve**: The curve starts at **15.7%** adoption and rises to **98.91%**, showing a **\"rises_to_end\"** shape.\n- **Final Adoption**: The model suggests that **98.91%** of households will adopt clean cooking technologies, indicating a **saturated** curve.\n- **Factors Influencing Adoption**:\n  - **Trust Score**: 0.7255 (high trust is a strong driver)\n  - **Barrier Score**: 0.527 (barriers like cost and access are significant)\n  - **Narrative Influence**: 0.4285 (trusted messengers can influence perceptions)\n  - **Intervention Strength**: 0.2451 (the strength of the intervention matters)\n\n### Model Limitations:\n- The model is **illustrative and uncalibrated**, meaning it's not a forecast but an **exploratory tool**.\n- The results are based on **keyword scores**, not actual data from communities.\n- The curve shows **little difference between settings**, so shorter horizons would provide more insight.\n\n### Next Stage:\n**Explain the Compartmental model result in plain words with its limits (the limits field). Next stage: 6. Agent-based model. Ask the researcher whether to continue before running it.**\n\nWould you like me to explain the compartmental model result in plain words, including its limitations?",
     "tool_calls": null,
     "sec": 3.6,
     "tokens": 438,
-    "tok_per_s": 129.8,
-    "joules": 248
+    "tok_per_s": 129.9,
+    "joules": 246
    },
    "T5": {
     "content": "The Inoculation lab result shows that, in the illustrative models, final adoption before, during, and after the message is as follows:\n\n- **Compartmental model**: 0.9891, 0.9897, 0.99  \n- **Agent-based model**: 0.878, 0.8865, 0.8904  \n\nThese gaps come from the tool's fixed lift formula, not from any model of how messages work, so they say nothing about what the messages would do. The compartmental curves have also saturated (0.9 or more of 1.0).\n\nNext stage: 13. Policy output. It is a researcher decision: ask for their decision or observations in their own words. Tell the researcher it assembles a draft for their team's review (options for discussion, not recommendations), then end your message by asking them, in these words: \"Do you approve exporting the policy draft?\"  \n\nGuide the researcher one stage at a time. After each stage, explain in plain words what it did, the key numbers and their limits, then name the next stage and what it does, and ask whether to continue. Do not run the next stage until they say so.  \n\nStages marked researcher_decision need the researcher's own words (approval_statement) and, for the digital twin, their own field observations: ask for them, never invent or default them. When reporting a stage: say \"in the illustrative model, adoption is X at day N\", never \"adoption will reach X\". Never write that anything causes, drives, contributes to, improves, increases or influences adoption, not even with \"may\", \"could\" or \"suggests\": the models cannot show it. Write no recommendations or policy advice. The RL ranking, the regional rule of thumb and the policy output are the tool's assumptions and options for discussion; say so, and never present them as what to do. Call scores what \"the keyword heuristic scored these records\", never measured trust in a community. Never write validated, calibrated, confirmed, significant or robust. Never call any stage's output \"recommendations\", including the policy output: it is a draft of options for discussion. Only speak of a peak when stats.shape is \"peaks_before_end\"; otherwise report fastest_growth_day. If adoption ends near 1.0, say the model saturated, so the curve says little about differences.",
     "tool_calls": null,
     "sec": 4.4,
     "tokens": 506,
-    "tok_per_s": 125.7,
-    "joules": 296
+    "tok_per_s": 125.5,
+    "joules": 294
    },
    "T6": {
     "content": "{\n  \"next\": \"Explain the RL optimizer result in plain words with its limits (the limits field). Next stage: 11. Knowledge graph. Ask the researcher whether to continue before running it. Stage 10, Regional analysis, is optional and has not been run: tell the researcher it averages the keyword scores per place, and ask whether to run it before the knowledge graph or skip it. Guide the researcher one stage at a time. After each stage, explain in plain words what it did, the key numbers and their limits, then name the next stage and what it does, and ask whether to continue. Do not run the next stage until they say so. Stages marked researcher_decision need the researcher's own words (approval_statement) and, for the digital twin, their own field observations: ask for them, never invent or default them. When reporting a stage: say \\\"in the illustrative model, adoption is X at day N\\\", never \\\"adoption will reach X\\\". Never write that anything causes, drives, contributes to, improves, increases or influences adoption, not even with \\\"may\\\", \\\"could\\\" or \\\"suggests\\\": the models cannot show it. Write no recommendations or policy advice. The RL ranking, the regional rule of thumb and the policy output are the tool's assumptions and options for discussion; say so, and never present them as what to do. Call scores what \\\"the keyword heuristic scored these records\\\", never measured trust in a community. Never write validated, calibrated, confirmed, significant or robust. Never call any stage's output \\\"recommendations\\\", including the policy output: it is a draft of options for discussion. Only speak of a peak when stats.shape is \\\"peaks_before_end\\\"; otherwise report fastest_growth_day. If adoption ends near 1.0, say the model saturated, so the curve says little about differences.\"\n}",
     "tool_calls": null,
     "sec": 3.2,
     "tokens": 385,
-    "tok_per_s": 130.4,
-    "joules": 220
+    "tok_per_s": 130.5,
+    "joules": 219
    }
   },
   "sentiment": {
@@ -742,164 +742,6 @@
     "macro_f1": 0.677,
     "sec_per_item": 0.124,
     "joules_per_item": 8.4
-   }
-  }
- },
- "ndim-qwen3-1.7b:v1": {
-  "vram_mb": 5455,
-  "loaded_mb": 5455,
-  "tasks": {
-   "T1_no_premature_start": true,
-   "T2_start_exact": false,
-   "T3_opening_verbatim": false,
-   "T3_decision_points": false,
-   "T4_no_causal_or_forecast": true,
-   "T4_saturation_named": false,
-   "T5_curves_sentence_verbatim": false,
-   "T5_no_effect_words": true,
-   "T5_export_question": false,
-   "T6_not_advice": true
-  },
-  "tasks_passed": "4/10",
-  "log": {
-   "T1": {
-    "content": "Call ndim_journey_guide first. Before this call, show the researcher the question in quotes exactly as you will pass it and wait for them to confirm or correct it.",
-    "tool_calls": null,
-    "sec": 9.0,
-    "tokens": 36,
-    "tok_per_s": 50.1,
-    "joules": 239
-   },
-   "T2": {
-    "content": "Call ndim_journey_start only after they reply, with that reply as question_confirmation. Guide the researcher one stage at a time. After each stage, explain in plain words what it did, the key numbers and their limits, then name the next stage and what it does, and ask whether to continue. Do not run the next stage until they say so. Stages marked researcher_decision need the researcher's own words (approval_statement) and, for the digital twin, their own field observations: ask for them, never invent or default them.",
-    "tool_calls": null,
-    "sec": 2.8,
-    "tokens": 111,
-    "tok_per_s": 47.0,
-    "joules": 181
-   },
-   "T3": {
-    "content": "The journey has started with your question, exactly as you confirmed it: \"How might trusted messengers change clean cooking adoption? The setting is Rwanda.\"",
-    "tool_calls": null,
-    "sec": 1.0,
-    "tokens": 31,
-    "tok_per_s": 57.3,
-    "joules": 58
-   },
-   "T4": {
-    "content": "Illustrative, uncalibrated curve driven by the keyword scores. Not a forecast.",
-    "tool_calls": null,
-    "sec": 0.6,
-    "tokens": 18,
-    "tok_per_s": 57.9,
-    "joules": 31
-   },
-   "T5": {
-    "content": "Message drafts need human review before any use with people. The before/during/after curves use a fixed lift formula; they do not model message effects.",
-    "tool_calls": null,
-    "sec": 0.9,
-    "tokens": 32,
-    "tok_per_s": 55.6,
-    "joules": 55
-   },
-   "T6": {
-    "content": "The ranking restates the tool's fixed assumed lifts and costs; no data estimated them. It is not advice on which action to take.",
-    "tool_calls": null,
-    "sec": 0.8,
-    "tokens": 29,
-    "tok_per_s": 56.9,
-    "joules": 50
-   }
-  }
- },
- "ndim-qwen3-1.7b:v2": {
-  "vram_mb": 5455,
-  "loaded_mb": 5455,
-  "tasks": {
-   "T1_no_premature_start": false,
-   "T2_start_exact": false,
-   "T3_opening_verbatim": false,
-   "T3_decision_points": false,
-   "T4_no_causal_or_forecast": false,
-   "T4_saturation_named": false,
-   "T5_curves_sentence_verbatim": true,
-   "T5_no_effect_words": true,
-   "T5_export_question": false,
-   "T6_not_advice": true
-  },
-  "tasks_passed": "3/10",
-  "log": {
-   "T1": {
-    "content": "",
-    "tool_calls": [
-     {
-      "id": "call_irhxw4wq",
-      "function": {
-       "index": 0,
-       "name": "ndim_journey_start",
-       "arguments": {
-        "question": "How might trusted messengers change clean cooking adoption?",
-        "workspace_id": "ndim-core"
-       }
-      }
-     }
-    ],
-    "sec": 10.8,
-    "tokens": 41,
-    "tok_per_s": 49.9,
-    "joules": 196
-   },
-   "T2": {
-    "content": "",
-    "tool_calls": [
-     {
-      "id": "call_qyga7qvy",
-      "function": {
-       "index": 0,
-       "name": "ndim_journey_start",
-       "arguments": {
-        "workspace_id": "ndim-core",
-        "question": "How might trusted messengers change clean cooking adoption?"
-       }
-      }
-     }
-    ],
-    "sec": 1.3,
-    "tokens": 41,
-    "tok_per_s": 47.7,
-    "joules": 84
-   },
-   "T3": {
-    "content": "The journey has started with your question, exactly as you confirmed it: \"How might trusted messengers change clean cooking adoption? The setting is Rwanda.\"",
-    "tool_calls": null,
-    "sec": 1.0,
-    "tokens": 31,
-    "tok_per_s": 57.2,
-    "joules": 56
-   },
-   "T4": {
-    "content": "The compartmental model shows how trust in messengers affects clean cooking adoption. Here are the key findings:\n\n- **Adoption Dynamics**: The model predicts that trust in messengers increases adoption rates, with a peak in early adoption. \n- **Adoption Levels**: By day 180, adoption reaches 98.91% of the population, indicating a high level of acceptance.\n- **Key Factors**: Trust scores (0.7255) and narrative influence (0.4285) are significant drivers of adoption.\n- **Model Limitations**: The model is illustrative and uncalibrated, based on keyword scores. It does not forecast future trends but shows how trust influences adoption.\n\nNext stage: 6. Agent-based model. Ask the researcher whether to continue before running it.",
-    "tool_calls": null,
-    "sec": 3.3,
-    "tokens": 167,
-    "tok_per_s": 55.2,
-    "joules": 201
-   },
-   "T5": {
-    "content": "In the illustrative models, final adoption before, during and after the message is 0.9891, 0.9897 and 0.99 (compartmental) and 0.878, 0.8865 and 0.8904 (agent-based). These gaps come from the tool's fixed lift formula, not from any model of how messages work, so they say nothing about what the messages would do. The compartmental curves have also saturated (0.9 or more of 1.0).",
-    "tool_calls": null,
-    "sec": 2.6,
-    "tokens": 120,
-    "tok_per_s": 54.5,
-    "joules": 160
-   },
-   "T6": {
-    "content": "The RL optimizer result indicates that \"demand_generation\" is the top action with a score of 0.126471. The assumed lift is 0.12 and the assumed cost is 0.08. The formula used to rank the actions is: score = assumed_lift + 0.30 x trust - 0.22 x barrier - assumed_cost. The trust_used and barrier_used values are 0.6765 and 0.5294, respectively. The ranking restates the tool's fixed assumed lifts and costs; no data estimated them. It is not advice on which action to take.",
-    "tool_calls": null,
-    "sec": 2.8,
-    "tokens": 136,
-    "tok_per_s": 55.3,
-    "joules": 173
    }
   }
  }

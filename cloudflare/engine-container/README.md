@@ -3,15 +3,23 @@
 Runs the NDIM engine (`backend/Dockerfile`, unchanged) in a Cloudflare Container behind a small Worker, so the
 Pages site can use it: `https://nidm-engine.pages.dev/engine/?api=<Worker URL>`.
 
-Live (demo, see the warning below): https://ndim-engine.couma.workers.dev, so the public engine page is
+Live (demo): https://ndim-engine.couma.workers.dev, so the public engine page is
 https://nidm-engine.pages.dev/engine/?api=https://ndim-engine.couma.workers.dev
 
-## Warning: data does not survive a restart yet
+## Data survives restarts (D1 mirror)
 
-The engine keeps workspaces, journeys and run logs as files on the container's own disk. Cloudflare discards
-that disk whenever the container stops: after 2 hours without requests (`sleepAfter`), on every deploy, and when
-Cloudflare moves it. `DATABASE_URL` does not help, because the journeys and workspaces are files, not database rows.
-Until storage is solved, treat this deployment as a demo and tell users to export their work.
+The container's disk is discarded on every restart, sleep and deploy. The engine keeps working with files; the Worker
+keeps a copy of the data folder in the D1 database `ndim-engine-data`:
+
+- **At start** the Worker sends every saved file back into the new container before any visitor's request (the engine
+  answers 503 until then and refuses a second restore, so an older copy never overwrites newer work).
+- **After each changing request**, and again 15 s later for chat replies that stream, the Worker pulls the changed and
+  deleted files into D1. A failed pull never fails the visitor's request; it is retried.
+- The routes it uses (`/__mirror/*`, see `backend/app/durable_mirror.py`) need the `NDIM_MIRROR_TOKEN` secret, and the
+  Worker refuses them from visitors.
+
+Verified 2026-10-02: a journey and its chat survived a redeploy that replaced the container (47 files restored).
+Not kept: files over 1.5 MB, and `exports/`, `backups/`, `support/`, `logs/`.
 
 ## Requirements
 
@@ -25,6 +33,8 @@ Until storage is solved, treat this deployment as a demo and tell users to expor
 cd cloudflare/engine-container
 npm install
 npx wrangler login              # opens a browser once
+npx wrangler d1 create ndim-engine-data   # first time only; put its id in wrangler.toml
+python3 -c 'import secrets; print(secrets.token_urlsafe(32), end="")' | npx wrangler secret put NDIM_MIRROR_TOKEN
 npm run check                   # type check + dry run (builds the image, uploads nothing)
 npx wrangler deploy             # builds, pushes the image, deploys the Worker; prints the Worker URL
 ```
@@ -36,7 +46,13 @@ The first request after a deploy or a sleep starts the container, which takes a 
 - `NDIM_ALLOWED_ORIGINS` in `wrangler.toml`: sites allowed to call the engine (the Pages site by default).
 - Secret `DATABASE_URL` (optional): `npx wrangler secret put DATABASE_URL`.
 - `instance_type = "standard-1"` (1/2 vCPU, 4 GiB): PyTorch and Pyro need more memory than `basic`.
-- `max_instances = 1`: with files on local disk, every user must reach the same instance.
+- `max_instances = 1`: the engine works on local files, so every user must reach the same instance.
+- `sleepAfter = "30m"`: safe now that the data is kept.
+
+## Bot check and headless browsers
+
+Automated tests with a headless browser saw intermittent "Failed to fetch": Cloudflare's bot protection answered some
+requests from the `HeadlessChrome` user agent. With a normal browser user agent the full journey ran with no errors.
 
 ## Bot check
 
