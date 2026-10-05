@@ -16,7 +16,7 @@ TOPOLOGIES = {
     'village': 'villages of clustered neighbours with a few ties between villages',
     'small_world': 'one clustered population with some long-range ties',
     'scale_free': 'a few highly connected households and many with few ties',
-    'well_mixed': 'everyone equally in contact with everyone (no network structure)',
+    'well_mixed': 'everyone equally in contact with everyone, with no network structure',
 }
 DEFAULTS = {'households': 1000, 'village_size': 100, 'neighbours': 8, 'rewire': 0.1, 'between_village_ties': 1.0,
             'replicates': 20, 'seed': 7}
@@ -107,7 +107,9 @@ def rates(parameters: Dict[str, float]) -> Dict[str, float]:
     }
 
 
-def run_network_model(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
+def simulate_runs(horizon_days: int, parameters: Dict[str, float]) -> Dict[str, np.ndarray]:
+    """Per-run curves (runs x days). Runs are seeded the same way for any parameters, so two settings compared run for
+    run share their networks and chance events."""
     s, r = settings(parameters), rates(parameters)
     n, runs = s['households'], s['replicates']
     adoption = np.zeros((runs, horizon_days))
@@ -140,13 +142,77 @@ def run_network_model(horizon_days: int, parameters: Dict[str, float]) -> List[D
             media_flow[run, day] = r['media'] * float(waiting.mean())
             adopted = (adopted | adopt) & ~drop
             adoption[run, day] = adopted.mean()
+    return {'adoption': adoption, 'peer': peer_flow, 'media': media_flow}
+
+
+def run_network_model(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
+    runs = simulate_runs(horizon_days, parameters)
+    adoption = runs['adoption']
     mean, low, high = adoption.mean(axis=0), np.percentile(adoption, 10, axis=0), np.percentile(adoption, 90, axis=0)
     return [{'day': float(day), 'adoption': float(mean[day]), 'adoption_lower': float(low[day]),
-             'adoption_upper': float(high[day]), 'peer_pressure': float(peer_flow[:, day].mean()),
-             'media_pressure': float(media_flow[:, day].mean()),
+             'adoption_upper': float(high[day]), 'peer_pressure': float(runs['peer'][:, day].mean()),
+             'media_pressure': float(runs['media'][:, day].mean()),
              'inoculation_pressure': float(parameters.get('inoculation_strength', 0.0)),
              'reactance_penalty': float(parameters.get('reactance_penalty', 0.0))}
             for day in range(horizon_days)]
+
+
+# Network variants a conclusion is checked against: every assumed shape, with one or two adopting neighbours needed.
+VARIANTS = [('well_mixed', 'simple')] + [(topology, contagion) for topology in ('village', 'small_world', 'scale_free')
+                                         for contagion in ('simple', 'complex')]
+CONTAGION = {'simple': 'where one adopting neighbour can persuade', 'complex': 'where two adopting neighbours are needed'}
+SPREAD_LIMIT = 0.10  # largest spread in average adoption across variants that still counts as "holds"
+CLEAR_DIFFERENCE = 0.01  # smallest average difference between two settings that counts as a difference at all
+
+
+def _half_day(curve: np.ndarray):
+    reached = np.nonzero(curve >= 0.5)[0]
+    return int(reached[0]) + 1 if len(reached) else None
+
+
+def robustness(horizon_days: int, parameters: Dict[str, float], alternative: Dict[str, float] | None = None) -> Dict[str, object]:
+    """Re-run one scenario (or a comparison of two settings) on every network variant and say whether it holds.
+
+    The measure is average adoption over the period: final adoption often saturates near the same level, while the
+    average still shows how fast adoption came. With `alternative` (parameter changes), each variant compares the two
+    settings run for run, on the same networks and chance events."""
+    rows = []
+    for topology, contagion in VARIANTS:
+        base_params = {**parameters, 'network_topology': topology, 'network_contagion': contagion}
+        base = simulate_runs(horizon_days, base_params)['adoption']
+        row = {'topology': topology, 'contagion': contagion,
+               'label': f"{TOPOLOGIES[topology]}, {CONTAGION[contagion]}" if topology != 'well_mixed' else TOPOLOGIES[topology],
+               'average_adoption': round(float(base.mean()), 4), 'final_adoption': round(float(base[:, -1].mean()), 4),
+               'half_adopted_day': _half_day(base.mean(axis=0))}
+        if alternative:
+            other = simulate_runs(horizon_days, {**base_params, **alternative})['adoption']
+            per_run = other.mean(axis=1) - base.mean(axis=1)
+            low, high = float(np.percentile(per_run, 10)), float(np.percentile(per_run, 90))
+            mean = float(per_run.mean())
+            direction = ('higher' if low > 0 and mean >= CLEAR_DIFFERENCE else
+                         'lower' if high < 0 and mean <= -CLEAR_DIFFERENCE else 'no clear difference')
+            row.update({'alternative_average_adoption': round(float(other.mean()), 4), 'difference': round(mean, 4),
+                        'difference_band': [round(low, 4), round(high, 4)], 'direction': direction})
+        rows.append(row)
+    averages = [row['average_adoption'] for row in rows]
+    out = {'measure': 'average adoption over the period (0 to 1)', 'horizon_days': horizon_days, 'variants': rows,
+           'spread': round(max(averages) - min(averages), 4), 'spread_limit': SPREAD_LIMIT,
+           'lowest': min(rows, key=lambda row: row['average_adoption'])['label'],
+           'highest': max(rows, key=lambda row: row['average_adoption'])['label'],
+           'status': 'assumed networks, not measured; a check of the model, not of the world'}
+    out['level_verdict'] = 'holds' if out['spread'] <= SPREAD_LIMIT else 'depends on the network shape'
+    if alternative:
+        directions = {row['direction'] for row in rows}
+        differences = [row['difference'] for row in rows]
+        out['alternative'] = alternative
+        out['difference_range'] = [min(differences), max(differences)]
+        only = next(iter(directions)) if len(directions) == 1 else None
+        out['comparison_verdict'] = ('holds: no clear difference in any network variant' if only == 'no clear difference' else
+                                     f'holds: {only} in every network variant' if only else
+                                     'flips: higher in some network variants and lower in others'
+                                     if {'higher', 'lower'} <= directions else 'depends on the network shape: '
+                                     + ', '.join(sorted(directions)))
+    return out
 
 
 def network_assumptions(parameters: Dict[str, float]) -> Dict[str, object]:
@@ -161,3 +227,33 @@ def network_assumptions(parameters: Dict[str, float]) -> Dict[str, object]:
             'band': f"10th to 90th percentile across {s['replicates']} runs: chance only, not uncertainty in the scores "
                     'or in the network shape',
             'status': 'assumed network, not measured; illustrative, not a forecast'}
+
+
+def robustness_sentences(result: Dict[str, object]) -> List[str]:
+    """Fixed wording for the check, so it is quoted rather than retold."""
+    averages = [row['average_adoption'] for row in result['variants']]
+    days, count = result['horizon_days'], len(result['variants'])
+    if result['level_verdict'] == 'holds':
+        sentences = [f"Checked on {count} assumed network shapes, average adoption over the {days} days stays between "
+                     f"{min(averages)} and {max(averages)}: the level holds across network shapes (spread "
+                     f"{result['spread']}, limit {result['spread_limit']})."]
+    else:
+        sentences = [f"Checked on {count} assumed network shapes, average adoption over the {days} days ranges from "
+                     f"{min(averages)} ({result['lowest']}) to {max(averages)} ({result['highest']}): the level depends "
+                     'on the network shape, so it should not be read as one number.']
+    if 'comparison_verdict' in result:
+        low, high = result['difference_range']
+        directions = sorted({row['direction'] for row in result['variants']})
+        lead = 'Compared with the baseline, the alternative setting'
+        if directions in (['higher'], ['lower']):
+            sentences.append(f"{lead} gives {directions[0]} average adoption in every network shape, so the direction "
+                             f"holds; the size of the change ranges from {low} to {high}.")
+        elif directions == ['no clear difference']:
+            sentences.append(f"{lead} makes no clear difference in any network shape (changes from {low} to {high}).")
+        elif {'higher', 'lower'} <= set(directions):
+            sentences.append(f"{lead} gives higher average adoption in some network shapes and lower in others ({low} "
+                             f"to {high}): the direction depends on how people are connected.")
+        else:
+            sentences.append(f"{lead} gives {' or '.join(directions)} average adoption depending on the network shape "
+                             f"(changes from {low} to {high}).")
+    return sentences

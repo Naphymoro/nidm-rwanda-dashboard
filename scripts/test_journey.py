@@ -78,6 +78,13 @@ class JourneyTests(unittest.TestCase):
         said = agents['presentation']['stages']['agents']['explanation']
         self.assertIn('1000 households on an assumed network', said)  # it said "follows households one by one" of a proxy
         self.assertNotIn('one by one', said)
+        self.assertEqual(len(agents['output']['robustness']['variants']), 7)
+        self.assertIn('assumed network shapes', agents['presentation']['stages']['agents']['sentences'][-1])
+        check = self.client.post('/engine/network/robustness', json={'horizon_days': 60, 'parameters': {'peer_effect': 0.15},
+                                                                     'alternative': {'trusted_messenger_fit': 0.5}})
+        self.assertEqual(check.status_code, 200, check.text)
+        self.assertEqual(len(check.json()['sentences']), 2)
+        self.assertEqual(self.client.post('/engine/network/robustness', json={'alternative': {}}).status_code, 422)
         digital = self.stage('digital', observed_adoption=0.2, trust_shift=0.0, barrier_shift=0.05,
                              approval_statement='These are our June field numbers.')['output']
         self.assertEqual(digital['model'], 'hybrid')

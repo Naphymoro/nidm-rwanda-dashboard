@@ -112,6 +112,10 @@ def facts(stage, output):
     if stage in ('compartmental', 'agents', 'digital'):
         out = {'model': output['model'], 'initial_adoption': round(output['trajectory'][0]['adoption'], 4),
                'final_adoption': _final(output), 'horizon_days': output['horizon_days']}
+        if stage == 'agents' and output.get('robustness'):
+            check = output['robustness']
+            out['network_check'] = {'verdict': check['level_verdict'], 'measure': check['measure'],
+                                    'average_adoption_by_network': {row['label']: row['average_adoption'] for row in check['variants']}}
         if stage == 'digital':
             out['researcher_observations'] = {k: output['feedback'][k] for k in ('observed_adoption', 'trust_shift', 'barrier_shift')}
         return out

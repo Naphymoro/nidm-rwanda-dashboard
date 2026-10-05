@@ -8,7 +8,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 from app.modelling import model_assumptions, run_agent_based_proxy, run_digital_twin
-from app.network_model import build_network, describe, network_assumptions, run_network_model
+from app.network_model import build_network, describe, network_assumptions, robustness, robustness_sentences, run_network_model
 from app.schemas import ModelMode
 
 DEFAULT = {'initial_adoption': 0.1, 'trust_score': 0.6, 'barrier_score': 0.35, 'peer_effect': 0.08, 'media_effect': 0.05}
@@ -65,6 +65,23 @@ class NetworkModelTests(unittest.TestCase):
         self.assertIn('not measured', assumptions['network']['status'])
         self.assertNotIn('network', model_assumptions(ModelMode.compartmental, DEFAULT))
         self.assertEqual(network_assumptions(DEFAULT)['households'], 1000)
+
+    def test_robustness_level_holds_when_media_leads_and_depends_when_peers_lead(self):
+        media_led, peer_led = robustness(90, DEFAULT), robustness(90, PEER_LED)
+        self.assertEqual(len(media_led['variants']), 7)
+        self.assertEqual(media_led['level_verdict'], 'holds')
+        self.assertEqual(peer_led['level_verdict'], 'depends on the network shape')
+        self.assertIn('two adopting neighbours are needed', peer_led['lowest'])
+        self.assertIn('should not be read as one number', robustness_sentences(peer_led)[0])
+
+    def test_robustness_comparison_reports_direction_and_size(self):
+        result = robustness(90, PEER_LED, {'trusted_messenger_fit': 0.6})
+        self.assertEqual(result['comparison_verdict'], 'holds: higher in every network variant')
+        low, high = result['difference_range']
+        self.assertGreater(high, 2 * low)  # same direction everywhere, very different size: the sentence must say both
+        self.assertIn(f'so the direction holds; the size of the change ranges from {low} to {high}', robustness_sentences(result)[1])
+        same = robustness(30, DEFAULT, {'network_seed': 7})  # no real change: no difference anywhere
+        self.assertEqual(same['comparison_verdict'], 'holds: no clear difference in any network variant')
 
 
 if __name__ == '__main__':

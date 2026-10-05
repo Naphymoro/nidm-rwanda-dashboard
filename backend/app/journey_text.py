@@ -4,6 +4,7 @@ Live chat agents reworded these sentences in ways that changed their meaning ("a
 increases adoption slightly", "personal data removed"). The engine now owns the wording; the research assistant's
 journey card and the ndim-mcp tools both show it unchanged, and the agents only explain around it.
 """
+from .network_model import robustness_sentences
 
 SATURATED = 0.9  # final adoption at or above this: the curve has little room left to show differences
 
@@ -15,7 +16,8 @@ LIMITS = {
                 'trust or barriers in a community.',
     'compartmental': 'Illustrative, uncalibrated curve computed from the keyword scores. Not a forecast.',
     'agents': 'Simulated households on an assumed network (villages of clustered neighbours), not real households or a '
-              'measured network. The band shows chance across runs only. Not a forecast.',
+              'measured network. The band shows chance across runs only; the network check compares assumed shapes, '
+              'not real ones. Not a forecast.',
     'digital': 'Re-runs the hybrid model from the researcher\'s field observations. It is still uncalibrated: one '
                'observed level does not fit the model to reality.',
     'bayes': 'The signal update treats keyword scores as pseudo-observations; the number of pseudo-trials is a tool '
@@ -89,7 +91,9 @@ def stage_sentences(stage, output):
         mean = output['mean']
         return [f"The keyword heuristic scored the accepted records: mean trust {round(mean['trust'], 3)}, mean barrier "
                 f"{round(mean['barrier'], 3)}, mean confidence {round(mean['confidence'], 3)}."]
-    if stage in ('compartmental', 'agents', 'digital'):
+    if stage == 'agents':
+        return curve_sentences(output) + robustness_sentences(output['robustness'])[:1]
+    if stage in ('compartmental', 'digital'):
         return curve_sentences(output)
     if stage == 'bayes':
         return [output['signal_update_note'], output.get('adoption_fit_note') or 'An adoption curve was fitted to the '
@@ -179,6 +183,13 @@ def explanation(stage, output, journey):
         last = output['trajectory'][-1]
         text += (f" Across {net['replicates']} runs with different chance events, final adoption ranges from "
                  f"{_num(last['adoption_lower'])} to {_num(last['adoption_upper'])} (10th to 90th percentile).")
+        check = output['robustness']
+        text += (f" The same scenario was re-run on {len(check['variants'])} assumed network shapes, this one included (clustered or "
+                 'not, a few highly connected households or none, and whether one or two adopting neighbours are needed '
+                 'to persuade a household). ' + ('Average adoption over the period barely changed between them, so this '
+                 'level does not hinge on the network assumption.' if check['level_verdict'] == 'holds' else
+                 f"Average adoption over the period was lowest with {check['lowest']} and highest with {check['highest']}, "
+                 'so this level hinges on how people are actually connected, which the model does not know.'))
         if outputs.get('compartmental'):
             text += f" For comparison, the compartmental model ends at {final_adoption(outputs['compartmental']['trajectory'])}."
         return text

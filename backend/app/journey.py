@@ -24,6 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from . import engine_store as store
 from .encoding import encode_rule_based
+from .network_model import robustness as network_robustness, robustness_sentences
 from .engine_tools import LIMITS, fingerprint, scientific_checks
 from .inoculation import aggregate_inoculation_parameters, diagnose_inoculation_rule_based
 from .journey_text import INTRO, LIMITS as STAGE_LIMITS, presentation
@@ -387,8 +388,9 @@ def run_stage(journey, stage, req):
     if stage == 'compartmental':
         return simulate(ModelMode.compartmental, req.horizon_days, model_params(journey))
     if stage == 'agents':
-        return simulate(ModelMode.agent_based, req.horizon_days,
-                        model_params(journey, peer_effect=req.peer_effect, media_effect=req.media_effect))
+        params = model_params(journey, peer_effect=req.peer_effect, media_effect=req.media_effect)
+        return simulate(ModelMode.agent_based, req.horizon_days, params) | {
+            'robustness': network_robustness(req.horizon_days, params)}
     if stage == 'digital':
         missing = [name for name in ('observed_adoption', 'trust_shift', 'barrier_shift') if getattr(req, name) is None]
         if missing:
@@ -667,3 +669,19 @@ def run(workspace: str, journey_id: str, stage: str, req: StageRequest):
         settings=req.model_dump(exclude_none=True, exclude={'approval_statement'}), cleared=stale)
     save(journey)
     return public(journey) | {'stage': stage, 'output': result, 'cleared_later_stages': stale}
+
+
+class RobustnessRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
+    horizon_days: int = Field(default=180, ge=7, le=365)
+    parameters: dict[str, float] = Field(default_factory=dict, description='Model parameters, e.g. trust_score, peer_effect.')
+    alternative: dict[str, float] | None = Field(default=None, description='Parameter changes to compare with the baseline.')
+
+
+@router.post('/network/robustness')
+def network_robustness_route(req: RobustnessRequest):
+    """Re-run a scenario, or a comparison of two settings, on every assumed network shape and say whether it holds."""
+    if req.alternative is not None and not req.alternative:
+        raise HTTPException(422, 'alternative needs at least one parameter change.')
+    result = network_robustness(req.horizon_days, req.parameters, req.alternative)
+    return result | {'sentences': robustness_sentences(result)}
