@@ -852,3 +852,25 @@ def test_the_guide_passes_on_each_stages_limits_from_the_engine():
         del stage['limits']  # an engine from before the guide carried limits
     view = call(build(lambda request: httpx.Response(200, json=guide)), 'ndim_journey_guide')
     assert not any('limits' in stage for stage in view['stages'])
+
+
+def test_messenger_seeding_is_offered_before_policy_and_runs_only_on_request():
+    done = ('intake', 'gate', 'repository', 'encoding', 'compartmental', 'agents', 'digital', 'bayes', 'rl', 'graph', 'inoculation')
+    offered = call(build(lambda request: httpx.Response(200, json=journey_body(done, 'policy', optional_done={'messenger_seeding': False}))),
+                   'ndim_journey_status', workspace_id=WS, journey_id=JID)
+    assert 'ndim_journey_messenger_seeding' in offered['next'] and 'Ask whether to run it or skip it' in offered['next']
+    ran = call(build(lambda request: httpx.Response(200, json=journey_body(done, 'policy', optional_done={'messenger_seeding': True}))),
+               'ndim_journey_status', workspace_id=WS, journey_id=JID)
+    assert 'ndim_journey_messenger_seeding' not in ran['next']
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, request.url.path, request.extensions.get('timeout', {}).get('read')))
+        return httpx.Response(200, json=journey_body(done, 'policy', stage='inoculation', output={
+            'audience': 'households', 'tone': 'clear', 'messenger': 'a CHW', 'drafts': [], 'review_status': 'draft',
+            'curve_method': 'm', 'estimated_strength': 0.2, 'curves': {}},
+                                                     optional_done={'messenger_seeding': True}))
+    view = call(build(handler), 'ndim_journey_messenger_seeding', workspace_id=WS, journey_id=JID)
+    assert seen[0][:2] == ('POST', f'/engine/workspaces/{WS}/journeys/{JID}/stages/inoculation/messenger-seeding')
+    assert seen[0][2] >= 120  # the comparison takes ~30 s on the cloud container; the default engine timeout is 30 s
+    assert view['explanation'] == stage_text('inoculation')['explanation']

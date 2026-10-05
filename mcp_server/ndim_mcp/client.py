@@ -50,16 +50,17 @@ class EngineClient:
     async def aclose(self):
         await self._http.aclose()
 
-    async def request(self, method, path, *, json=None, params=None, text=False, retry_busy=False):
+    async def request(self, method, path, *, json=None, params=None, text=False, retry_busy=False, timeout=None):
         attempts = self.settings.retry_attempts if retry_busy else 1
         for attempt in range(attempts):
             try:
-                response = await self._http.request(method, path, json=json, params=params)
+                response = await self._http.request(method, path, json=json, params=params,
+                                                    **({'timeout': timeout} if timeout else {}))
             except httpx.ConnectError as exc:
                 raise EngineError(f'Cannot reach the NDIM engine at {self.settings.engine_url}. '
                                   'Start it (uvicorn backend.app.main:app --port 8010) or set NDIM_ENGINE_URL.') from exc
             except httpx.TimeoutException as exc:
-                raise EngineError(f'The NDIM engine did not answer within {self.settings.timeout:g}s.') from exc
+                raise EngineError(f'The NDIM engine did not answer within {timeout or self.settings.timeout:g}s.') from exc
             except httpx.HTTPError as exc:
                 raise EngineError(f'Engine request failed: {type(exc).__name__}') from exc
             if response.status_code == 429 and attempt + 1 < attempts:

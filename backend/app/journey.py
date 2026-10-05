@@ -77,8 +77,8 @@ STAGES = [
      'needs': ['encoding'], 'researcher_decision': False},
     {'id': 'inoculation', 'number': 12, 'phase': 'Strategy', 'title': 'Inoculation lab',
      'does': 'Drafts pre-bunking, refutation and short counter-messages from the diagnosis, and shows the tool\'s '
-             'illustrative before/during/after adoption curves. Also compares, in the agent-based model, recruiting '
-             'messengers at random, by most ties or by ties between villages. Drafts need human review before any use.',
+             'illustrative before/during/after adoption curves. Optionally afterwards, compares in the agent-based model '
+             'recruiting messengers at random, by most ties or by ties between villages. Drafts need human review before any use.',
      'needs': ['encoding', 'compartmental', 'agents'], 'researcher_decision': False},
     {'id': 'policy', 'number': 13, 'phase': 'Export', 'title': 'Policy output',
      'does': 'Assembles the evidence grade, policy readiness, model summary and the audit trail into a draft for '
@@ -500,11 +500,8 @@ def run_stage(journey, stage, req):
         for key, agent in (('compartmental', False), ('agents', True)):
             base = output(journey, key)['trajectory']
             curves[key] = {phase: vaccine_curve(base, strength, phase, agent) for phase in ('during', 'after')} | {'before': base}
-        agents = output(journey, 'agents')  # who a campaign recruits as messengers, on the stage 6 scenario
-        seeding = seeding_comparison(agents['horizon_days'], agents['parameters'])
         result = {'audience': req.audience, 'tone': req.tone, 'themes_used': themes, 'messenger': messenger, 'drafts': drafts,
                   'estimated_strength': strength, 'curves': curves, 'applied_strength': 0.0,
-                  'messenger_seeding': seeding | {'sentences': seeding_sentences(seeding)},
                   'review_status': 'draft: requires human review before any use with people',
                   'curve_method': 'Illustrative lift formula from the workbench applied to the stage 5 and 6 curves; it is not '
                                   'a model of message effects and has not been tested against field data.'}
@@ -560,6 +557,7 @@ def public(journey, full=False):
     body['stages'] = rows
     body['next_stage'] = next_stage
     body['presentation'] = presentation(journey)
+    body['optional_done'] = {'messenger_seeding': bool((output(journey, 'inoculation') or {}).get('messenger_seeding'))}
     if full:
         body['outputs'] = {key: value['output'] for key, value in journey['stages'].items()}
         body['events'] = journey['events']
@@ -674,6 +672,24 @@ def run(workspace: str, journey_id: str, stage: str, req: StageRequest):
         settings=req.model_dump(exclude_none=True, exclude={'approval_statement'}), cleared=stale)
     save(journey)
     return public(journey) | {'stage': stage, 'output': result, 'cleared_later_stages': stale}
+
+
+@router.post('/workspaces/{workspace}/journeys/{journey_id}/stages/inoculation/messenger-seeding')
+def messenger_seeding(workspace: str, journey_id: str):
+    """Optional, after stage 12: compare who a campaign recruits as messengers, on the stage 6 scenario.
+
+    Kept out of the stage itself: 28 network simulations take about 5 s locally and about 30 s on the small cloud
+    container. It adds to the inoculation result and clears nothing (no later stage reads it)."""
+    journey = load(workspace, journey_id)
+    inoculation = journey['stages'].get('inoculation')
+    if not inoculation:
+        raise HTTPException(409, 'Run stage 12, Inoculation lab, before the messenger comparison.')
+    agents = output(journey, 'agents')
+    seeding = seeding_comparison(agents['horizon_days'], agents['parameters'])
+    inoculation['output']['messenger_seeding'] = seeding | {'sentences': seeding_sentences(seeding)}
+    log(journey, 'optional', 'Messenger recruiting comparison ran', stage='inoculation')
+    save(journey)
+    return public(journey) | {'stage': 'inoculation', 'output': inoculation['output'], 'cleared_later_stages': []}
 
 
 class RobustnessRequest(BaseModel):

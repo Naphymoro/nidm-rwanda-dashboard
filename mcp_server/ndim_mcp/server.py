@@ -529,6 +529,14 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
                                   json={'decisions': [d.model_dump() for d in decisions], 'approval_statement': approval_statement})
 
     @mcp.tool(annotations=WRITE)
+    async def ndim_journey_messenger_seeding(workspace_id: Workspace, journey_id: JourneyId) -> dict:
+        """Optional, after stage 12 (Inoculation lab), only if the researcher asks for it: compare who a campaign recruits
+        as messengers (at random, best-connected households, bridges between villages) on assumed network shapes. Takes
+        up to half a minute. The result comes back as stage 12's sentences and explanation: quote them, add nothing."""
+        return await journey_call('POST', workspace_id, journey_id, '/stages/inoculation/messenger-seeding',
+                                  timeout=max(settings.timeout, 120.0))  # 28 simulations: ~30 s on the cloud container
+
+    @mcp.tool(annotations=WRITE)
     async def ndim_journey_run_stage(
         workspace_id: Workspace, journey_id: JourneyId, stage: Stage,
         approval_statement: Annotated[str | None, Field(min_length=2, max_length=1000, description=(

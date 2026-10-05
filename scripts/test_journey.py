@@ -234,6 +234,15 @@ class JourneyTests(unittest.TestCase):
         curves = shown['inoculation']['sentences'][0]
         self.assertTrue(curves.startswith('In the illustrative models, final adoption before, during and after the message is '))
         self.assertIn('say nothing about what the messages would do', curves)
+        self.assertNotIn('messenger_seeding', body['output'])  # optional now: the stage stays fast
+        self.assertFalse(body['optional_done']['messenger_seeding'])
+        self.assertEqual(len(shown['inoculation']['sentences']), 2)
+        response = self.client.post(f'{self.base}/stages/inoculation/messenger-seeding')
+        self.assertEqual(response.status_code, 200, response.text)
+        body = response.json()
+        self.assertEqual(body['cleared_later_stages'], [])
+        self.assertTrue(body['optional_done']['messenger_seeding'])
+        shown = body['presentation']['stages']
         seeding = body['output']['messenger_seeding']
         self.assertEqual(len(seeding['variants']), 7)
         self.assertEqual(shown['inoculation']['sentences'][2:], [seeding['sentences'][0], seeding['sentences'][1], seeding['sentences'][-1]])
@@ -253,6 +262,11 @@ class JourneyTests(unittest.TestCase):
             self.assertIsNone(agent_checks.check(view['explanation'], known), (stage, view['explanation']))
         # The same text comes back on a plain read, so a reloaded chat shows the same card.
         self.assertEqual(self.client.get(self.base).json()['presentation'], body['presentation'])
+
+    def test_messenger_comparison_needs_the_inoculation_stage(self):
+        self.capture()
+        response = self.client.post(f'{self.base}/stages/inoculation/messenger-seeding')
+        self.assertEqual(response.status_code, 409, response.text)
 
     def test_unknown_journey_is_404(self):
         self.assertEqual(self.client.get(f'/engine/workspaces/{self.ws}/journeys/not-a-uuid').status_code, 404)

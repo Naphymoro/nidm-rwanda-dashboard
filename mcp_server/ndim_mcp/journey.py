@@ -142,6 +142,11 @@ def journey_view(body):
         if nxt == 'intake':
             parts.append('Ask for their field notes or stories, each with place (admin_unit), source, period, language and '
                          'whether they have permission to use it (consent), then call ndim_journey_add_evidence.')
+        if nxt == 'policy' and not body.get('optional_done', {}).get('messenger_seeding'):
+            parts.append('Optional before the policy output: the messenger recruiting comparison (ndim_journey_messenger_seeding) '
+                         're-runs the stage 6 scenario with a campaign recruiting messengers at random, the best-connected '
+                         'households or bridges between villages, on assumed network shapes; it can take up to half a '
+                         'minute. Ask whether to run it or skip it.')
         if nxt == 'policy':
             # A live agent told the researcher to "confirm by stating" this question, as if it were a phrase for them to say.
             parts.append('Tell the researcher it assembles a draft for their team\'s review (options for discussion, not '
