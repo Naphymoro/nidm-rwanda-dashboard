@@ -118,12 +118,21 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(len(thorough['execution']['sensitivity_grid']), 11)
         self.assertEqual(run['request']['model'], thorough['request']['model'])
 
-    def test_language_and_ignored_parameter_are_blocked(self):
-        for overrides in [{'language':'rw'}, {'model':'agent_based'}]:
-            run = self.plan(**overrides)
-            self.assertTrue(run['blockers'])
-            self.assertEqual(self.client.post(self.url(run)+'/start').status_code, 422)
-            self.assertEqual(self.client.get(self.url(run)).json()['status'], 'planned')
+    def test_untranslated_language_is_blocked(self):
+        run = self.plan(language='rw')
+        self.assertTrue(run['blockers'])
+        self.assertEqual(self.client.post(self.url(run)+'/start').status_code, 422)
+        self.assertEqual(self.client.get(self.url(run)).json()['status'], 'planned')
+
+    def test_agent_based_scenario_runs_and_uses_intervention_strength(self):
+        run = self.plan(model='agent_based')
+        self.assertFalse(run['blockers'])
+        self.assertTrue(any('intervention_strength adds a daily chance' in warning for warning in run['warnings']))
+        run = self.execute(run)
+        self.assertEqual(run['status'], 'completed')
+        baseline, intervention = run['outputs']['baseline'], run['outputs']['intervention']
+        self.assertGreater(intervention['trajectory'][-1]['adoption'], baseline['trajectory'][-1]['adoption'])
+        self.assertEqual(intervention['assumptions']['network']['intervention']['intervention_strength'], .3)
 
     def test_input_validation_and_no_untrusted_tool_names(self):
         for overrides in [{'skill':'shell'}, {'evidence':' '*30}, {'horizon_days':366}, {'intervention_strength':-1},
