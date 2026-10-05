@@ -624,6 +624,19 @@ STAGE_ROWS = [(1, 'intake', 'Narrative intake', 'Evidence', False), (2, 'gate', 
               (13, 'policy', 'Policy output', 'Export', True)]
 
 
+# Stand-ins for the engine's fixed wording (backend/app/journey_text.py). They are deliberately odd, so a test can only
+# pass if the MCP hands them on unchanged rather than writing its own.
+INTRO = '**The journey, in six phases**\n\n1. Evidence: ENGINE INTRO \u2014 "quoted" text.\n\n- (stage 13)'
+OPENING = ('The journey has started with your question, exactly as you confirmed it: "How might trusted messengers change '
+           'clean cooking adoption?" The setting is Rwanda.')
+
+
+def stage_text(stage):
+    return {'sentences': [f'ENGINE SENTENCE 1 for {stage}: adoption is 0.4123 at day 179.', f'ENGINE SENTENCE 2 for {stage}.'],
+            'explanation': f'ENGINE EXPLANATION for {stage}, with  two spaces and \u00e9.',
+            'limits': f'ENGINE LIMITS for {stage}. Not a forecast; not advice.'}
+
+
 def journey_body(done=(), next_stage='intake', **extra):
     stages = [{'number': n, 'id': i, 'title': t, 'phase': p, 'researcher_decision': d, 'optional': i == 'regional',
                'status': 'done' if i in done else 'ready' if i == next_stage else 'waiting', 'needs': [], 'at': None}
@@ -632,9 +645,10 @@ def journey_body(done=(), next_stage='intake', **extra):
               'consent': 'research_use', 'excerpt': 'Households say...', 'review': None,
               'gate': {'gate': 'review_before_accepting', 'blockers': [], 'warnings': ['instruction-like text: review before accepting'],
                        'pii_flags': ['phone-or-id-like number'], 'quality_flags': []}}
+    shown = {stage: stage_text(stage) for stage in (*done, *([extra['stage']] if 'stage' in extra else []))}
     return {'journey_id': JID, 'workspace_id': WS, 'question': 'How might trusted messengers change clean cooking adoption?',
             'country': 'Rwanda', 'created_at': '2026-09-29T10:00:00+00:00', 'records': [record], 'stages': stages,
-            'next_stage': next_stage, **extra}
+            'next_stage': next_stage, 'presentation': {'intro': INTRO, 'opening': OPENING, 'stages': shown}, **extra}
 
 
 def test_journey_view_asks_for_the_researcher_decision_on_each_record():
@@ -655,7 +669,7 @@ def test_stage_result_is_compact_and_carries_its_limits_and_rules():
                 workspace_id=WS, journey_id=JID, stage='compartmental')
     assert 'trajectory' not in json.dumps(view['result'])
     assert view['result']['stats']['shape'] == 'rises_to_end' and view['result']['inputs']['trust_score'] == 0.6123
-    assert 'Not a forecast' in view['limits']
+    assert view['limits'] == stage_text('compartmental')['limits']
     assert 'Next stage: 6. Agent-based model.' in view['next'] and 'Write no recommendations' in view['next']
 
 
@@ -663,7 +677,7 @@ def test_rl_and_policy_are_never_presented_as_advice():
     rules = call(build(lambda request: httpx.Response(200, json=journey_body(stage='rl', output={
         'ranking': [], 'top_action': 'consumer_subsidy', 'formula': 'f', 'method': 'm', 'trust_used': 0.6, 'barrier_used': 0.4}))),
         'ndim_journey_run_stage', workspace_id=WS, journey_id=JID, stage='rl')
-    assert 'not advice' in rules['limits'] and 'never present them as what to do' in rules['next']
+    assert rules['limits'] == stage_text('rl')['limits'] and 'never present them as what to do' in rules['next']
 
 
 def test_journey_decisions_are_audited_only_after_the_engine_accepts(tmp_path):
@@ -724,10 +738,10 @@ def test_journey_start_describes_the_path_and_pins_the_id():
     view = call(build(lambda request: httpx.Response(201, json=journey_body())), 'ndim_journey_start',
                 workspace_id=WS, question='How might trusted messengers change clean cooking adoption?',
                 question_confirmation='Yes, that is my question.')
-    assert view['next'].startswith(f'Use journey_id {JID} exactly') and 'opening sentence word for word' in view['next']
-    assert view['opening'] == ('The journey has started with your question, exactly as you confirmed it: "How might trusted '
-                               'messengers change clean cooking adoption?" The setting is Rwanda.')
-    assert '6. Export: a policy draft of options' in view['next'] and '(stage 7)' in view['next'] and 'field notes' in view['next']
+    assert view['next'].startswith(f'Use journey_id {JID} exactly') and 'opening field word for word' in view['next']
+    # The opening and the intro are the engine's, unchanged; `next` points at them instead of restating them.
+    assert view['opening'] == OPENING and view['intro'] == INTRO
+    assert 'intro field word for word' in view['next'] and 'ENGINE INTRO' not in view['next'] and 'field notes' in view['next']
     # Given only phase names, a live agent called the twin "to validate findings" and the export "actionable".
     assert not re.search(r'\b(validat|actionable|calibrat)', view['next'].split('They decide')[0], re.I)
 
@@ -744,9 +758,9 @@ def test_journey_start_needs_the_researchers_confirmation_of_the_question(tmp_pa
     schema = tools['ndim_journey_start'].inputSchema
     assert 'question_confirmation' in schema['required'] and 'in Rwanda' in schema['properties']['question']['description']
     guide = {'stages': [{'number': n, 'id': i, 'title': t, 'phase': p, 'does': 'd', 'needs': [], 'researcher_decision': d}
-                        for n, i, t, p, d in STAGE_ROWS], 'principles': []}
+                        for n, i, t, p, d in STAGE_ROWS], 'principles': [], 'intro': INTRO}
     view = call(build(lambda request: httpx.Response(200, json=guide)), 'ndim_journey_guide')
-    assert view['intro'].count('\n- ') == 3 and '\n6. Export: a policy draft' in view['intro'] and '(stage 13)' in view['intro']
+    assert view['intro'] == INTRO
     assert view['next'].index('intro field word for word') < view['next'].index('show their question back in quotes') < view['next'].index(
         'question_confirmation')
     audit_file = tmp_path / 'audit.jsonl'
@@ -784,9 +798,57 @@ def test_inoculation_curves_come_with_a_sentence_that_claims_no_message_effect()
                          'agents': {'before': rise(0.878), 'during': rise(0.8865), 'after': rise(0.8904)}}}
     view = call(build(lambda request: httpx.Response(200, json=journey_body(stage='inoculation', output=output))),
                 'ndim_journey_run_stage', workspace_id=WS, journey_id=JID, stage='inoculation')
-    sentence = view['result']['curves_sentence']
-    assert sentence == ('In the illustrative models, final adoption before, during and after the message is 0.9891, 0.9897 '
-                        'and 0.99 (compartmental) and 0.878, 0.8865 and 0.8904 (agent-based). These gaps come from the '
-                        "tool's fixed lift formula, not from any model of how messages work, so they say nothing about what "
-                        'the messages would do. The compartmental curves have also saturated (0.9 or more of 1.0).')
-    assert f'word for word, and add nothing else about what the messages would do' in view['next'] and sentence in view['next']
+    # The sentence itself is the engine's (journey_text.curves_sentence); the MCP passes it on and forbids additions.
+    assert view['sentences'] == stage_text('inoculation')['sentences'] and 'curves_sentence' not in view['result']
+    assert view['result']['curves']['agents'] == {'before': 0.878, 'during': 0.8865, 'after': 0.8904}
+    assert 'quoting, word for word' in view['next'] and 'add nothing else about what the messages would do' in view['next']
+
+
+@pytest.mark.parametrize('stage', ['encoding', 'compartmental', 'rl', 'inoculation'])
+def test_stage_wording_is_the_engines_unchanged(stage):
+    outputs = {'encoding': {'mean': {'trust': 0.5}, 'themes': [], 'encoded': [], 'diagnoses': [], 'method': 'm'},
+               'compartmental': {'model': 'compartmental', 'horizon_days': 10, 'method_status': 'illustrative_uncalibrated',
+                                 'trajectory': trajectory(0.95), 'parameters': {'trust_score': 0.6, 'barrier_score': 0.4,
+                                                                                'narrative_influence': 0.3, 'intervention_strength': 0.2}},
+               'rl': {'ranking': [], 'top_action': 'consumer_subsidy', 'formula': 'f', 'method': 'm', 'trust_used': 0.6, 'barrier_used': 0.4},
+               'inoculation': {'audience': 'households', 'tone': 'clear', 'messenger': 'health_worker', 'drafts': [],
+                               'review_status': 'r', 'curve_method': 'm', 'estimated_strength': 0.6, 'twin': None,
+                               'curves': {'compartmental': {phase: trajectory(0.5) for phase in ('before', 'during', 'after')}}}}
+    body = journey_body(('intake', 'gate', 'repository'), stage=stage, output=outputs[stage])
+    view = call(build(lambda request: httpx.Response(200, json=body)), 'ndim_journey_run_stage',
+                workspace_id=WS, journey_id=JID, stage=stage)
+    assert {key: view[key] for key in ('sentences', 'explanation', 'limits')} == stage_text(stage)
+    assert 'sentences field, the explanation field and the limits field' in view['next']
+    # The MCP no longer writes its own saturation sentence: the engine's sentences say it.
+    assert 'saturation' not in view['result']
+
+
+def test_a_journey_without_engine_wording_is_refused():
+    # An older engine sends no presentation; the MCP has no copy of the wording to fall back on, by design.
+    body = journey_body()
+    del body['presentation']
+    for tool, args in (('ndim_journey_status', {'journey_id': JID}),
+                       ('ndim_journey_start', {'question': 'How might trusted messengers change clean cooking adoption?',
+                                               'question_confirmation': 'Yes.'})):
+        with pytest.raises(ToolError, match='did not send the journey wording.*in your own words'):
+            call(build(lambda request: httpx.Response(200, json=body)), tool, workspace_id=WS, **args)
+    missing = journey_body(stage='rl', output={'ranking': [], 'top_action': 'a', 'formula': 'f', 'method': 'm',
+                                               'trust_used': 0.6, 'barrier_used': 0.4})
+    missing['presentation']['stages'] = {}
+    with pytest.raises(ToolError, match='no wording for the rl stage'):
+        call(build(lambda request: httpx.Response(200, json=missing)), 'ndim_journey_run_stage', workspace_id=WS,
+             journey_id=JID, stage='rl')
+    guide = {'stages': [], 'principles': []}
+    with pytest.raises(ToolError, match='did not send the journey wording'):
+        call(build(lambda request: httpx.Response(200, json=guide)), 'ndim_journey_guide')
+
+
+def test_the_guide_passes_on_each_stages_limits_from_the_engine():
+    guide = {'stages': [{'number': n, 'id': i, 'title': t, 'phase': p, 'does': 'd', 'needs': [], 'researcher_decision': d,
+                         'limits': stage_text(i)['limits']} for n, i, t, p, d in STAGE_ROWS], 'principles': [], 'intro': INTRO}
+    view = call(build(lambda request: httpx.Response(200, json=guide)), 'ndim_journey_guide')
+    assert [stage['limits'] for stage in view['stages']] == [stage_text(i)['limits'] for _, i, *_ in STAGE_ROWS]
+    for stage in guide['stages']:
+        del stage['limits']  # an engine from before the guide carried limits
+    view = call(build(lambda request: httpx.Response(200, json=guide)), 'ndim_journey_guide')
+    assert not any('limits' in stage for stage in view['stages'])

@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from . import audit, sweeps
 from .client import EngineClient, EngineError, check_ids
 from .config import Settings
-from .journey import GUIDE, INTRO, LIMITS, journey_view
+from .journey import GUIDE, NO_WORDING, journey_view, presentation
 from .summaries import (DEFAULT_STRENGTH, ELIGIBLE, EXISTING_RUNS, NOTICE, REPORTING_RULES, TERMINAL, compare_runs,
                         existing_run_note, ineligible, summarize_plan, summarize_run, tutorial)
 
@@ -448,12 +448,17 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
 
         Use it to describe the journey before starting, or when the researcher asks what a stage is."""
         guide = await engine.request('GET', '/engine/journey/stages')
+        if not guide.get('intro'):
+            raise EngineError(NO_WORDING)
         public = settings.public_url or settings.engine_url
+        # The intro and each stage's limits are the engine's wording, passed through unchanged. An engine from before
+        # it sent per-stage limits gives none here; every stage result still carries its limits.
         return {'stages': [{key: stage[key] for key in ('number', 'id', 'phase', 'title', 'does', 'needs', 'researcher_decision')}
-                           | {'optional': stage.get('optional', False), 'limits': LIMITS[stage['id']]} for stage in guide['stages']],
+                           | {'optional': stage.get('optional', False)} | ({'limits': stage['limits']} if stage.get('limits') else {})
+                           for stage in guide['stages']],
                 'principles': guide['principles'],
                 'web_app': f'{public}/classic-workbench',
-                'intro': INTRO,
+                'intro': guide['intro'],
                 'next': ('Show the researcher the intro field word for word, as markdown. Then show their question back in '
                          'quotes, exactly as you will pass it to ndim_journey_start (ask for it if they have not given '
                          'one), and ask them to confirm or correct it. Call ndim_journey_start only after they reply, with '
@@ -483,14 +488,14 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         # A live agent skipped ndim_journey_guide and asked for evidence without saying where the journey goes. Given only
         # the phase names, it described the twin as "to validate findings" and the export as "actionable policy outputs".
         # Told to quote the question and add nothing, live agents still wrote "how trusted messengers can change ...
-        # adoption in Rwanda": a paraphrase with the country folded in. A finished sentence names the country apart.
-        view['opening'] = (f'The journey has started with your question, exactly as you confirmed it: "{view["question"]}" '
-                           f'The setting is {view["country"]}.')
+        # adoption in Rwanda": a paraphrase with the country folded in. The engine's opening names the country apart.
+        shown = presentation(body)
+        view['opening'], view['intro'] = shown['opening'], shown['intro']
         view['next'] = (f'Use journey_id {view["journey_id"]} exactly for every later call in this journey; start only one '
-                        'journey per question. Begin your reply with the opening sentence word for word; after it, refer '
+                        'journey per question. Begin your reply with the opening field word for word; after it, refer '
                         'to the question only by quoting it exactly, never by paraphrase. Before asking for evidence, '
-                        'tell the researcher what lies ahead, using the text below word for word, unless you already '
-                        'showed it from ndim_journey_guide; do not list the stages any other way.\n\n' + INTRO + '\n\n'
+                        'tell the researcher what lies ahead by showing the intro field word for word, as markdown, unless '
+                        'you already showed it from ndim_journey_guide; do not list the stages any other way. '
                         + view['next'])
         return view
 
