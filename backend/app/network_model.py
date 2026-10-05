@@ -6,6 +6,11 @@ hazard set by intervention_strength (read as the compartmental model reads it, s
 with the proxy's friction hazard. On a fully mixed population the neighbour share is the population share, so the
 expected curve is the old proxy's curve (run_agent_based_proxy); the network is what changes it.
 
+Messenger seeding (optional, off by default): a campaign recruits a share of households as messengers, chosen by a
+strategy (random, best connected, or holders of bridging ties). Messengers adopt at the start, keep using for the whole
+period, and their adoption counts for more with their neighbours: 1 + 2 x trusted_messenger_fit ordinary neighbours.
+With no seeding the model is exactly the one above.
+
 The network is an assumption, not measured data. Every run draws its own network and its own chance events from a fixed
 seed, so results are reproducible; the band is the spread across runs (chance only), not uncertainty in the scores.
 """
@@ -20,7 +25,17 @@ TOPOLOGIES = {
     'well_mixed': 'everyone equally in contact with everyone, with no network structure',
 }
 DEFAULTS = {'households': 1000, 'village_size': 100, 'neighbours': 8, 'rewire': 0.1, 'between_village_ties': 1.0,
-            'replicates': 20, 'seed': 7}
+            'replicates': 20, 'seed': 7, 'messenger_share': 0.02}
+
+# Messenger seeding: who a campaign recruits, and how much a recruited messenger's adoption counts with neighbours.
+SEEDING = {
+    'none': 'no messengers recruited',
+    'random': 'messengers recruited at random',
+    'well_connected': 'the households with the most ties recruited as messengers',
+    'bridges': 'the households with the most ties to other villages (on networks without villages, the most bridging '
+               'ties: ties to households they share no neighbour with) recruited as messengers',
+}
+MESSENGER_WEIGHT = 2.0  # a messenger counts as 1 + MESSENGER_WEIGHT * trusted_messenger_fit ordinary adopting neighbours
 
 
 def _ring_lattice(nodes: np.ndarray, k: int, rewire: float, rng: np.random.Generator) -> List[Tuple[int, int]]:
@@ -87,6 +102,10 @@ def settings(parameters: Dict[str, float]) -> Dict[str, object]:
     out = {key: parameters.get(f'network_{key}', value) for key, value in DEFAULTS.items()}
     out['topology'] = parameters.get('network_topology', 'village')
     out['contagion'] = parameters.get('network_contagion', 'simple')
+    out['seeding'] = parameters.get('network_seeding', 'none')
+    if out['seeding'] not in SEEDING:
+        raise ValueError(f"Unknown seeding strategy {out['seeding']!r}; known: {', '.join(SEEDING)}")
+    out['messenger_share'] = max(0.0, min(1.0, float(out['messenger_share'])))
     for key in ('households', 'village_size', 'neighbours', 'replicates', 'seed'):
         out[key] = int(out[key])
     return out
@@ -134,6 +153,61 @@ def rates(parameters: Dict[str, float]) -> Dict[str, float]:
     }
 
 
+def messenger_weight(parameters: Dict[str, float]) -> float:
+    """How many ordinary adopting neighbours one messenger's adoption counts as: 1 + 2 x trusted_messenger_fit.
+
+    trusted_messenger_fit (0 to 1, from the inoculation diagnosis) is read as how far the recruited messengers are people
+    their neighbours already trust on this topic (a community health worker or a cooperative or church leader). At 0 a
+    messenger persuades like any adopting neighbour; at 1, like three. An assumption of the tool, not an estimate."""
+    return 1.0 + MESSENGER_WEIGHT * max(0.0, min(1.0, float(parameters.get('trusted_messenger_fit', 0.0))))
+
+
+def local_bridges(source: np.ndarray, target: np.ndarray, households: int) -> np.ndarray:
+    """Per household, the number of its ties that are local bridges: the two households share no neighbour.
+
+    A cheap stand-in for betweenness (no shortest paths are computed): a local bridge is the only short route between
+    the two sides it joins, so the households holding most of them sit between groups. On village networks these are
+    mostly the ties between villages (and the few rewired ties inside a village); on the small-world network the
+    long-range ties; on the scale-free network, with almost no clustering, most ties qualify, so it leans towards
+    the well-connected households. Fully mixed, no tie is a local bridge. Bridge recruiting uses village membership
+    first where villages exist, because rewired ties inside a village are local bridges too."""
+    half = source < target
+    a, b = source[half], target[half]
+    linked = np.zeros((households, households), dtype=bool)
+    linked[source, target] = True
+    bridging = np.zeros(len(a), dtype=bool)
+    for start in range(0, len(a), 2048):  # chunks keep the memory small on the Cloudflare container
+        stop = start + 2048
+        bridging[start:stop] = ~(linked[a[start:stop]] & linked[b[start:stop]]).any(axis=1)
+    return np.bincount(a[bridging], minlength=households) + np.bincount(b[bridging], minlength=households)
+
+
+def choose_messengers(strategy: str, count: int, degree: np.ndarray, rng: np.random.Generator,
+                      source: np.ndarray | None = None, target: np.ndarray | None = None,
+                      groups: np.ndarray | None = None) -> np.ndarray:
+    """Indices of the `count` households a campaign recruits. Ties in the ranking are broken at random.
+
+    Bridge recruiting ranks households by their ties to other villages when villages are known (`groups`), then by
+    local bridges (see local_bridges), then by ties; without villages, by local bridges, then by ties."""
+    n = len(degree)
+    count = min(count, n)
+    if strategy == 'none' or count <= 0:
+        return np.zeros(0, dtype=np.int64)
+    chance = rng.random(n)
+    if strategy == 'random':
+        order = np.argsort(chance)
+    elif strategy == 'well_connected':
+        order = np.lexsort((chance, -degree))
+    elif strategy == 'bridges':
+        bridges = np.zeros(n) if source is None else local_bridges(source, target, n)
+        between = (np.zeros(n) if source is None or groups is None else
+                   np.bincount(source[groups[source] != groups[target]], minlength=n))
+        order = np.lexsort((chance, -degree, -bridges, -between))
+    else:
+        raise ValueError(f'Unknown seeding strategy {strategy!r}; known: {", ".join(SEEDING)}')
+    return order[:count]
+
+
 def simulate_runs(horizon_days: int, parameters: Dict[str, float]) -> Dict[str, np.ndarray]:
     """Per-run curves (runs x days). Runs are seeded the same way for any parameters, so two settings compared run for
     run share their networks and chance events."""
@@ -153,18 +227,30 @@ def simulate_runs(horizon_days: int, parameters: Dict[str, float]) -> Dict[str, 
                                            s['between_village_ties'])
             degree = np.maximum(np.bincount(source, minlength=n), 1).astype(float)
         adopted = rng.random(n) < r['initial_adoption']
+        committed = None
+        if s['seeding'] != 'none':  # its own random stream, so every strategy shares the run's network and chance events
+            chosen = choose_messengers(s['seeding'], int(round(s['messenger_share'] * n)), degree,
+                                       np.random.default_rng([s['seed'], run, 1]), source, target,
+                                       np.arange(n) // s['village_size'] if s['topology'] == 'village' else None)
+            committed = np.zeros(n, dtype=bool)
+            committed[chosen] = True
+            adopted = adopted | committed
+            influence_weight = np.where(committed, messenger_weight(parameters), 1.0)
         drop_probability = min(1.0, r['friction'])  # daily rates used as daily probabilities, as in the proxy
         for day in range(horizon_days):
+            influence = adopted if committed is None else adopted * influence_weight
             if source is None:
-                adopting_neighbours = np.full(n, float(adopted.sum())) - adopted
+                adopting_neighbours = np.full(n, float(influence.sum())) - influence
             else:
-                adopting_neighbours = np.bincount(source, weights=adopted[target].astype(float), minlength=n)
+                adopting_neighbours = np.bincount(source, weights=influence[target].astype(float), minlength=n)
             peer_hazard = r['peer'] * adopting_neighbours / degree
             if s['contagion'] == 'complex':  # neighbours persuade only once at least two of them have adopted
                 peer_hazard = np.where(adopting_neighbours >= 2, peer_hazard, 0.0)
             waiting = ~adopted
             adopt = waiting & (rng.random(n) < np.minimum(1.0, peer_hazard + r['media'] + r['intervention']))
             drop = adopted & (rng.random(n) < drop_probability)
+            if committed is not None:  # messengers keep using for the whole campaign
+                drop &= ~committed
             peer_flow[run, day] = float((peer_hazard * waiting).mean())
             media_flow[run, day] = r['media'] * float(waiting.mean())
             adopted = (adopted | adopt) & ~drop
@@ -290,4 +376,171 @@ def robustness_sentences(result: Dict[str, object]) -> List[str]:
         else:
             sentences.append(f"{lead} gives {' or '.join(directions)} average adoption depending on the network shape "
                              f"(changes from {low} to {high}).")
+    return sentences
+
+
+# Messenger seeding comparison: every strategy on every network variant, on the same networks and chance events.
+STRATEGIES = ('none', 'random', 'well_connected', 'bridges')
+STRATEGY_LABELS = {'none': 'no messengers', 'random': 'random recruiting', 'well_connected': 'best-connected recruiting',
+                   'bridges': 'bridge recruiting'}
+
+
+def _variant_label(topology: str, contagion: str) -> str:
+    return f"{TOPOLOGIES[topology]}, {CONTAGION[contagion]}" if topology != 'well_mixed' else TOPOLOGIES[topology]
+
+
+SHAPES = {'village': 'village networks', 'small_world': 'small-world networks',
+          'scale_free': 'networks with a few highly connected households'}
+
+
+def _shapes(rows: List[Dict[str, object]]) -> str:
+    """Short names for a set of networked variants: a shape with both contagion rules is named once."""
+    parts = []
+    for topology in SHAPES:
+        rules = [row['contagion'] for row in rows if row['topology'] == topology]
+        if len(rules) == 2:
+            parts.append(SHAPES[topology])
+        elif rules:
+            parts.append(f"{SHAPES[topology]} {CONTAGION[rules[0]]}")
+    return parts[0] if len(parts) == 1 else ', '.join(parts[:-1]) + ' and ' + parts[-1]
+
+
+def _join(names: List[str]) -> str:
+    labels = [STRATEGY_LABELS[name] for name in names]
+    return labels[0] if len(labels) == 1 else ', '.join(labels[:-1]) + ' and ' + labels[-1]
+
+
+def selection_overlap(parameters: Dict[str, float], topology: str) -> float | None:
+    """Share of households both best-connected and bridge recruiting pick, on the first run's network of a shape."""
+    s = settings({**parameters, 'network_topology': topology})
+    if topology == 'well_mixed':
+        return None
+    rng = np.random.default_rng(np.random.default_rng(s['seed']).integers(2 ** 63))
+    source, target = build_network(topology, s['households'], rng, s['village_size'], s['neighbours'], s['rewire'],
+                                   s['between_village_ties'])
+    degree = np.maximum(np.bincount(source, minlength=s['households']), 1).astype(float)
+    count = int(round(s['messenger_share'] * s['households']))
+    if count == 0:
+        return None
+    groups = np.arange(s['households']) // s['village_size'] if topology == 'village' else None
+    picks = [set(choose_messengers(name, count, degree, np.random.default_rng([s['seed'], 0, 1]), source, target,
+                                   groups).tolist())
+             for name in ('well_connected', 'bridges')]
+    return round(len(picks[0] & picks[1]) / count, 3)
+
+
+def ranking_verdict(networked: List[Dict[str, object]], recruiting: List[str]) -> Tuple[str, str, List[str]]:
+    """Whether the leading group of strategies is the same on every networked variant: (code, verdict, always leading)."""
+    groups = {tuple(sorted(row['leading'])) for row in networked}
+    always = [name for name in recruiting if all(name in row['leading'] for row in networked)]
+    if all(not row['behind'] for row in networked):
+        return 'no clear difference', 'no clear difference: no strategy is clearly behind another in any network shape', always
+    if len(groups) == 1:
+        return ('holds', f"holds: {_join(networked[0]['leading'])} lead in every network shape, clearly ahead of "
+                         f"{_join(networked[0]['behind'])}", always)
+    return 'depends on the network shape', 'depends on the network shape: the leading strategies differ between shapes', always
+
+
+def seeding_comparison(horizon_days: int, parameters: Dict[str, float], strategies=STRATEGIES) -> Dict[str, object]:
+    """Run each seeding strategy on each network variant and say whether their ranking holds across network shapes.
+
+    Strategies are compared run for run (same networks, same chance events; only who is recruited differs). One
+    strategy is clearly behind another when the gap is positive in at least 90% of runs and at least CLEAR_DIFFERENCE
+    on average. Per variant, the leading group is the strategy with the highest average adoption and every strategy not
+    clearly behind it. The verdict reads the networked variants only: fully mixed, who is recruited cannot matter (all
+    strategies recruit alike there), so that row is a check of the setup."""
+    strategies = list(dict.fromkeys(strategies))
+    unknown = [name for name in strategies if name not in SEEDING]
+    if unknown:
+        raise ValueError(f'Unknown seeding strategy {unknown[0]!r}; known: {", ".join(SEEDING)}')
+    recruiting = [name for name in strategies if name != 'none']
+    if len(recruiting) < 2:
+        raise ValueError('Compare at least two strategies that recruit messengers (random, well_connected, bridges).')
+    s = settings(parameters)
+
+    def clearly_behind(gap: np.ndarray) -> bool:
+        return bool(np.percentile(gap, 10) > 0 and gap.mean() >= CLEAR_DIFFERENCE)
+
+    rows = []
+    for topology, contagion in VARIANTS:
+        variant = {**parameters, 'network_topology': topology, 'network_contagion': contagion}
+        per_run = {name: simulate_runs(horizon_days, {**variant, 'network_seeding': name})['adoption'].mean(axis=1)
+                   for name in strategies}
+        ranking = sorted(recruiting, key=lambda name: -per_run[name].mean())
+        leader = ranking[0]
+        leading = [name for name in ranking if name == leader or not clearly_behind(per_run[leader] - per_run[name])]
+        behind = [name for name in ranking if name not in leading]
+        row = {'topology': topology, 'contagion': contagion, 'label': _variant_label(topology, contagion),
+               'average_adoption': {name: round(float(per_run[name].mean()), 4) for name in strategies},
+               'ranking': ranking, 'leading': leading, 'behind': behind}
+        if behind:  # how far the leading group is ahead: its lowest member against the best of the rest
+            gap = per_run[leading[-1]] - per_run[behind[0]]
+            row['gap'] = round(float(gap.mean()), 4)
+            row['gap_band'] = [round(float(np.percentile(gap, 10)), 4), round(float(np.percentile(gap, 90)), 4)]
+        if 'none' in strategies:
+            row['gain_over_none'] = {name: round(float((per_run[name] - per_run['none']).mean()), 4) for name in recruiting}
+        if {'well_connected', 'bridges'} <= set(strategies):
+            row['same_households_share'] = selection_overlap(parameters, topology)
+        rows.append(row)
+    networked = [row for row in rows if row['topology'] != 'well_mixed']
+    code, verdict, always = ranking_verdict(networked, recruiting)
+    gaps = [row['gap'] for row in networked if 'gap' in row]
+    out = {'measure': 'average adoption over the period (0 to 1)', 'horizon_days': horizon_days, 'strategies': strategies,
+           'strategy_meaning': {name: SEEDING[name] for name in strategies},
+           'messengers': int(round(s['messenger_share'] * s['households'])), 'messenger_share': s['messenger_share'],
+           'households': s['households'], 'messenger_weight': round(messenger_weight(parameters), 3),
+           'trusted_messenger_fit': round((messenger_weight(parameters) - 1.0) / MESSENGER_WEIGHT, 3),
+           'variants': rows, 'verdict': code, 'ranking_verdict': verdict,
+           'always_leading': always, 'same_order_everywhere': len({tuple(row['ranking']) for row in networked}) == 1,
+           'gap_range': [min(gaps), max(gaps)] if gaps else None,
+           'status': 'assumed networks, not measured; illustrative, not a forecast; options for discussion, not '
+                     'recommendations'}
+    if 'none' in strategies:
+        out['gain_over_none_range'] = {name: [min(row['gain_over_none'][name] for row in networked),
+                                              max(row['gain_over_none'][name] for row in networked)] for name in recruiting}
+    return out
+
+
+def seeding_sentences(result: Dict[str, object]) -> List[str]:
+    """Fixed wording for the seeding comparison, so it is quoted rather than retold."""
+    networked = [row for row in result['variants'] if row['topology'] != 'well_mixed']
+    days = result['horizon_days']
+    sentences = [f"On {len(networked)} assumed network shapes (assumed networks, not measured), a campaign recruiting "
+                 f"{result['messengers']} messengers ({round(100 * result['messenger_share'], 1)}% of "
+                 f"{result['households']} households), each counting as {result['messenger_weight']} ordinary neighbours, "
+                 'was simulated with each recruiting strategy on the same networks and chance events. Illustrative, not '
+                 'a forecast.']
+    code = result['verdict']
+    if code == 'holds':
+        low, high = result['gap_range']
+        leading, behind = networked[0]['leading'], networked[0]['behind']
+        level = ', level with each other,' if len(leading) > 1 else ''
+        sentences.append(f"{_join(leading).capitalize()}{level} {'have' if len(leading) > 1 else 'has'} the highest average "
+                         f"adoption over the {days} days in every network shape, ahead of {_join(behind)} by {low} to "
+                         f"{high}: the ranking holds across these assumed shapes.")
+    elif code == 'depends on the network shape':
+        low, high = result['gap_range']
+        always = result['always_leading']
+        others = []
+        for name in [n for n in result['strategies'] if n != 'none' and n not in always]:
+            level = [row for row in networked if name in row['leading']]
+            behind = [row for row in networked if name not in row['leading']]
+            others.append(f"{STRATEGY_LABELS[name]} is level with them on {_shapes(level)} and clearly behind on "
+                          f"{_shapes(behind)}" if level else f"{STRATEGY_LABELS[name]} is clearly behind on {_shapes(behind)}")
+        if always:
+            lead = (f"{_join(always).capitalize()} {'are' if len(always) > 1 else 'is'} among the strategies with the highest "
+                    f"average adoption over the {days} days on every network shape, while " + '; '.join(others))
+        else:
+            lead = (f"No strategy has the highest average adoption over the {days} days on every network shape: "
+                    + '; '.join(f"{_join(row['leading'])} lead on {_shapes([row])}" for row in networked))
+        sentences.append(f"{lead} (gaps from {low} to {high} where one is clearly behind). So whether it matters who is "
+                         'recruited depends on how people are actually connected, which the model does not know.')
+    else:
+        sentences.append(f"No recruiting strategy is clearly ahead of the others in any network shape, in average adoption "
+                         f"over the {days} days.")
+    if 'gain_over_none_range' in result:
+        parts = ', '.join(f"{lo} to {hi} with {STRATEGY_LABELS[name]}" for name, (lo, hi) in result['gain_over_none_range'].items())
+        sentences.append(f'Compared with no messengers, average adoption is higher by {parts}, across the network shapes.')
+    sentences.append('These are options for discussion, not recommendations: the messenger weight and the networks are '
+                     'assumptions of the tool.')
     return sentences
