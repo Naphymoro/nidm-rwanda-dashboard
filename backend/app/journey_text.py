@@ -4,7 +4,7 @@ Live chat agents reworded these sentences in ways that changed their meaning ("a
 increases adoption slightly", "personal data removed"). The engine now owns the wording; the research assistant's
 journey card and the ndim-mcp tools both show it unchanged, and the agents only explain around it.
 """
-from .network_model import robustness_sentences
+from .network_model import robustness_sentences, seeding_sentences
 
 SATURATED = 0.9  # final adoption at or above this: the curve has little room left to show differences
 
@@ -28,7 +28,9 @@ LIMITS = {
                 'The rule of thumb is a threshold rule, not a model result.',
     'graph': 'Links show that a place, a theme and a signal occur together in the records. They are not causal.',
     'inoculation': 'Message drafts need human review before any use with people. The before/during/after curves use a '
-                   'fixed lift formula; they do not model message effects.',
+                   'fixed lift formula; they do not model message effects. The messenger comparison recruits simulated '
+                   'households on assumed networks, with an assumed persuasion weight; it compares strategies inside the '
+                   'model, not in any community, and is not advice on whom to recruit.',
     'policy': 'A draft for the research team\'s review: options for discussion, not recommendations. The evidence grade '
               'and readiness come from the number of records and encoder confidence only.',
 }
@@ -108,6 +110,9 @@ def stage_sentences(stage, output):
         sentences = [curves_sentence(output['curves']), 'The message drafts need human review before any use with people.']
         if output.get('twin'):
             sentences += curve_sentences(output['twin'])
+        if output.get('messenger_seeding'):  # setup, verdict, and the options-not-recommendations line
+            seeding = seeding_sentences(output['messenger_seeding'])
+            sentences += [seeding[0], seeding[1], seeding[-1]]
         return sentences
     if stage == 'policy':
         return ['This is a draft of options for the research team to discuss, not recommendations.']
@@ -225,8 +230,18 @@ def explanation(stage, output, journey):
                 'means they occur together in the records; it says nothing about cause.')
     if stage == 'inoculation':
         titles = '; '.join(f"{d['type']}: {d['title']}" for d in output['drafts'])
-        return (f"Three message drafts for {output['audience'].replace('_', ' ')}, to be delivered by {output['messenger'].replace('_', ' ')}: "
+        text = (f"Three message drafts for {output['audience'].replace('_', ' ')}, to be delivered by {output['messenger'].replace('_', ' ')}: "
                 f'{titles}. They need your team\'s review before any use with people. ' + curves_sentence(output['curves']))
+        seeding = output.get('messenger_seeding')
+        if seeding:
+            text += (f" The agent-based model was also re-run with a campaign that recruits {seeding['messengers']} of its "
+                     f"{seeding['households']} simulated households as messengers: chosen at random, the households with the "
+                     'most ties, or the households with the most ties to other villages (on networks without villages, '
+                     'the most ties to households they share no neighbour with). Messengers use from the start and keep using; each one\'s adoption '
+                     f"counts as {seeding['messenger_weight']} ordinary neighbours, from the trusted-messenger fit of "
+                     f"{seeding['trusted_messenger_fit']} in the diagnosis (an assumption of the tool). "
+                     + ' '.join(seeding_sentences(seeding)[1:]))
+        return text
     if stage == 'policy':
         summary, grade = output['summary'], output['evidence_grade']
         return (f"The draft brings together {summary['accepted_records']} accepted and {summary['rejected_records']} rejected "

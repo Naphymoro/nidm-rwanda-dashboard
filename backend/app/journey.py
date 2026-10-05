@@ -24,7 +24,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from . import engine_store as store
 from .encoding import encode_rule_based
-from .network_model import robustness as network_robustness, robustness_sentences
+from .network_model import (STRATEGIES as SEEDING_STRATEGIES, robustness as network_robustness, robustness_sentences,
+                            seeding_comparison, seeding_sentences)
 from .engine_tools import LIMITS, fingerprint, scientific_checks
 from .inoculation import aggregate_inoculation_parameters, diagnose_inoculation_rule_based
 from .journey_text import INTRO, LIMITS as STAGE_LIMITS, presentation
@@ -76,7 +77,8 @@ STAGES = [
      'needs': ['encoding'], 'researcher_decision': False},
     {'id': 'inoculation', 'number': 12, 'phase': 'Strategy', 'title': 'Inoculation lab',
      'does': 'Drafts pre-bunking, refutation and short counter-messages from the diagnosis, and shows the tool\'s '
-             'illustrative before/during/after adoption curves. Drafts need human review before any use.',
+             'illustrative before/during/after adoption curves. Also compares, in the agent-based model, recruiting '
+             'messengers at random, by most ties or by ties between villages. Drafts need human review before any use.',
      'needs': ['encoding', 'compartmental', 'agents'], 'researcher_decision': False},
     {'id': 'policy', 'number': 13, 'phase': 'Export', 'title': 'Policy output',
      'does': 'Assembles the evidence grade, policy readiness, model summary and the audit trail into a draft for '
@@ -498,8 +500,11 @@ def run_stage(journey, stage, req):
         for key, agent in (('compartmental', False), ('agents', True)):
             base = output(journey, key)['trajectory']
             curves[key] = {phase: vaccine_curve(base, strength, phase, agent) for phase in ('during', 'after')} | {'before': base}
+        agents = output(journey, 'agents')  # who a campaign recruits as messengers, on the stage 6 scenario
+        seeding = seeding_comparison(agents['horizon_days'], agents['parameters'])
         result = {'audience': req.audience, 'tone': req.tone, 'themes_used': themes, 'messenger': messenger, 'drafts': drafts,
                   'estimated_strength': strength, 'curves': curves, 'applied_strength': 0.0,
+                  'messenger_seeding': seeding | {'sentences': seeding_sentences(seeding)},
                   'review_status': 'draft: requires human review before any use with people',
                   'curve_method': 'Illustrative lift formula from the workbench applied to the stage 5 and 6 curves; it is not '
                                   'a model of message effects and has not been tested against field data.'}
@@ -685,3 +690,24 @@ def network_robustness_route(req: RobustnessRequest):
         raise HTTPException(422, 'alternative needs at least one parameter change.')
     result = network_robustness(req.horizon_days, req.parameters, req.alternative)
     return result | {'sentences': robustness_sentences(result)}
+
+
+class SeedingRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
+    horizon_days: int = Field(default=180, ge=7, le=365)
+    parameters: dict[str, float] = Field(default_factory=dict, description='Model parameters, e.g. trust_score, '
+                                         'peer_effect, trusted_messenger_fit (raises each messenger\'s persuasion weight).')
+    strategies: list[Literal['none', 'random', 'well_connected', 'bridges']] = Field(
+        default_factory=lambda: list(SEEDING_STRATEGIES), description='Recruiting strategies to compare; at least two '
+        'that recruit messengers. none is the no-messenger reference.')
+    messenger_share: float = Field(default=0.02, gt=0, le=0.2, description='Share of households recruited as messengers.')
+
+
+@router.post('/network/seeding')
+def network_seeding_route(req: SeedingRequest):
+    """Compare messenger recruiting strategies on every assumed network shape and say whether their ranking holds."""
+    if len(set(req.strategies) - {'none'}) < 2:
+        raise HTTPException(422, 'Compare at least two strategies that recruit messengers (random, well_connected, bridges).')
+    result = seeding_comparison(req.horizon_days, {**req.parameters, 'network_messenger_share': req.messenger_share},
+                                req.strategies)
+    return result | {'sentences': seeding_sentences(result)}

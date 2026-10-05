@@ -85,6 +85,13 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(check.status_code, 200, check.text)
         self.assertEqual(len(check.json()['sentences']), 2)
         self.assertEqual(self.client.post('/engine/network/robustness', json={'alternative': {}}).status_code, 422)
+        seeding = self.client.post('/engine/network/seeding', json={'horizon_days': 30, 'strategies': ['random', 'well_connected'],
+                                                                   'parameters': {'peer_effect': 0.15, 'network_replicates': 4}})
+        self.assertEqual(seeding.status_code, 200, seeding.text)
+        self.assertEqual(seeding.json()['strategies'], ['random', 'well_connected'])
+        self.assertIn('assumed networks, not measured', seeding.json()['sentences'][0])
+        self.assertEqual(self.client.post('/engine/network/seeding', json={'strategies': ['none', 'bridges']}).status_code, 422)
+        self.assertEqual(self.client.post('/engine/network/seeding', json={'strategies': ['celebrities', 'random']}).status_code, 422)
         digital = self.stage('digital', observed_adoption=0.2, trust_shift=0.0, barrier_shift=0.05,
                              approval_statement='These are our June field numbers.')['output']
         self.assertEqual(digital['model'], 'hybrid')
@@ -227,6 +234,12 @@ class JourneyTests(unittest.TestCase):
         curves = shown['inoculation']['sentences'][0]
         self.assertTrue(curves.startswith('In the illustrative models, final adoption before, during and after the message is '))
         self.assertIn('say nothing about what the messages would do', curves)
+        seeding = body['output']['messenger_seeding']
+        self.assertEqual(len(seeding['variants']), 7)
+        self.assertEqual(shown['inoculation']['sentences'][2:], [seeding['sentences'][0], seeding['sentences'][1], seeding['sentences'][-1]])
+        self.assertIn('options for discussion, not recommendations', shown['inoculation']['sentences'][-1])
+        self.assertIn('as messengers', shown['inoculation']['explanation'])
+        self.assertIn('not advice on whom to recruit', shown['inoculation']['limits'])
         text = ' '.join(sentence for view in shown.values() for sentence in view['sentences'])
         for banned in ('will reach', 'recommend ', 'causes', 'validated'):
             self.assertNotIn(banned, text)

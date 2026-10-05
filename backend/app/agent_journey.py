@@ -130,8 +130,17 @@ def facts(stage, output):
     if stage == 'graph':
         return {'nodes': [node['label'] for node in output['nodes']], 'links': len(output['edges'])}
     if stage == 'inoculation':
-        return {'audience': output['audience'], 'messenger': output['messenger'],
-                'drafts': [{'type': d['type'], 'title': d['title'], 'text': d['text']} for d in output['drafts']]}
+        out = {'audience': output['audience'], 'messenger': output['messenger'],
+               'drafts': [{'type': d['type'], 'title': d['title'], 'text': d['text']} for d in output['drafts']]}
+        seeding = output.get('messenger_seeding')
+        if seeding:
+            out['messenger_seeding'] = {
+                'status': seeding['status'], 'measure': seeding['measure'], 'verdict': seeding['ranking_verdict'],
+                'messengers': seeding['messengers'], 'messenger_weight': seeding['messenger_weight'],
+                'average_adoption_by_network': {row['label']: row['average_adoption'] for row in seeding['variants']},
+                'leading_by_network': {row['label']: row['leading'] for row in seeding['variants']},
+                'gain_over_no_messengers_range': seeding.get('gain_over_none_range')}
+        return out
     if stage == 'policy':
         return {'evidence_grade': output['evidence_grade'].get('grade'), 'summary': output['summary']}
     return {}
