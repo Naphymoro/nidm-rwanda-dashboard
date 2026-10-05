@@ -1,6 +1,7 @@
 """Benchmark local Ollama models on NDIM assistant tasks and sentiment, with speed, VRAM and GPU energy.
 
 Usage: python3 llm_bench.py tasks|sentiment MODEL [MODEL ...]   (stdlib only; host Ollama on 127.0.0.1:11434)
+Environment: OLLAMA (server URL), BENCH_OUT (results file; default llm_results.json here).
 """
 import json, re, subprocess, sys, threading, time, urllib.error, urllib.request
 from pathlib import Path
@@ -9,6 +10,7 @@ HERE = Path(__file__).parent
 FX = json.load(open(HERE / 'fixtures.json'))
 R, Q, TOOLS = FX['results'], FX['question'], FX['tools']
 OLLAMA = __import__('os').environ.get('OLLAMA', 'http://127.0.0.1:11434')
+OUT = Path(__import__('os').environ.get('BENCH_OUT') or HERE / 'llm_results.json')
 SYSTEM = ('You are the NDIM research assistant, talking with a researcher in Rwanda. You run the NDIM engine through '
           'the ndim_* tools. Every tool result has a `next` field: follow it exactly, including any text it tells you '
           'to show word for word. Never invent the researcher\'s answers, approvals or observations.')
@@ -174,7 +176,7 @@ def vram_mb(model):
 if __name__ == '__main__':
     power = Power()
     time.sleep(1)
-    results = json.load(open(HERE / 'llm_results.json')) if (HERE / 'llm_results.json').exists() else {}
+    results = json.load(open(OUT)) if OUT.exists() else {}
     mode = sys.argv[1]
     for model in sys.argv[2:]:
         print(f'== {model} ({mode})', flush=True)
@@ -190,7 +192,7 @@ if __name__ == '__main__':
             entry['sentiment'] = run_sentiment(model, power, per_lang=30 if reasoning else 300, predict=1500 if reasoning else 8)
             entry['sentiment']['items_per_language'] = 30 if reasoning else 300
             print(json.dumps(entry['sentiment']), flush=True)
-        json.dump(results, open(HERE / 'llm_results.json', 'w'), indent=1, ensure_ascii=False)
+        json.dump(results, open(OUT, 'w'), indent=1, ensure_ascii=False)
         urllib.request.urlopen(urllib.request.Request(OLLAMA + '/api/generate', data=json.dumps({'model': model, 'keep_alive': 0}).encode(),
                                                       headers={'Content-Type': 'application/json'}), timeout=60).read()
     power.proc.terminate()

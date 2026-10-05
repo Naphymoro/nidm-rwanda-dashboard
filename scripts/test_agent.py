@@ -184,6 +184,26 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(status['model_label'], 'NDIM-tuned (small)')
         self.assertEqual(self.client.get('/agent/models').json()['models'], [])  # other providers: nothing to pick
 
+    def test_model_labels_follow_the_fine_tune_registry(self):
+        tags = {'models': [{'name': 'ndim-qwen3-1.7b:v3', 'size': 3.4e9}, {'name': 'ndim-qwen3-1.7b:v4', 'size': 3.4e9},
+                           {'name': 'ndim-qwen3-1.7b:v5', 'size': 3.4e9}, {'name': 'qwen3:1.7b', 'size': 1.4e9}]}
+        registry = {'promoted': 'ndim-qwen3-1.7b:v4', 'versions': [
+            {'model': 'ndim-qwen3-1.7b:v3', 'verdict': 'promoted'}, {'model': 'ndim-qwen3-1.7b:v4', 'verdict': 'promoted'},
+            {'model': 'ndim-qwen3-1.7b:v5', 'verdict': 'rejected', 'reasons': ['tools.no_fake_confirm: 0.2 against 0.4']}]}
+
+        class Reply:
+            def json(self):
+                return tags
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'local_models.json'
+            path.write_text(json.dumps(registry))
+            with patch.dict(os.environ, {'NDIM_AGENT_PROVIDER': 'ollama', 'NDIM_MODEL_REGISTRY': str(path)}), \
+                    patch.object(agent.httpx, 'get', return_value=Reply()):
+                data = self.client.get('/agent/models').json()
+        self.assertEqual([(m['name'], m['label']) for m in data['models']],
+                         [('ndim-qwen3-1.7b:v4', 'NDIM-tuned (small)'), ('ndim-qwen3-1.7b:v3', 'NDIM-tuned (older test version)'),
+                          ('qwen3:1.7b', 'Tiny'), ('ndim-qwen3-1.7b:v5', 'NDIM-tuned (failed the gate)')])
+
     def test_saved_config_wins_and_is_private(self):
         response = self.client.post('/agent/config', json={'provider': 'anthropic', 'api_key': 'sk-ant-test', 'model': 'claude-sonnet-5'})
         self.assertEqual(response.status_code, 200)

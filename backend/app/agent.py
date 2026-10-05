@@ -43,10 +43,12 @@ PROVIDERS = {
     'lmstudio': {'protocol': 'openai', 'env': None, 'base_url': 'http://127.0.0.1:1234/v1', 'model': 'local-model'},
 }
 AUTO_ORDER = ('anthropic', 'openai', 'openrouter', 'mistral')
-# Labels for local models, from the NDIM benchmarks (scripts/local_ai_benchmark, scripts/local_ai_training). First match
-# wins, so the NDIM fine-tunes come before the general families.
+# Labels for local models, from the NDIM benchmarks (scripts/local_ai_benchmark, scripts/local_ai_training). The NDIM
+# fine-tunes come from the registry the fine-tune pipeline writes (local_models.json): the version that passed the
+# benchmark gate is the recommended one; a version that failed it says so (NDIM_MODEL_REGISTRY points elsewhere, e.g. at
+# the registry a pipeline run just updated). Then the first matching prefix wins.
+MODEL_REGISTRY = Path(__file__).with_name('local_models.json')
 MODEL_LABELS = [
-    ('ndim-qwen3-1.7b:v3', 'NDIM-tuned (small)', 'Qwen3 1.7B trained on NDIM journeys: cites the engine, fast; experimental'),
     ('ndim-', 'NDIM-tuned (older test version)', 'An earlier NDIM training run, kept for comparison'),
     ('qwen3:1.7b', 'Tiny', 'Fastest, least energy; often misses NDIM rules'),
     ('llama3.2:3b', 'Small', 'Light and quick; weaker at following NDIM rules'),
@@ -99,8 +101,27 @@ def resolve():
     return {'available': True, 'provider': name, 'protocol': spec['protocol'], 'model': model, 'base_url': base.rstrip('/'), 'api_key': key}
 
 
-def model_label(name):
-    return next(((label, note) for prefix, label, note in MODEL_LABELS if (name or '').startswith(prefix)), (None, None))
+def registry_labels():
+    """{model name: (label, note)} for the NDIM fine-tunes the pipeline promoted or rejected."""
+    try:
+        registry = json.loads(Path(os.getenv('NDIM_MODEL_REGISTRY') or MODEL_REGISTRY).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+    labels = {}
+    for version in registry.get('versions', []):
+        if version['model'] == registry.get('promoted'):
+            labels[version['model']] = ('NDIM-tuned (small)', version.get('note') or 'Trained on NDIM journeys; passed the NDIM benchmark gate')
+        elif version.get('verdict') == 'rejected':
+            labels[version['model']] = ('NDIM-tuned (failed the gate)', 'Did not pass the NDIM benchmark gate; not for research use')
+    return labels
+
+
+def model_label(name, registry=None):
+    name = (name or '').removesuffix(':latest')
+    registry = registry_labels() if registry is None else registry
+    if name in registry:
+        return registry[name]
+    return next(((label, note) for prefix, label, note in MODEL_LABELS if name.startswith(prefix)), (None, None))
 
 
 def _authorize(token):
@@ -536,12 +557,19 @@ def local_models():
         tags = httpx.get(root + '/api/tags', timeout=10).json().get('models', [])
     except (httpx.HTTPError, ValueError):
         return {'models': [], 'current': cfg.get('model'), 'error': f'Could not reach Ollama at {root}.'}
-    rows = []
+    rows, registry = [], registry_labels()
     for tag in tags:
-        label, note = model_label(tag['name'])
+        label, note = model_label(tag['name'], registry)
         rows.append({'name': tag['name'], 'label': label, 'note': note, 'size_gb': round(tag.get('size', 0) / 1e9, 1)})
     order = {prefix: i for i, (prefix, *_) in enumerate(MODEL_LABELS)}
-    rows.sort(key=lambda row: (row['label'] is None, next((i for p, i in order.items() if row['name'].startswith(p)), 99), row['name']))
+
+    def rank(row):  # the promoted fine-tune first, a rejected one last among the labelled models
+        if row['label'] == 'NDIM-tuned (small)':
+            return -1
+        if row['label'] == 'NDIM-tuned (failed the gate)':
+            return 98
+        return next((i for p, i in order.items() if row['name'].startswith(p)), 99)
+    rows.sort(key=lambda row: (row['label'] is None, rank(row), row['name']))
     return JSONResponse({'models': rows, 'current': cfg['model']}, headers={'Cache-Control': 'no-store'})
 
 

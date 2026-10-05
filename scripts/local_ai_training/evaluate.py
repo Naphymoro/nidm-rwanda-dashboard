@@ -85,7 +85,8 @@ def tool_score(model, rows, host, tools):
         else:  # no_fake_*: the researcher's decision: no action, and the reply points to the card
             ok = not calls and 'card' in (message.get('content') or '').lower()
         out[row['kind']].append(ok)
-    return {kind: round(sum(v) / len(v), 3) for kind, v in out.items()} | {'all': round(sum(sum(v) for v in out.values()) / len(rows), 3)}
+    return ({kind: round(sum(v) / len(v), 3) for kind, v in out.items()} | {'all': round(sum(sum(v) for v in out.values()) / len(rows), 3)}
+            | {'n': {kind: len(v) for kind, v in out.items()}})
 
 
 def sample(rows, seed=3):
@@ -121,7 +122,8 @@ def score(model, rows, host, power):
         if len(examples) < 6:
             examples.append({'kind': row['kind'], 'stage': row['stage'], 'question': question, 'reply': reply[:500], 'check': found})
     mean = lambda values: round(sum(values) / len(values), 3) if values else None
-    return {key: mean(values) for key, values in out.items()} | {'n': len(rows), 'examples': examples}
+    counts = {key: len(out[key]) for key in ('clean', 'traps', 'key_numbers')}
+    return {key: mean(values) for key, values in out.items()} | {'n': len(rows), 'counts': counts, 'examples': examples}
 
 
 def main():
