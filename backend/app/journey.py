@@ -26,7 +26,7 @@ from . import engine_store as store
 from .encoding import encode_rule_based
 from .engine_tools import LIMITS, fingerprint, scientific_checks
 from .inoculation import aggregate_inoculation_parameters, diagnose_inoculation_rule_based
-from .journey_text import INTRO, presentation
+from .journey_text import INTRO, LIMITS as STAGE_LIMITS, presentation
 from .sentiment import classify as classify_sentiment, status as sentiment_status
 from .modelling import model_assumptions, run_digital_twin
 from .pipeline import evidence_grade
@@ -561,7 +561,8 @@ def public(journey, full=False):
 
 @router.get('/journey/stages')
 def stage_guide():
-    return {'stages': STAGES, 'runnable': list(RUNNABLE), 'intro': INTRO,
+    # Each stage's limits come with it, so ndim-mcp can describe a stage before it runs without its own copy of them.
+    return {'stages': [stage | {'limits': STAGE_LIMITS[stage['id']]} for stage in STAGES], 'runnable': list(RUNNABLE), 'intro': INTRO,
             'principles': ['Only records the researcher accepted reach a model.',
                            'Field feedback, evidence decisions and the export need the researcher\'s own words.',
                            'All scores are keyword heuristics and all curves are illustrative and uncalibrated.']}

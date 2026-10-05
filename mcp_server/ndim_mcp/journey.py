@@ -1,33 +1,12 @@
 """Agent-sized views of the engine's 13-stage journey, and the guidance that walks a researcher through it.
 
-The engine returns full curves and every record; these functions keep the numbers a researcher needs, the limits
-that go with them, and a `next` instruction that makes the agent explain each stage and ask before moving on.
+The engine returns full curves and every record; these functions keep the numbers a researcher needs, pass the
+engine's fixed wording (its `presentation`) through unchanged, and add a `next` instruction that makes the agent quote
+that wording, explain each stage around it and ask before moving on. No journey wording is kept here: live agents
+reworded it into overclaims, and a second copy could drift from the engine's.
 """
+from .client import EngineError
 from .summaries import trajectory_stats
-
-# What each stage's numbers are, in the words an agent should pass on. Keep in step with the engine's STAGES.
-LIMITS = {
-    'intake': 'Records are stored as given; nothing has been scored yet.',
-    'gate': 'The gate checks metadata and patterns only. It does not judge whether a record is true or representative.',
-    'repository': 'Only accepted records reach any model. Decisions are frozen once encoding runs.',
-    'encoding': 'Scores come from English keywords in each record: interpretations for review, not measurements of '
-                'trust or barriers in a community.',
-    'compartmental': 'Illustrative, uncalibrated curve computed from the keyword scores. Not a forecast.',
-    'agents': 'A deterministic proxy for household behaviour, not a simulation of real households. Not a forecast.',
-    'digital': 'Re-runs the hybrid model from the researcher\'s field observations. It is still uncalibrated: one '
-               'observed level does not fit the model to reality.',
-    'bayes': 'The signal update treats keyword scores as pseudo-observations; the number of pseudo-trials is a tool '
-             'convention. An adoption curve is fitted only to an observed series the researcher supplied.',
-    'rl': 'The ranking restates the tool\'s fixed assumed lifts and costs; no data estimated them. It is not advice '
-          'on which action to take.',
-    'regional': 'Averages of keyword scores per place. A place with one or two records says little about the place. '
-                'The rule of thumb is a threshold rule, not a model result.',
-    'graph': 'Links show that a place, a theme and a signal occur together in the records. They are not causal.',
-    'inoculation': 'Message drafts need human review before any use with people. The before/during/after curves use a '
-                   'fixed lift formula; they do not model message effects.',
-    'policy': 'A draft for the research team\'s review: options for discussion, not recommendations. The evidence grade '
-              'and readiness come from the number of records and encoder confidence only.',
-}
 
 # The experiment REPORTING_RULES, minus the scenario headline these stages do not have, plus the stages that look like advice.
 JOURNEY_RULES = ('When reporting a stage: say "in the illustrative model, adoption is X at day N", never "adoption will '
@@ -41,58 +20,31 @@ JOURNEY_RULES = ('When reporting a stage: say "in the illustrative model, adopti
                  '"peaks_before_end"; otherwise report fastest_growth_day. If adoption ends near 1.0, say the model '
                  'saturated, so the curve says little about differences.')
 
-GUIDE = ('Guide the researcher one stage at a time. After each stage, explain in plain words what it did, the key '
-         'numbers and their limits, then name the next stage and what it does, and ask whether to continue. Do not run '
+GUIDE = ('Guide the researcher one stage at a time. After each stage, give its sentences, explanation and limits '
+         'fields word for word (the engine\'s own wording: never reword, shorten or add to them), answer questions only '
+         'from them and the result field, then name the next stage and what it does, and ask whether to continue. Do not run '
          'the next stage until they say so. Stages marked researcher_decision need the researcher\'s own words '
          '(approval_statement) and, for the digital twin, their own field observations: ask for them, never invent or '
          'default them.')
 
-# The phases in words that claim nothing the stages cannot do (no "validate", no "actionable"), and the three points
-# where the journey waits for the researcher's own words. Live intros assembled from these parts changed their meaning
-# ("any personal data removed", when the gate only flags it) or dropped the decision points; the agent copies a finished
-# text more faithfully than it builds one.
-INTRO = ('**The journey, in six phases**\n\n'
-         '1. Evidence: your field notes are stored as given, checked for metadata and personal data, and you accept or '
-         'reject each one.\n'
-         '2. Encode: an English keyword heuristic scores trust, barriers and themes.\n'
-         '3. Model: illustrative, uncalibrated adoption curves from those scores.\n'
-         '4. Twin: the model re-run from your own field observations, then a signal update and a ranking of actions under '
-         'the tool\'s fixed assumptions.\n'
-         '5. Strategy: place summaries, a map of which themes occur together, and message drafts for your review.\n'
-         '6. Export: a policy draft of options for your team to discuss, not recommendations.\n\n'
-         '**You decide at three points**\n\n'
-         '- Accepting or rejecting each record (stage 3)\n'
-         '- Giving your own field observations for the digital twin (stage 7)\n'
-         '- Approving the policy export (stage 13)')
+NO_WORDING = ('The NDIM engine did not send the journey wording (presentation), so this journey cannot be shown as '
+              'written. The engine is older than this tool: ask the operator to update it. Do not describe the journey '
+              'or its results in your own words in the meantime.')
 
-SATURATED = 0.9  # final adoption at or above this: the curve has little room left to show differences
+
+def presentation(body):
+    """The engine's fixed wording for this journey (intro, opening, and per finished stage its sentences, explanation
+    and limits). The engine owns it so that no agent, and no copy here, can drift from it; an engine too old to send it
+    is refused rather than worded here, because wording composed outside the engine is what this replaced."""
+    shown = body.get('presentation')
+    if not isinstance(shown, dict) or not {'intro', 'opening', 'stages'} <= shown.keys():
+        raise EngineError(NO_WORDING)
+    return shown
 
 
 def _curve(output):
-    view = {'model': output['model'], 'horizon_days': output['horizon_days'], 'method_status': output['method_status'],
+    return {'model': output['model'], 'horizon_days': output['horizon_days'], 'method_status': output['method_status'],
             'stats': trajectory_stats(output['trajectory'])}
-    if view['stats'].get('final_adoption', 0) >= SATURATED:
-        # A live agent reported 0.93 and 0.91 endpoints without saying the model had saturated.
-        view['saturation'] = (f"Adoption ends at {view['stats']['final_adoption']} of 1.0: the model has saturated, so this "
-                              'curve says little about differences between settings. A shorter horizon_days would show more.')
-    return view
-
-
-MODEL_NAMES = {'compartmental': 'compartmental', 'agents': 'agent-based'}
-
-
-def curves_sentence(curves):
-    """The one thing the before/during/after curves can support. Told not to read saturated curves as a small message
-    effect, a live agent still wrote that they "suggest marginal effects due to saturation"; it quotes a sentence better."""
-    parts = [f"{', '.join(str(phases[key]) for key in ('before', 'during'))} and {phases['after']} ({MODEL_NAMES.get(model, model)})"
-             for model, phases in curves.items()]
-    sentence = ('In the illustrative models, final adoption before, during and after the message is '
-                + ' and '.join(parts) + '. These gaps come from the tool\'s fixed lift formula, not from any model of how '
-                'messages work, so they say nothing about what the messages would do.')
-    saturated = [MODEL_NAMES.get(model, model) for model, phases in curves.items() if min(phases.values()) >= SATURATED]
-    if saturated:
-        sentence += f" The {' and '.join(saturated)} curves have also saturated (0.9 or more of 1.0)."
-    return sentence
 
 
 def stage_view(stage, output):
@@ -134,7 +86,6 @@ def stage_view(stage, output):
         view['estimated_strength'] = round(output['estimated_strength'], 4)
         view['curves'] = {model: {phase: trajectory_stats(rows)['final_adoption'] for phase, rows in phases.items()}
                           for model, phases in output['curves'].items()}
-        view['curves_sentence'] = curves_sentence(view['curves'])
         if output.get('twin'):
             view['twin_with_inoculation'] = _curve(output['twin'])
         return view
@@ -157,20 +108,28 @@ def journey_view(body):
                           'decision': (record['review'] or {}).get('decision')}
                        | ({'translation_checked_by': record['translation_checked_by']} if record.get('translation_checked_by') else {})
                        for record in body['records']]
+    shown = presentation(body)
     parts = []
     if stage := body.get('stage'):
+        if not (text := shown['stages'].get(stage)):
+            raise EngineError(f'The NDIM engine sent no wording for the {stage} stage it ran. Do not describe the result in '
+                              'your own words; call ndim_journey_status, and if the wording is still missing, tell the '
+                              'researcher the tool needs attention.')
         view['stage'] = stage
+        view |= {key: text[key] for key in ('sentences', 'explanation', 'limits')}
         view['result'] = stage_view(stage, body['output'])
-        view['limits'] = LIMITS[stage]
         if body.get('cleared_later_stages'):
             view['cleared_later_stages'] = body['cleared_later_stages']
             parts.append('Re-running this stage cleared these later stages, which must be run again: '
                          + ', '.join(body['cleared_later_stages']) + '.')
-        parts.append(f"Explain the {stages[stage]['title']} result in plain words with its limits (the limits field).")
+        fields = [f'the {key} field' for key in ('sentences', 'explanation', 'limits') if text[key]]
+        parts.append(f"Report the {stages[stage]['title']} result by quoting, word for word and in this order, "
+                     + ', '.join(fields[:-1]) + (' and ' if len(fields) > 1 else '') + fields[-1] + ': they are the '
+                     'engine\'s wording, so never reword them. Take every number you mention from them or from the result field.')
         if stage == 'inoculation':
-            parts.append('Report the before, during and after curves with this sentence, word for word, and add nothing '
-                         'else about what the messages would do (no "marginal", "small", "limited" or "suggests"): "'
-                         + view['result']['curves_sentence'] + '"')
+            # A live agent read saturated before/during/after curves as "marginal effects due to saturation".
+            parts.append('The first of the sentences reports the before, during and after curves: add nothing else '
+                         'about what the messages would do (no "marginal", "small", "limited" or "suggests").')
     if undecided := body.get('undecided'):
         parts.append(f'{len(undecided)} record(s) still need an accept or reject decision from the researcher before '
                      'the repository is complete.')

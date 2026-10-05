@@ -63,6 +63,8 @@ class JourneyTests(unittest.TestCase):
     def test_guide_lists_thirteen_stages(self):
         guide = self.client.get('/engine/journey/stages').json()
         self.assertEqual([stage['number'] for stage in guide['stages']], list(range(1, 14)))
+        self.assertTrue(all(stage['limits'] for stage in guide['stages']))
+        self.assertIn('Not a forecast', guide['stages'][4]['limits'])
         self.assertEqual(self.journey['next_stage'], 'intake')
 
     def test_full_journey_in_order(self):
