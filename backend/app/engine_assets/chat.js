@@ -1140,7 +1140,7 @@ function paramForm(values,{skill}={}){
   const select=(name,label,value,options)=>{const node=el('select',{name},options.map(([v,t])=>el('option',{value:v,text:t})));node.value=value;return el('label',{},label,node);};
   return el('form',{class:'form'},
     skill!==undefined?select('skill','Workflow',skill==='auto'?'scenario':skill,[['evidence','Evidence interpretation'],['scenario','Scenario comparison'],['sensitivity','Sensitivity experiment']]):null,
-    select('model','Model',values.model,[['compartmental','Compartmental'],['hybrid','Hybrid'],['agent_based','Agent-based proxy']]),
+    select('model','Model',values.model,[['compartmental','Compartmental'],['hybrid','Hybrid'],['agent_based','Agent-based (network)']]),
     range('intervention_strength','Intervention strength',values.intervention_strength),
     range('initial_adoption','Initial adoption',values.initial_adoption),
     range('narrative_influence','Narrative influence',values.narrative_influence),

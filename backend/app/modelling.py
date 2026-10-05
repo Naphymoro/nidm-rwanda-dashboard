@@ -1,4 +1,5 @@
 from typing import Dict, List
+from .network_model import network_assumptions, run_network_model
 from .schemas import ModelMode
 
 
@@ -138,7 +139,7 @@ def run_agent_based_proxy(horizon_days: int, parameters: Dict[str, float]) -> Li
 
 def run_hybrid_model(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
     comp = run_compartmental_model(horizon_days, parameters)
-    abm = run_agent_based_proxy(horizon_days, parameters)
+    abm = run_network_model(horizon_days, parameters)
     return [
         {
             "day": comp[i]["day"],
@@ -161,7 +162,7 @@ def run_digital_twin(model_mode: ModelMode, horizon_days: int, parameters: Dict[
     if model_mode == ModelMode.compartmental:
         return run_compartmental_model(horizon_days, parameters)
     if model_mode == ModelMode.agent_based:
-        return run_agent_based_proxy(horizon_days, parameters)
+        return run_network_model(horizon_days, parameters)
     return run_hybrid_model(horizon_days, parameters)
 
 
@@ -173,13 +174,15 @@ def model_assumptions(model_mode: ModelMode, parameters: Dict[str, float]) -> Di
         model_type = "Full NDIM compartment model"
         compartments = ["S", "M", "T", "I", "R"]
     elif model_mode == ModelMode.agent_based:
-        model_type = "Agent-based proxy"
+        model_type = "Network agent-based model"
         compartments = []
     else:
         model_type = "Hybrid NDIM model"
         compartments = ["S", "M", "T", "I", "R"]
+    network = network_assumptions(parameters) if model_mode != ModelMode.compartmental and parameters.get("model_family") != "prototype_adoption_curve" else None
     return {
         "model_type": model_type,
+        **({"network": network} if network else {}),
         "compartments": compartments,
         "note": "NDIM model outputs include uncertainty bands when evidence strength is available.",
         "parameters": parameters,

@@ -14,7 +14,8 @@ LIMITS = {
     'encoding': 'Scores come from English keywords in each record: interpretations for review, not measurements of '
                 'trust or barriers in a community.',
     'compartmental': 'Illustrative, uncalibrated curve computed from the keyword scores. Not a forecast.',
-    'agents': 'A deterministic proxy for household behaviour, not a simulation of real households. Not a forecast.',
+    'agents': 'Simulated households on an assumed network (villages of clustered neighbours), not real households or a '
+              'measured network. The band shows chance across runs only. Not a forecast.',
     'digital': 'Re-runs the hybrid model from the researcher\'s field observations. It is still uncalibrated: one '
                'observed level does not fit the model to reality.',
     'bayes': 'The signal update treats keyword scores as pseudo-observations; the number of pseudo-trials is a tool '
@@ -170,8 +171,14 @@ def explanation(stage, output, journey):
         return _curve_story(output, 'The compartmental model treats everyone as one population moving between states: '
                                     'not yet persuaded, misinformed, truth-aligned, inoculated, and adopting.')
     if stage == 'agents':
-        text = _curve_story(output, 'The agent-based model follows households one by one, letting neighbours and media '
-                                    'nudge each other.')
+        net = output['assumptions']['network']
+        text = _curve_story(output, f"The agent-based model simulates {net['households']} households on an assumed "
+                                    f"network: {net['topology_meaning']}, with {_num(net['mean_ties'])} ties per household "
+                                    'on average. Each day a household may adopt through media or through neighbours who '
+                                    'already adopted, and may stop because of barriers.')
+        last = output['trajectory'][-1]
+        text += (f" Across {net['replicates']} runs with different chance events, final adoption ranges from "
+                 f"{_num(last['adoption_lower'])} to {_num(last['adoption_upper'])} (10th to 90th percentile).")
         if outputs.get('compartmental'):
             text += f" For comparison, the compartmental model ends at {final_adoption(outputs['compartmental']['trajectory'])}."
         return text

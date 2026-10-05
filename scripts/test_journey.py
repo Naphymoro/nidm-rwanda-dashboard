@@ -74,7 +74,10 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(len(encoding['encoded']), 2)
         self.assertEqual(len(encoding['diagnoses']), 2)
         self.stage('compartmental')
-        self.stage('agents')
+        agents = self.stage('agents')
+        said = agents['presentation']['stages']['agents']['explanation']
+        self.assertIn('1000 households on an assumed network', said)  # it said "follows households one by one" of a proxy
+        self.assertNotIn('one by one', said)
         digital = self.stage('digital', observed_adoption=0.2, trust_shift=0.0, barrier_shift=0.05,
                              approval_statement='These are our June field numbers.')['output']
         self.assertEqual(digital['model'], 'hybrid')

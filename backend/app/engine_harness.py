@@ -94,7 +94,7 @@ def build_plan(payload, resource_snapshot=None):
     if payload.consent == 'unconfirmed':
         warnings.append('Source permission is unconfirmed. Confirm research use before retaining or sharing this evidence.')
     if payload.model == 'agent_based' and skill != 'evidence':
-        blocked.append('The existing agent-based proxy does not use intervention_strength. Select compartmental or hybrid for an intervention comparison; the harness will not substitute a model.')
+        blocked.append('The agent-based network model does not use intervention_strength. Select compartmental or hybrid for an intervention comparison; the harness will not substitute a model.')
     if payload.model == 'hybrid':
         warnings.append('Hybrid adoption blends 55% compartmental and 45% deterministic proxy output. Its reported compartments describe only the compartmental component.')
     if profile == 'thorough' and measured['recommended_profile'] == 'economy':

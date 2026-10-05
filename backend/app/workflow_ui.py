@@ -12155,7 +12155,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
       function renderDigitalTwinBenchmark() {
         const rows = [
           ["Observed system state", "partially implemented", "Manual observed adoption, trust shift, barrier shift, and feedback note."],
-          ["Virtual representation", "implemented", "Hybrid NDIM run: 55% compartmental S/M/T/I/R model plus 45% agent-based proxy."],
+          ["Virtual representation", "implemented", "Hybrid NDIM run: 55% compartmental S/M/T/I/R model plus 45% network agent-based model (simulated households on an assumed village network)."],
           ["Bidirectional data flow", "partially implemented", "Observations rerun the virtual model; outputs feed Bayesian/RL/policy stages. No automatic live sensor stream yet."],
           ["Calibration", "partially implemented", "Feedback deltas update trust/barrier parameters for the twin rerun; no formal parameter-estimation loop yet."],
           ["Scenario modelling", "partially implemented", "Current scenario is baseline versus feedback-adjusted twin; inoculation lab adds before/during/after narrative-vaccine runs."],
@@ -12219,7 +12219,7 @@ WORKFLOW_UI_HTML = r"""<!doctype html>
                   <div class="field"><label for="feedbackNote">Feedback note</label><input id="feedbackNote" value="${escapeHtml(state.feedback.note)}" placeholder="district feedback, survey note..." /></div>
                 </div>
                 ${mathBlock("\\begin{aligned}error_t &= observed_t - predicted_t \\\\ \\theta_{t+1} &= \\theta_t + \\lambda error_t \\\\ trust_{t+1} &= clamp(trust_t + trust\\_shift, 0, 1) \\\\ barrier_{t+1} &= clamp(barrier_t + barrier\\_shift, 0, 1) \\end{aligned}")}
-                <div class="guide-note"><strong>Guiding note</strong><p>The virtual model running here is the hybrid NDIM model: a weighted blend of the compartmental S/M/T/I/R model and the agent-based proxy. Observed adoption resets the starting state; trust and barrier shifts now directly alter the twin rerun parameters.</p></div>
+                <div class="guide-note"><strong>Guiding note</strong><p>The virtual model running here is the hybrid NDIM model: a weighted blend of the compartmental S/M/T/I/R model and the network agent-based model. Observed adoption resets the starting state; trust and barrier shifts now directly alter the twin rerun parameters.</p></div>
                 <div class="guide-note"><strong>How previous stages feed the twin</strong><p>The twin starts with the ODE and agent model outputs, then checks them against field feedback. If observed adoption is lower than predicted, the twin treats the original model as over-optimistic. If trust rises or barriers fall after an intervention, the twin reruns the forecast with those changes. This is why the digital twin is a feedback loop, not just another chart.</p></div>
                 ${renderDigitalFeedbackChain()}
                 <div class="button-row"><button class="button primary" id="runDigital" type="button">Apply feedback and rerun twin</button></div>
@@ -15010,7 +15010,7 @@ bridge_i &= \operatorname{count}(cross\_community\_links_i)
 
       <h2>7. Digital twin feedback derivation</h2>
       <p>The current NDIM implementation should be read as a <strong>prototype digital twin feedback loop</strong>. It is more than a static scenario chart because observed field feedback changes the virtual model run and feeds later Bayesian/RL/policy stages. It is not yet a full operational digital twin because it does not continuously ingest live field streams, automatically estimate all parameters, or maintain scheduled state synchronization.</p>
-      <p><strong>Model running inside the twin:</strong> the Digital Twin stage calls the backend <code>/simulate</code> endpoint with <code>model_mode = hybrid</code>. The backend runs a hybrid NDIM model, currently a weighted blend of the documented compartmental S/M/T/I/R model and an agent-based proxy:</p>
+      <p><strong>Model running inside the twin:</strong> the Digital Twin stage calls the backend <code>/simulate</code> endpoint with <code>model_mode = hybrid</code>. The backend runs a hybrid NDIM model, currently a weighted blend of the documented compartmental S/M/T/I/R model and a network agent-based model (simulated households on an assumed village network):</p>
       <div class="math-display">\begin{aligned}
 A_{hybrid}(t) &= 0.55A_{ODE}(t) + 0.45A_{ABM}(t)
 \end{aligned}</div>
