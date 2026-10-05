@@ -52,4 +52,4 @@ def environment_manifest():
         except importlib.metadata.PackageNotFoundError:
             packages[name] = None
     return {'python': platform.python_version(), 'platform': platform.system(), 'packages': packages,
-            'random_seed': None, 'seed_reason': 'Selected engine tools are deterministic; no random sampling.'}
+            'random_seed': None, 'seed_reason': 'The compartmental model has no random sampling. The agent-based network model (also 45% of hybrid) samples networks and chance events from a fixed seed (network_seed, default 7), so the same inputs repeat exactly.'}
