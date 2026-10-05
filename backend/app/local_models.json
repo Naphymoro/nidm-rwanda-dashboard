@@ -1,0 +1,137 @@
+{
+ "family": "ndim-qwen3-1.7b",
+ "base": "qwen3:1.7b",
+ "promoted": "ndim-qwen3-1.7b:v3",
+ "note": "Written by scripts/local_ai_training/pipeline.py; the Studio model picker reads it (backend/app/agent.py).",
+ "versions": [
+  {
+   "date": "2026-10-01",
+   "model": "ndim-qwen3-1.7b:v1",
+   "verdict": "legacy",
+   "reasons": [
+    "Trained before the gate existed: became a copier and stopped calling tools."
+   ],
+   "scores": {
+    "answers.clean": 1.0,
+    "answers.traps": 1.0,
+    "answers.key_numbers": 1.0,
+    "tools.tool_propose": 0.0,
+    "tools.no_fake_confirm": 0.5,
+    "tools.tool_records": 0.0,
+    "tools.tool_status": 0.0,
+    "tools.tool_stage": 0.0,
+    "tools.no_fake_decision": 0.4,
+    "tools.all": 0.1,
+    "n": {
+     "answers.clean": 100,
+     "answers.traps": 60,
+     "answers.key_numbers": 40
+    }
+   }
+  },
+  {
+   "date": "2026-10-01",
+   "model": "ndim-qwen3-1.7b:v2",
+   "verdict": "legacy",
+   "reasons": [
+    "Trained before the gate existed: learned \"yes means act\" (faked confirmations)."
+   ],
+   "scores": {
+    "answers.clean": 0.97,
+    "answers.traps": 0.883,
+    "answers.key_numbers": 1.0,
+    "tools.tool_propose": 1.0,
+    "tools.no_fake_confirm": 0.0,
+    "tools.tool_records": 1.0,
+    "tools.no_fake_add": 0.0,
+    "tools.no_fake_review": 0.0,
+    "tools.tool_status": 0.7,
+    "tools.next_answer": 0.522,
+    "tools.tool_stage": 0.986,
+    "tools.no_fake_decision": 0.467,
+    "tools.all": 0.534,
+    "n": {
+     "answers.clean": 100,
+     "answers.traps": 60,
+     "answers.key_numbers": 40,
+     "tools.next_answer": 90,
+     "tools.tool_stage": 70,
+     "tools.no_fake_decision": 60,
+     "tools.no_fake_confirm": 30,
+     "tools.no_fake_add": 20,
+     "tools.no_fake_review": 20,
+     "tools.tool_propose": 10,
+     "tools.tool_records": 10,
+     "tools.tool_status": 10
+    }
+   }
+  },
+  {
+   "date": "2026-10-02",
+   "model": "ndim-qwen3-1.7b:v3",
+   "verdict": "promoted",
+   "reasons": [
+    "Promoted by hand before the gate existed; better than the base model on every safety item."
+   ],
+   "scores": {
+    "answers.clean": 0.98,
+    "answers.traps": 0.733,
+    "answers.key_numbers": 0.967,
+    "tools.tool_propose": 1.0,
+    "tools.no_fake_confirm": 0.4,
+    "tools.tool_records": 1.0,
+    "tools.no_fake_add": 0.5,
+    "tools.no_fake_review": 0.7,
+    "tools.tool_status": 0.5,
+    "tools.next_answer": 0.967,
+    "tools.tool_stage": 1.0,
+    "tools.no_fake_decision": 0.683,
+    "tools.all": 0.809,
+    "n": {
+     "answers.clean": 100,
+     "answers.traps": 60,
+     "answers.key_numbers": 40,
+     "tools.next_answer": 90,
+     "tools.tool_stage": 70,
+     "tools.no_fake_decision": 60,
+     "tools.no_fake_confirm": 30,
+     "tools.no_fake_add": 20,
+     "tools.no_fake_review": 20,
+     "tools.tool_propose": 10,
+     "tools.tool_records": 10,
+     "tools.tool_status": 10
+    }
+   },
+   "base_scores": {
+    "answers.clean": 0.84,
+    "answers.traps": 0.45,
+    "answers.key_numbers": 0.36,
+    "tools.tool_propose": 0.9,
+    "tools.no_fake_confirm": 0.0,
+    "tools.tool_records": 0.9,
+    "tools.no_fake_add": 0.0,
+    "tools.no_fake_review": 0.0,
+    "tools.tool_status": 0.4,
+    "tools.next_answer": 0.067,
+    "tools.tool_stage": 0.629,
+    "tools.no_fake_decision": 0.0,
+    "tools.all": 0.225,
+    "n": {
+     "answers.clean": 100,
+     "answers.traps": 60,
+     "answers.key_numbers": 40,
+     "tools.next_answer": 90,
+     "tools.tool_stage": 70,
+     "tools.no_fake_decision": 60,
+     "tools.no_fake_confirm": 30,
+     "tools.no_fake_add": 20,
+     "tools.no_fake_review": 20,
+     "tools.tool_propose": 10,
+     "tools.tool_records": 10,
+     "tools.tool_status": 10
+    }
+   },
+   "note": "Qwen3 1.7B trained on NDIM journeys: cites the engine, fast; experimental"
+  }
+ ]
+}

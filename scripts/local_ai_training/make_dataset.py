@@ -10,6 +10,8 @@ and advice ("which action should we take").
     python scripts/local_ai_training/make_dataset.py --journeys 24 --out data/heldout.jsonl --seed 99 --heldout
     python scripts/local_ai_training/make_dataset.py --tools --journeys 60 --out data/tools.jsonl --seed 2
 
+--schema-out also writes the Studio's tool list, for training and evaluation prompts.
+
 --tools writes tool-use examples instead: the Studio situations where the right reply is a tool call (propose the
 journey with the question verbatim, fill the evidence form, run the next computing stage, read the status) and the
 ones where it is not acting (the researcher's decisions belong to the card). A first fine-tune without these copied
@@ -210,7 +212,11 @@ def main():
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--heldout', action='store_true')
     parser.add_argument('--tools', action='store_true', help='write tool-use examples instead of stage answers')
+    parser.add_argument('--schema-out', help="also write the Studio's tool list (as Ollama receives it) to this file")
     args = parser.parse_args()
+    if args.schema_out:
+        Path(args.schema_out).write_text(json.dumps([{'type': 'function', 'function': {key: tool[key] for key in ('name', 'description', 'parameters')}}
+                                                     for tool in agent.TOOLS], indent=1), encoding='utf-8')
     rng = random.Random(args.seed)
     random.seed(args.seed)
     places = HELDOUT_PLACES if args.heldout else PLACES

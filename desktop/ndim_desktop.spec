@@ -10,6 +10,7 @@ PROJECT = ROOT.parent
 
 datas = [
     (str(PROJECT / "backend" / "app" / "engine_assets"), "app/engine_assets"),
+    (str(PROJECT / "backend" / "app" / "local_models.json"), "app"),
     (str(PROJECT / "docs"), "docs"),
     (str(PROJECT / "stress_test_corpus"), "stress_test_corpus"),
 ]

@@ -25,8 +25,9 @@ from transformers import (AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfi
 # The generator writes many identical "limits" answers; a balanced sample teaches the behaviours without drowning them.
 MIX = {'explain': 450, 'cause': 150, 'forecast': 120, 'advice': 120, 'limits': 60,
        'tool_stage': 200, 'tool_propose': 60, 'tool_records': 60, 'tool_status': 60, 'next_answer': 150,
-       'no_fake_confirm': 120, 'no_fake_add': 80, 'no_fake_review': 80, 'no_fake_decision': 120, 'replay': 200}
+       'no_fake_confirm': 120, 'no_fake_add': 80, 'no_fake_review': 80, 'no_fake_decision': 120, 'replay': 200, 'lesson': 400}
 # v3: as many "it is your decision, use the card" replies as "run the next stage" calls (v2 learned "yes means act").
+# 'lesson': answers a researcher approved or corrected in the Studio (export_lessons.py); never unchecked replies.
 
 
 def balanced(rows, seed):
@@ -82,13 +83,15 @@ def main():
     parser.add_argument('--max-len', type=int, default=3584)
     parser.add_argument('--seed', type=int, default=7)
     parser.add_argument('--merge', action='store_true')
+    parser.add_argument('--max-steps', type=int, default=-1, help='stop after this many optimizer steps (smoke tests)')
+    parser.add_argument('--max-examples', type=int, help='keep only this many of the balanced examples (smoke tests)')
     args = parser.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
     tokenizer = AutoTokenizer.from_pretrained(args.base)
     tools = json.load(open(args.tools_schema, encoding='utf-8')) if args.tools_schema else None
-    rows = balanced([json.loads(line) for path in args.data for line in open(path, encoding='utf-8')], args.seed)
+    rows = balanced([json.loads(line) for path in args.data for line in open(path, encoding='utf-8')], args.seed)[:args.max_examples]
     data = [encode(tokenizer, row, args.max_len, tools) for row in rows]
     print('mix:', {kind: sum(1 for row in rows if row['kind'] == kind) for kind in MIX}, flush=True)
     print(f'{len(data)} examples; longest {max(len(d["input_ids"]) for d in data)} tokens; '
@@ -105,14 +108,14 @@ def main():
     trainer = Trainer(
         model=model, train_dataset=data, data_collator=lambda batch: collate(batch, tokenizer.pad_token_id),
         args=TrainingArguments(output_dir=str(out / 'checkpoints'), per_device_train_batch_size=1, gradient_accumulation_steps=8,
-                               num_train_epochs=args.epochs, learning_rate=args.lr, lr_scheduler_type='cosine', warmup_ratio=0.05,
+                               num_train_epochs=args.epochs, max_steps=args.max_steps, learning_rate=args.lr, lr_scheduler_type='cosine', warmup_ratio=0.05,
                                logging_steps=10, save_strategy='no', bf16=True, gradient_checkpointing=True,
                                optim='paged_adamw_8bit', report_to=[], seed=args.seed, remove_unused_columns=False))
     trainer.train()
     model.save_pretrained(out / 'adapter')
     tokenizer.save_pretrained(out / 'adapter')
     (out / 'train_info.json').write_text(json.dumps({'base': args.base, 'examples': len(data), 'mix': MIX, 'tools': bool(tools), 'epochs': args.epochs,
-                                                     'lr': args.lr, 'rank': args.rank, 'log': trainer.state.log_history}, indent=1))
+                                                     'max_steps': args.max_steps, 'lr': args.lr, 'rank': args.rank, 'log': trainer.state.log_history}, indent=1))
 
     if args.merge:  # full-precision merge for Ollama import; the adapter alone is kept too
         del model, trainer
