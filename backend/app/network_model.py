@@ -1,7 +1,8 @@
 """Network agent-based model: households on an assumed social network, adopting through media and neighbours.
 
 Each household is adopting or not. Every day a non-adopter adopts with a hazard from media (as in the mean-field proxy)
-plus a hazard from its neighbours, proportional to the share of its neighbours who already adopted; an adopter stops
+plus a hazard from its neighbours, proportional to the share of its neighbours who already adopted, plus an outreach
+hazard set by intervention_strength (read as the compartmental model reads it, see intervention_hazard); an adopter stops
 with the proxy's friction hazard. On a fully mixed population the neighbour share is the population share, so the
 expected curve is the old proxy's curve (run_agent_based_proxy); the network is what changes it.
 
@@ -91,8 +92,33 @@ def settings(parameters: Dict[str, float]) -> Dict[str, object]:
     return out
 
 
+# intervention_strength in run_compartmental_model (modelling.py) opens two routes from not adopting into adopting
+# (adoption there is T + I + R): susceptible -> inoculated, 0.020 x strength per day (part of iota), and misinformed ->
+# truth-aligned, 0.012 x strength per day (part of rho). Its third use, 0.018 x strength in gamma, moves inoculated ->
+# durable, which stays inside adoption. Households here are only adopting or not, so a non-adopter gets the two rates
+# mixed by that model's starting split of non-adopters into susceptible (S0) and misinformed (M0). Strength 0 adds
+# nothing. Missing strength counts as 0 here (the compartmental model assumes 0.15), so runs that never set it keep
+# their earlier results.
+INTERVENTION_RATES = {'susceptible': 0.020, 'misinformed': 0.012}
+
+
+def intervention_hazard(parameters: Dict[str, float]) -> float:
+    """Daily chance, per non-adopting household, of adopting through the intervention lever."""
+    clamp = lambda value: max(0.0, min(1.0, float(value)))
+    strength = clamp(parameters.get('intervention_strength', 0.0))
+    if strength == 0.0:
+        return 0.0
+    initial, barrier = clamp(parameters.get('initial_adoption', 0.10)), clamp(parameters.get('barrier_score', 0.35))
+    susceptible = max(0.0, float(parameters.get('S0', max(0.05, 0.72 - initial * 0.30))))
+    misinformed = max(0.0, float(parameters.get('M0', 0.10 + barrier * 0.12
+                                                + clamp(parameters.get('misinformation_risk', 0.0)) * 0.08)))
+    share = susceptible / ((susceptible + misinformed) or 1.0)
+    return strength * (INTERVENTION_RATES['susceptible'] * share + INTERVENTION_RATES['misinformed'] * (1.0 - share))
+
+
 def rates(parameters: Dict[str, float]) -> Dict[str, float]:
-    """The mean-field proxy's media and friction terms, so both models read the same parameters the same way."""
+    """The mean-field proxy's media and friction terms, so both models read the same parameters the same way, plus the
+    intervention term (zero unless intervention_strength is set)."""
     clamp = lambda value: max(0.0, min(1.0, float(value)))
     inoculation = clamp(parameters.get('inoculation_strength', 0.0))
     messenger = clamp(parameters.get('trusted_messenger_fit', 0.0))
@@ -104,6 +130,7 @@ def rates(parameters: Dict[str, float]) -> Dict[str, float]:
         'friction': float(parameters.get('barrier_score', 0.35)) * 0.025
                     + clamp(parameters.get('misinformation_risk', 0.0)) * 0.008
                     + clamp(parameters.get('reactance_penalty', 0.0)) * 0.010,
+        'intervention': intervention_hazard(parameters),
     }
 
 
@@ -136,7 +163,7 @@ def simulate_runs(horizon_days: int, parameters: Dict[str, float]) -> Dict[str, 
             if s['contagion'] == 'complex':  # neighbours persuade only once at least two of them have adopted
                 peer_hazard = np.where(adopting_neighbours >= 2, peer_hazard, 0.0)
             waiting = ~adopted
-            adopt = waiting & (rng.random(n) < np.minimum(1.0, peer_hazard + r['media']))
+            adopt = waiting & (rng.random(n) < np.minimum(1.0, peer_hazard + r['media'] + r['intervention']))
             drop = adopted & (rng.random(n) < drop_probability)
             peer_flow[run, day] = float((peer_hazard * waiting).mean())
             media_flow[run, day] = r['media'] * float(waiting.mean())
@@ -223,7 +250,14 @@ def network_assumptions(parameters: Dict[str, float]) -> Dict[str, object]:
         rng = np.random.default_rng(np.random.default_rng(s['seed']).integers(2 ** 63))
         shape = describe(*build_network(s['topology'], s['households'], rng, s['village_size'], s['neighbours'],
                                         s['rewire'], s['between_village_ties']), s['households'])
-    return {**s, 'topology_meaning': TOPOLOGIES[s['topology']], **shape,
+    hazard = intervention_hazard(parameters)
+    intervention = {'intervention_strength': float(parameters.get('intervention_strength', 0.0)),
+                    'daily_adoption_chance_per_non_adopter': round(hazard, 6),
+                    'mapping': 'intervention_strength enters as in the compartmental model: 0.020 x strength per day for '
+                               'households counted as not yet persuaded and 0.012 x strength for those counted as '
+                               'misinformed, mixed by that model\'s starting split; 0 adds nothing. An abstract lever, '
+                               'not a description of any real programme.'}
+    return {**s, 'topology_meaning': TOPOLOGIES[s['topology']], **shape, 'intervention': intervention,
             'band': f"10th to 90th percentile across {s['replicates']} runs: chance only, not uncertainty in the scores "
                     'or in the network shape',
             'status': 'assumed network, not measured; illustrative, not a forecast'}

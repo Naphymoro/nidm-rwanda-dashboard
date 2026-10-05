@@ -93,10 +93,10 @@ def build_plan(payload, resource_snapshot=None):
         blocked.append('The available encoder uses English keywords. Supply an explicitly translated English source before execution; no translation or scoring substitution is automatic.')
     if payload.consent == 'unconfirmed':
         warnings.append('Source permission is unconfirmed. Confirm research use before retaining or sharing this evidence.')
-    if payload.model == 'agent_based' and skill != 'evidence':
-        blocked.append('The agent-based network model does not use intervention_strength. Select compartmental or hybrid for an intervention comparison; the harness will not substitute a model.')
+    if payload.model in ('agent_based', 'hybrid') and skill != 'evidence':
+        warnings.append('In the agent-based network model, intervention_strength adds a daily chance of adopting for households that have not adopted, at the rates the compartmental model uses for it. The household network is assumed, not measured; results are illustrative, not a forecast.')
     if payload.model == 'hybrid':
-        warnings.append('Hybrid adoption blends 55% compartmental and 45% deterministic proxy output. Its reported compartments describe only the compartmental component.')
+        warnings.append('Hybrid adoption blends 55% compartmental and 45% network agent-based output. Its reported compartments describe only the compartmental component.')
     if profile == 'thorough' and measured['recommended_profile'] == 'economy':
         warnings.append('Thorough was explicitly selected on a constrained host; execution stays serial within this experiment.')
     prior = []

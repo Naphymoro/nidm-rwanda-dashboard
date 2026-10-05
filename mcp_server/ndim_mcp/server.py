@@ -199,8 +199,10 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         consent: Annotated[Literal['synthetic', 'research_use', 'unconfirmed'], Field(description=(
             '"research_use" only if the researcher confirmed permission to use this evidence; "synthetic" for demo data; '
             'otherwise "unconfirmed". Never upgrade this yourself.'))] = 'unconfirmed',
-        model: Annotated[Literal['compartmental', 'agent_based', 'hybrid'], Field(description='Model family. agent_based ignores '
-            'intervention strength, so it is blocked for scenario and sensitivity workflows.')] = 'compartmental',
+        model: Annotated[Literal['compartmental', 'agent_based', 'hybrid'], Field(description='Model family. compartmental: one '
+            'population moving between states. agent_based: simulated households on an assumed network, where '
+            'intervention_strength adds a daily chance of adopting at the compartmental model\'s rates. hybrid: 55% '
+            'compartmental plus 45% agent_based.')] = 'compartmental',
         profile: Annotated[Literal['auto', 'economy', 'balanced', 'thorough'], Field(description='Sensitivity grid density: 3, 7 or 11 points.')] = 'auto',
         horizon_days: Annotated[int, Field(ge=7, le=365)] = 90,
         intervention_strength: Annotated[float, Field(ge=0, le=1, description='The only intervention lever in the model. '
@@ -359,7 +361,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         mode: Annotated[Literal['one_at_a_time', 'grid'], Field(description=(
             'one_at_a_time: a base run plus each value of each factor alone (attributable). grid: every combination '
             '(interactions, but differences cannot be attributed to one factor). At most 24 runs.'))] = 'one_at_a_time',
-        model: Annotated[Literal['compartmental', 'hybrid'], Field(description='agent_based cannot express an intervention.')] = 'compartmental',
+        model: Annotated[Literal['compartmental', 'agent_based', 'hybrid'], Field(description='As in ndim_plan_experiment.')] = 'compartmental',
         horizon_days: Annotated[int, Field(ge=7, le=365)] = 90,
         intervention_strength: Annotated[float, Field(ge=0, le=1)] = 0.3,
         initial_adoption: Annotated[float, Field(ge=0, le=1)] = 0.1,

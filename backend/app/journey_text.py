@@ -178,8 +178,11 @@ def explanation(stage, output, journey):
         net = output['assumptions']['network']
         text = _curve_story(output, f"The agent-based model simulates {net['households']} households on an assumed "
                                     f"network: {net['topology_meaning']}, with {_num(net['mean_ties'])} ties per household "
-                                    'on average. Each day a household may adopt through media or through neighbours who '
-                                    'already adopted, and may stop because of barriers.')
+                                    'on average. Each day a household may adopt through media, through neighbours who '
+                                    'already adopted' + (f", or through the abstract intervention lever (strength "
+                                    f"{_num(net['intervention']['intervention_strength'])}, read as in the compartmental "
+                                    'model)' if net.get('intervention', {}).get('intervention_strength') else '')
+                                    + ', and may stop because of barriers.')
         last = output['trajectory'][-1]
         text += (f" Across {net['replicates']} runs with different chance events, final adoption ranges from "
                  f"{_num(last['adoption_lower'])} to {_num(last['adoption_upper'])} (10th to 90th percentile).")
