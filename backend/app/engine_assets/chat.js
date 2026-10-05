@@ -577,14 +577,17 @@ function evidenceForm(){
   const d=state.journeyDraft;
   if(!d.records)d.records=(state.recordsProposal||[{text:''}]).map(r=>({text:r.text||'',admin_unit:r.admin_unit||'',source_name:r.source_name||'',period:r.period||'',consent:'',language:'en'}));
   const rows=d.records.map((record,index)=>{
-    const bind=(key,props)=>{const input=el(props.tag||'input',{...props,tag:null,oninput:e=>{record[key]=e.target.value;}});input.value=record[key];return input;};
+    const bind=(key,props)=>{const input=el(props.tag||'input',{...props,tag:null,oninput:e=>{record[key]=e.target.value;}});input.value=record[key]??'';return input;};
     return el('div',{class:'jc-record'},el('b',{text:`Record ${index+1}`}),
       field('Story or field note, unchanged',bind('text',{tag:'textarea',rows:'3',maxlength:'20000'})),
       el('div',{class:'jc-row'},field('Place',bind('admin_unit',{placeholder:'e.g. Kicukiro / Niboye'})),field('Source',bind('source_name',{placeholder:'e.g. Field team interview 4'})),
         field('Period',bind('period',{placeholder:'e.g. 2026-Q2'}))),
       el('div',{class:'jc-row'},field('Permission',(()=>{const s=el('select',{onchange:e=>{record.consent=e.target.value;}},CONSENTS.map(([v,t])=>el('option',{value:v,text:t})));s.value=record.consent;return s;})()),
-        field('Language',(()=>{const s=el('select',{onchange:e=>{record.language=e.target.value;}},[['en','English'],['rw','Kinyarwanda'],['fr','French'],['other','Other']].map(([v,t])=>el('option',{value:v,text:t})));s.value=record.language;return s;})(),
-          'The encoder reads English only; other languages are blocked at the gate.')));
+        field('Language',(()=>{const s=el('select',{onchange:e=>{record.language=e.target.value;rerenderJourney();}},[['en','English'],['rw','Kinyarwanda'],['fr','French'],['other','Other']].map(([v,t])=>el('option',{value:v,text:t})));s.value=record.language;return s;})(),
+          'The encoder reads English only: a record in another language needs an English translation that a person has checked.')),
+      record.language==='en'?null:el('div',{class:'jc-row'},
+        field('English translation, checked',bind('translation_en',{tag:'textarea',rows:'3',maxlength:'20000'}),'Trust, barrier and theme scores read this translation; sentiment reads the original.'),
+        field('Translation checked by',bind('translation_checked_by',{placeholder:'Name of the person who checked it'}))));
   });
   return el('div',{class:'review-form'},el('b',{text:'Add your field notes'}),
     el('p',{class:'muted',text:state.recordsProposal?'NDIM filled this form from your message. Check every field: nothing is added until you click Add to journey.':'Type your notes here, or paste them in the chat and NDIM fills this form for you to check.'}),
@@ -594,7 +597,12 @@ function evidenceForm(){
       el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
         const missing=d.records.findIndex(r=>!r.text.trim()||!r.admin_unit.trim()||!r.source_name.trim()||!r.period.trim()||!r.consent);
         if(missing>=0){state.journeyError=`Record ${missing+1} needs its text, place, source, period and permission.`;rerenderJourney();return;}
-        const records=d.records.map(r=>({...r,text:r.text.trim()}));
+        const half=d.records.findIndex(r=>r.language!=='en'&&!(r.translation_en||'').trim()!==!(r.translation_checked_by||'').trim());
+        if(half>=0){state.journeyError=`Record ${half+1}: give the English translation and who checked it, or leave both empty.`;rerenderJourney();return;}
+        const records=d.records.map(({translation_en,translation_checked_by,...r})=>{
+          const out={...r,text:r.text.trim()};
+          if(r.language!=='en'&&(translation_en||'').trim())Object.assign(out,{translation_en:translation_en.trim(),translation_checked_by:translation_checked_by.trim()});
+          return out;});
         journeyAction(()=>post('/records',{records}),null);
       }},icon('check'),'Add to journey')));
 }
@@ -606,6 +614,7 @@ function decisionsForm(j){
     const choice=(v,label)=>el('label',{class:'jc-choice'},el('input',{type:'radio',name:'decide-'+record.record_id,value:v,disabled:(blocked&&v==='accept')||!!record.review,checked:value===v,onchange:()=>{d[record.record_id]=v;}}),el('span',{text:label}));
     return el('div',{class:'jc-record'},el('div',{},el('b',{text:record.admin_unit}),el('small',{class:'muted',text:` · ${record.source_name} · ${record.period} · ${human(record.consent)}`})),
       el('p',{text:record.excerpt+(record.excerpt.length>=160?'…':'')}),
+      record.translation_excerpt?el('p',{class:'muted',text:`English translation (checked by ${record.translation_checked_by}): ${record.translation_excerpt}${record.translation_excerpt.length>=160?'…':''}`}):null,
       el('div',{class:'small',text:`${GATE_LABEL[g.gate]||g.gate}${flags.length?': '+flags.join('; '):''}`}),
       el('div',{class:'jc-row'},choice('accept','Accept'),choice('reject','Reject')));
   });

@@ -20,7 +20,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from . import engine_store as store
 from .encoding import encode_rule_based
@@ -113,6 +113,18 @@ class EvidenceItem(BaseModel):
     source_type: Literal['field_note', 'interview', 'focus_group', 'survey_open_text', 'citizen_report', 'document'] = 'field_note'
     language: Literal['en', 'rw', 'fr', 'other'] = 'en'
     consent: Literal['synthetic', 'research_use', 'unconfirmed'] = 'unconfirmed'
+    # The keyword encoder reads English only: a non-English record passes the gate with an English translation and the
+    # name of the person who checked it. Keyword scores read the translation; sentiment reads the original.
+    translation_en: str | None = Field(default=None, min_length=1, max_length=20000)
+    translation_checked_by: str | None = Field(default=None, min_length=1, max_length=240)
+
+    @model_validator(mode='after')
+    def _translation_pair(self):
+        if bool(self.translation_en) != bool(self.translation_checked_by):
+            raise ValueError('translation_en and translation_checked_by go together: give both or neither')
+        if self.translation_en and self.language == 'en':
+            raise ValueError('translation_en is for records whose language is not English')
+        return self
 
 
 class JourneyCreate(BaseModel):
@@ -212,7 +224,8 @@ def log(journey, kind, message, **extra):
 
 def scan(item, others):
     """Port of the workbench's scanNarrative: flags for review, never silent edits."""
-    text, lower = item.text, item.text.lower()
+    text = item.text + ('\n' + item.translation_en if item.translation_en else '')
+    lower = text.lower()
     injection = [pattern for pattern in INJECTION if pattern in lower]
     pii = []
     if re.search(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', text, re.I):
@@ -222,20 +235,23 @@ def scan(item, others):
     if re.search(r'\b(?:national id|passport|id number|birth certificate)\b', text, re.I):
         pii.append('identity document mention')
     quality = []
-    if len(text.strip()) < 80:
+    if len(item.text.strip()) < 80:
         quality.append('short narrative')
     if re.search(r'(.)\1{12,}', text):
         quality.append('repeated-character anomaly')
-    normalized = ' '.join(lower.split())
+    normalized = ' '.join(item.text.lower().split())
     if normalized in others:
         quality.append('exact duplicate of an earlier record')
     risk = min(1.0, len(injection) * 0.28 + len(pii) * 0.18 + len(quality) * 0.08)
     blockers = []
-    if not any(character.isalnum() for character in text):
+    if not any(character.isalnum() for character in item.text):
         blockers.append('no readable words')
-    if item.language != 'en':
-        blockers.append('not English: the encoder reads English keywords only; supply a translation the researcher has checked')
     warnings = []
+    if item.language != 'en' and not item.translation_en:
+        blockers.append('not English: the encoder reads English keywords only; supply a translation the researcher has checked')
+    elif item.translation_en:
+        warnings.append(f'translated record: keyword scores will read the English translation checked by '
+                        f'{item.translation_checked_by}; compare it with the original before accepting')
     if item.consent == 'unconfirmed':
         warnings.append('consent unconfirmed: confirm research use before accepting')
     if injection:
@@ -250,7 +266,8 @@ def accepted(journey):
 
 
 def narrative(record, country):
-    return NarrativeRecord(narrative_id=record['record_id'], text=record['text'], metadata=NarrativeMetadata(
+    """The text the keyword encoder reads: the checked English translation when the record has one."""
+    return NarrativeRecord(narrative_id=record['record_id'], text=record.get('translation_en') or record['text'], metadata=NarrativeMetadata(
         source_type=record['source_type'], source_name=record['source_name'], country=country,
         admin_unit=record['admin_unit'], language=record['language'],
         provenance={'declared_by': 'researcher', 'consent': record['consent'], 'period': record['period']}))
@@ -269,14 +286,14 @@ def inoculation_signal(journey):
     return aggregate_inoculation_parameters(diagnoses)
 
 
-def sentiment_summary(records):
+def sentiment_summary(texts):
     """How many records read positive, neutral and negative, and by which method (the classifier reads Kinyarwanda too)."""
     status = sentiment_status()
     if not status['available']:
         return {'method': status['method'], 'counts': None}
     counts = {'positive': 0, 'neutral': 0, 'negative': 0}
-    for record in records:
-        result = classify_sentiment(record.text)
+    for text in texts:
+        result = classify_sentiment(text)
         if result:
             counts[result['label']] = counts.get(result['label'], 0) + 1
     return {'method': status['method'], 'counts': counts}
@@ -353,8 +370,10 @@ def vaccine_curve(base, strength, phase, agent):
 def run_stage(journey, stage, req):
     encoded_out = output(journey, 'encoding')
     if stage == 'encoding':
-        records = [narrative(record, journey['country']) for record in accepted(journey)]
-        encoded = [encode_rule_based(record, EncodingMode.manual, 'journey: deterministic English keyword encoder') for record in records]
+        kept = accepted(journey)
+        records = [narrative(record, journey['country']) for record in kept]
+        encoded = [encode_rule_based(record, EncodingMode.manual, 'journey: deterministic English keyword encoder',
+                                     sentiment_text=source['text']) for record, source in zip(records, kept)]
         diagnoses = [diagnose_inoculation_rule_based(record, item) for record, item in zip(records, encoded)]
         return {'encoded': [item.model_dump(mode='json') for item in encoded],
                 'diagnoses': [item.model_dump(mode='json') for item in diagnoses],
@@ -362,7 +381,8 @@ def run_stage(journey, stage, req):
                          'confidence': avg([e.confidence for e in encoded], None)},
                 'themes': top_items([theme for e in encoded for theme in e.themes], 6),
                 'inoculation_signal': aggregate_inoculation_parameters(diagnoses),
-                'sentiment': sentiment_summary(records),
+                'sentiment': sentiment_summary([source['text'] for source in kept]),
+                'translated': sum(bool(source.get('translation_en')) for source in kept),
                 'method': 'English keyword heuristics; interpretations, not measurements.'}
     if stage == 'compartmental':
         return simulate(ModelMode.compartmental, req.horizon_days, model_params(journey))
@@ -527,6 +547,8 @@ def public(journey, full=False):
     body = {key: journey[key] for key in ('journey_id', 'workspace_id', 'question', 'country', 'created_at', 'updated_at')}
     body['records'] = [{key: record[key] for key in ('record_id', 'admin_unit', 'source_name', 'source_type', 'period', 'language',
                                                      'consent', 'content_sha256', 'gate', 'review')} | {'excerpt': record['text'][:160]}
+                       | ({'translation_excerpt': record['translation_en'][:160], 'translation_checked_by': record['translation_checked_by']}
+                          if record.get('translation_en') else {})
                        for record in journey['records']]
     body['stages'] = rows
     body['next_stage'] = next_stage
@@ -584,6 +606,7 @@ def add_evidence(workspace: str, journey_id: str, req: EvidenceRequest):
         gate = scan(item, seen)
         seen.add(' '.join(item.text.lower().split()))
         record = {'record_id': str(uuid4()), **item.model_dump(), 'content_sha256': hashlib.sha256(item.text.encode()).hexdigest(),
+                  'translation_sha256': hashlib.sha256(item.translation_en.encode()).hexdigest() if item.translation_en else None,
                   'gate': gate, 'review': None, 'added_at': store.now()}
         journey['records'].append(record)
         added.append(record['record_id'])

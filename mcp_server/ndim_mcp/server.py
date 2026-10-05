@@ -69,8 +69,8 @@ Stage = Literal['encoding', 'compartmental', 'agents', 'digital', 'bayes', 'rl',
 
 
 class EvidenceRecord(BaseModel):
-    text: Annotated[str, Field(min_length=1, max_length=20000, description='The story or field note, unchanged. English '
-        'only: the encoder reads English keywords. If you translate, say so and get the researcher\'s confirmation.')]
+    text: Annotated[str, Field(min_length=1, max_length=20000, description='The story or field note, unchanged, in its '
+        'original language. Never replace it with a translation.')]
     admin_unit: Annotated[str, Field(min_length=1, max_length=240, description='Place, as the researcher gave it, e.g. "Kicukiro / Niboye".')]
     source_name: Annotated[str, Field(min_length=1, max_length=240, description='Who or what the record came from, e.g. "Field team interview 4".')]
     period: Annotated[str, Field(min_length=1, max_length=60, description='When it was collected, e.g. "2026-Q2". Ask; do not guess.')]
@@ -78,6 +78,11 @@ class EvidenceRecord(BaseModel):
     language: Literal['en', 'rw', 'fr', 'other'] = 'en'
     consent: Annotated[Literal['synthetic', 'research_use', 'unconfirmed'], Field(description=(
         '"research_use" only if the researcher confirmed permission; "synthetic" for demo data; otherwise "unconfirmed".'))] = 'unconfirmed'
+    translation_en: Annotated[str | None, Field(min_length=1, max_length=20000, description=(
+        'For a record not in English: the English translation the researcher gave you, word for word. Never your own '
+        'translation. Keyword scores read it (sentiment reads the original); without it a non-English record is blocked.'))] = None
+    translation_checked_by: Annotated[str | None, Field(min_length=1, max_length=240, description=(
+        'Name of the person who checked that translation, as the researcher said it. Ask; never fill it in yourself.'))] = None
 
 
 class EvidenceDecision(BaseModel):
@@ -500,7 +505,7 @@ def create_server(settings=None, client=None, host='127.0.0.1', port=8000):
         """Stages 1-2: add the researcher's records and run the SDMX gate on each (metadata, English, personal data,
         instruction-like text, duplicates). Records are stored unchanged; one record per story or note."""
         return await journey_call('POST', workspace_id, journey_id, '/evidence',
-                                  json={'records': [record.model_dump() for record in records]})
+                                  json={'records': [record.model_dump(exclude_none=True) for record in records]})
 
     @mcp.tool(annotations=WRITE)
     async def ndim_journey_record_decisions(workspace_id: Workspace, journey_id: JourneyId,

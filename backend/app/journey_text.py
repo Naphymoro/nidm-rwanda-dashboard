@@ -157,6 +157,9 @@ def explanation(stage, output, journey):
                 f"(strong). Across all records the average trust score is {_num(mean['trust'])}, barrier "
                 f"{_num(mean['barrier'])}, with encoder confidence {_num(mean['confidence'])}. The themes found most often: "
                 f'{themes}. These are counts of keywords in the text, not measurements of what people think.')
+        if output.get('translated'):
+            text += (f" For {output['translated']} of these record(s) the keywords were read in the English translation a "
+                     'researcher checked, not in the original wording; sentiment was read in the original.')
         counts = (output.get('sentiment') or {}).get('counts')
         if counts:
             text += (f" Sentiment, read by a classifier trained on African-language tweets (it reads Kinyarwanda too): "

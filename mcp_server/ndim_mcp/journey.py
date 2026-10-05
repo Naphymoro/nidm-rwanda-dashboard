@@ -155,6 +155,7 @@ def journey_view(body):
                        | {'gate': record['gate']['gate'], 'gate_flags': record['gate']['blockers'] + record['gate']['warnings']
                           + record['gate']['pii_flags'] + record['gate']['quality_flags'],
                           'decision': (record['review'] or {}).get('decision')}
+                       | ({'translation_checked_by': record['translation_checked_by']} if record.get('translation_checked_by') else {})
                        for record in body['records']]
     parts = []
     if stage := body.get('stage'):

@@ -108,7 +108,9 @@ def encode_rule_based(
     record: NarrativeRecord,
     mode: EncodingMode = EncodingMode.manual,
     note: str = "deterministic heuristic fallback",
+    sentiment_text: Optional[str] = None,
 ) -> EncodedNarrative:
+    """sentiment_text: the original wording when record.text is a checked English translation (the classifier reads Kinyarwanda)."""
     text = record.text.lower()
     provenance = record.metadata.provenance or {}
     tag_text = " ".join(str(tag).lower() for tag in (record.tags or []))
@@ -179,7 +181,7 @@ def encode_rule_based(
     sentiment = clamp((positive_stance + trust_positive + health * 0.4 + emotion * 0.12 - negative_stance - trust_negative - safety * 0.2 - misinformation * 0.15) / 10, -0.8, 0.8)
     # The keyword sentiment read every Kinyarwanda tweet as neutral; the classifier, when installed, replaces it.
     # Trust, barrier and themes stay keyword-based (English).
-    classified = classify_sentiment(record.text)
+    classified = classify_sentiment(sentiment_text or record.text)
     sentiment_note = (f"sentiment: {SENTIMENT_METHOD}, {classified['label']} "
                       f"(positive {classified['probabilities'].get('positive')}, negative {classified['probabilities'].get('negative')})"
                       if classified else "sentiment: English keyword heuristic")
