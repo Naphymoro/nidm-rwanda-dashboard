@@ -6,8 +6,8 @@ flagged (unverified numbers or claim words) cannot be approved as written, only 
 its own inventions.
 
 Everything stays in this computer's data folder. A researcher may mark an approved answer for sharing; with online sync
-on, only answers are shared, with the engine's numbers as context, never the question or any evidence text. An answer
-that quotes the evidence is kept local whatever the researcher ticked.
+on (answer_sync.py, off by default), only the answer text is shared, never the question, the engine's numbers or any
+evidence text. An answer that quotes the evidence is kept local whatever the researcher ticked.
 """
 import json
 import re
@@ -104,8 +104,24 @@ def forget(item_id):
     save(data)
 
 
+def set_share(item_id, share):
+    """Mark an approved or corrected answer for sharing, or withdraw it (sync then deletes it online)."""
+    data = load()
+    lesson = next((item for item in data['lessons'] if item['id'] == item_id), None)
+    if lesson is None:
+        raise HTTPException(404, 'Nothing with that id')
+    if share and lesson['kind'] == 'flagged':
+        raise HTTPException(422, 'Only approved or corrected answers can be shared.')
+    lesson['share'] = bool(share)
+    lesson.pop('share_blocked', None)
+    save(data)
+    return lesson
+
+
 def recall(message, workspace_id, limit=3):
-    """Prompt lines with the team's terms and the approved answers to the most similar earlier questions."""
+    """Prompt lines with the team's terms and the approved answers to the most similar earlier questions; with online
+    sync on, then a few answers other researchers shared, ranked below the team's own."""
+    from . import answer_sync
     data = load()
     terms = [t for t in data['terms'] if t['workspace_id'] in (None, workspace_id)][-30:]
     asked = set(words(message)) - STOP
@@ -124,6 +140,11 @@ def recall(message, workspace_id, limit=3):
         lines.append('Answers your research team approved or corrected for similar questions. Follow their wording and '
                      'care; for numbers, the engine\'s current results always take precedence over these:')
         lines += [f"- Asked: {lesson['question'][:300]}\n  Approved answer: {lesson['answer'][:800]}" for lesson in best]
+    shared = answer_sync.matches(message, limit=max(0, min(2, limit - len(best))))
+    if shared:
+        lines.append('Answers other NDIM researchers approved and shared online. They do not know this workspace; use them '
+                     'only for wording and method, below your own team\'s answers and never for numbers:')
+        lines += [f"- Shared answer: {item['answer'][:600]}" for item in shared]
     return lines
 
 

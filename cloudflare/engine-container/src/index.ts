@@ -1,4 +1,5 @@
 import { Container, getContainer } from "@cloudflare/containers";
+import { sharedAnswers } from "./shared-answers";
 
 // Required by the containers library once a deployment has used outbound interception (an earlier version did; its
 // settings persist): without this export every container start fails with "ctx.exports.ContainerProxy is undefined".
@@ -9,6 +10,7 @@ interface Env {
   DB: D1Database;
   NDIM_ALLOWED_ORIGINS: string;
   NDIM_MIRROR_TOKEN: string;
+  NDIM_SYNC_TOKENS?: string; // access keys for shared answers (src/shared-answers.ts); never given to the container
   DATABASE_URL?: string;
 }
 
@@ -139,8 +141,12 @@ export class NdimEngine extends Container<Env> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (new URL(request.url).pathname.startsWith("/__mirror")) {
+    const path = new URL(request.url).pathname;
+    if (path.startsWith("/__mirror")) {
       return new Response("Not Found", { status: 404 }); // the mirror routes are the Worker's, never a visitor's
+    }
+    if (path === "/shared-answers" || path.startsWith("/shared-answers/")) {
+      return sharedAnswers(request, env); // answered by the Worker and D1; the container is not started for these
     }
     // One named instance: every request must reach the container that holds the files.
     return getContainer(env.ENGINE, "main").fetch(request);

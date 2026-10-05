@@ -1017,7 +1017,7 @@ function poll(runId){
 // ---------- learning: researchers teach the assistant ----------
 // A thumbs-up approves a reply as written, Correct replaces it with the researcher's words, a thumbs-down alone is only
 // logged. NDIM recalls what it was taught in its next answers; nothing is learned from replies nobody checked. With
-// online sync on, only answers marked for sharing leave this computer, never questions or evidence.
+// online sync on (off by default), only answers marked for sharing leave this computer, never questions or evidence.
 const feedbackURL = id => threadURL(state.threadId)+'/messages/'+encodeURIComponent(id)+'/feedback';
 async function sendFeedback(message,body){
   state.feedbackError.delete(message.id);
@@ -1046,7 +1046,7 @@ function feedbackBar(message){
   }
   if(fb){
     const label=fb.kind==='correction'?'Your correction was learned':fb.kind==='answer'?'Approved: NDIM will reuse this answer':'Marked not helpful (not learned)';
-    return el('div',{class:'fb-bar done'},icon(fb.kind==='flagged'?'x':'check'),el('span',{text:label+(fb.share?' · shared when online':'')}),
+    return el('div',{class:'fb-bar done'},icon(fb.kind==='flagged'?'x':'check'),el('span',{text:label+(fb.share?' · marked for sharing':'')}),
       fb.blocked?el('small',{class:'muted',text:' '+fb.blocked}):null,
       el('button',{type:'button',class:'btn ghost',onclick:()=>{state.correcting.add(message.id);renderMessages();}},icon('pencil'),'Correct'));
   }
@@ -1058,8 +1058,8 @@ function feedbackBar(message){
 }
 async function renderLearning(){
   const box=$('panel-learning');
-  let data;
-  try{data=await api('/agent/learning');}catch(err){box.replaceChildren(callout('error','alert',err.message));return;}
+  let data, sync;
+  try{[data,sync]=await Promise.all([api('/agent/learning'),api('/agent/learning/sync')]);}catch(err){box.replaceChildren(callout('error','alert',err.message));return;}
   const term=el('input',{placeholder:'Term, e.g. imbabura',maxlength:'120'}), meaning=el('input',{placeholder:'Meaning, e.g. improved cookstove',maxlength:'600'});
   const usable=data.usable_examples, ready=data.fine_tune_ready_at;
   box.replaceChildren(
@@ -1072,9 +1072,46 @@ async function renderLearning(){
     el('ul',{class:'learn-list'},data.term_list.map(t=>el('li',{},el('span',{},el('b',{text:t.term}),' = '+t.meaning),forgetButton(t.id)))),
     el('b',{text:'What NDIM learned from replies'}),
     data.items.length?el('ul',{class:'learn-list'},data.items.map(item=>el('li',{},
-      el('span',{},el('span',{class:'tag',text:{answer:'approved',correction:'corrected',flagged:'not helpful'}[item.kind]}),item.share?el('span',{class:'tag',text:'shared online'}):null,
-        el('small',{class:'muted',text:' '+(item.question||'(after a journey step)').slice(0,120)}),el('p',{text:item.answer.slice(0,400)})),forgetButton(item.id)))):
-      el('p',{class:'muted',text:'Nothing yet. Use 👍, 👎 or Correct under NDIM’s replies.'}));
+      el('span',{},el('span',{class:'tag',text:{answer:'approved',correction:'corrected',flagged:'not helpful'}[item.kind]}),item.share?el('span',{class:'tag',text:'marked for sharing'}):null,
+        el('small',{class:'muted',text:' '+(item.question||'(after a journey step)').slice(0,120)}),el('p',{text:item.answer.slice(0,400)})),
+      el('span',{class:'learn-actions'},item.kind!=='flagged'?shareButton(item.id,item.share):null,forgetButton(item.id))))):
+      el('p',{class:'muted',text:'Nothing yet. Use 👍, 👎 or Correct under NDIM’s replies.'}),
+    syncSection(sync));
+}
+
+// ---------- online sync: only answers the researcher marked for sharing leave this computer ----------
+// Off by default. The list shows exactly what will be sent (only the answer text) and what is held back, and why.
+function shareButton(id,shared){
+  return el('button',{type:'button',class:'btn ghost small',title:shared?'Stop sharing this answer (it is deleted online at the next sync)':'Share this answer when online sync is on',
+    onclick:async()=>{await api('/agent/learning/'+encodeURIComponent(id)+'/share',{method:'POST',body:JSON.stringify({share:!shared})});renderLearning();}},shared?'Stop sharing':'Share');
+}
+function syncSection(sync){
+  const head=el('b',{text:'Online sync'});
+  if(!sync.available)return el('div',{class:'sync-box'},head,el('p',{class:'muted',text:'Online sync is available in the desktop app only. What NDIM learns here stays here.'}));
+  const save=async(body,button)=>{if(button)button.disabled=true;try{await api('/agent/learning/sync',{method:'PUT',body:JSON.stringify(body)});}catch(err){state.syncError=err.message;}renderLearning();};
+  const toggle=el('input',{type:'checkbox',id:'sync-toggle',checked:sync.enabled});
+  const key=el('input',{type:'password',placeholder:'Access key from your research team',maxlength:'300','aria-label':'Access key',autocomplete:'off'});
+  toggle.addEventListener('change',()=>{state.syncError=null;
+    if(toggle.checked&&!sync.has_token&&!key.value.trim()){toggle.checked=false;state.syncError='Enter the access key your research team was given, then turn sync on.';renderLearning();return;}
+    save(toggle.checked?{enabled:true,...(key.value.trim()?{token:key.value.trim()}:{})}:{enabled:false});});
+  const counts={shared:0,'will share':0,'held back':0};sync.outbox.forEach(row=>counts[row.status]++);
+  const last=sync.last_sync;
+  return el('div',{class:'sync-box'},head,
+    el('p',{class:'muted',text:'When sync is on, the answers you mark for sharing are sent to the NDIM sync service after a privacy check, and answers other researchers shared are used here, below your own team’s answers. Only the answer text is sent: never your questions, field notes, workspace or names. Everything NDIM learned stays on this computer either way.'}),
+    el('label',{class:'jc-choice'},toggle,el('span',{text:sync.enabled?'Online sync is on':'Online sync is off'})),
+    !sync.has_token?el('label',{class:'jc-field'},key):null,
+    state.syncError?callout('error','alert',state.syncError):null,
+    last&&last.error?callout('warn','alert','Last sync failed: '+last.error):null,
+    el('p',{class:'muted',text:`${counts.shared} shared · ${counts['will share']} waiting to be shared · ${counts['held back']} held back · ${sync.others} answer(s) from other researchers`+
+      (last?` · last sync ${new Date(last.at).toLocaleString()}`:'')}),
+    sync.withdraw?el('p',{class:'muted',text:`${sync.withdraw} answer(s) you stopped sharing will be deleted online at the next sync${sync.enabled?'':' (turn sync on to delete them)'}.`}):null,
+    sync.enabled?el('button',{type:'button',class:'btn',onclick:e=>{e.target.disabled=true;api('/agent/learning/sync/run',{method:'POST'}).catch(err=>{state.syncError=err.message;}).finally(renderLearning);}},'Sync now'):null,
+    el('b',{text:'What will be shared'}),
+    sync.outbox.length?el('ul',{class:'learn-list',id:'sync-outbox'},sync.outbox.map(row=>el('li',{},
+      el('span',{},el('span',{class:'tag'+(row.status==='held back'?' warn':''),text:row.status}),el('p',{text:row.answer}),
+        row.reasons.length?el('small',{class:'muted',text:'Kept on this computer: '+row.reasons.join(' ')}):null),
+      shareButton(row.id,true)))):
+      el('p',{class:'muted',text:'Nothing is marked for sharing. Use Share on an approved or corrected answer above.'}));
 }
 function forgetButton(id){return el('button',{type:'button',class:'icon-btn',title:'Forget this','aria-label':'Forget this',onclick:async()=>{await api('/agent/learning/'+encodeURIComponent(id),{method:'DELETE'});renderLearning();}},icon('trash'));}
 
