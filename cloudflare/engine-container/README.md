@@ -21,6 +21,34 @@ keeps a copy of the data folder in the D1 database `ndim-engine-data`:
 Verified 2026-10-02: a journey and its chat survived a redeploy that replaced the container (47 files restored).
 Not kept: files over 1.5 MB, and `exports/`, `backups/`, `support/`, `logs/`.
 
+## Shared answers (opt-in online sync)
+
+Researchers using the desktop engine can turn on online sync in Studio's Learning panel (off by default). Their engine
+then sends the answers they approved or corrected and marked for sharing, and pulls answers other researchers shared
+(`backend/app/answer_sync.py`). The Worker answers these routes itself from D1; the container is not involved:
+
+- `GET /shared-answers?since=<cursor>`: answers and withdrawals since the cursor, without the caller's own.
+- `POST /shared-answers` `{"answers": [{"id", "kind", "answer"}]}`: at most 50 a request, 4000 characters each,
+  only those three fields (no question, evidence or name); emails and long numbers are refused.
+- `DELETE /shared-answers/<id>`: withdraw; the text is erased and other engines drop their copy at their next pull.
+
+Every request needs `Authorization: Bearer <key>` with a key from the `NDIM_SYNC_TOKENS` secret (comma-separated,
+one per research team, so one can be revoked alone) and `X-NDIM-Install` (a random secret per computer: only the
+computer that sent an answer can withdraw it). Without the secret the routes answer 503. The public demo engine has no
+key and refuses to sync, so its visitors cannot write. Writes are limited to 300 an hour per key and 5000 live answers
+per computer.
+
+To turn it on (not done yet):
+
+```bash
+npx wrangler d1 migrations apply ndim-engine-data --remote   # creates the shared_answers table
+python3 -c 'import secrets; print(secrets.token_urlsafe(32), end="")' | npx wrangler secret put NDIM_SYNC_TOKENS
+npx wrangler deploy
+```
+
+Then give each research team its key; they paste it in the Learning panel. Tested locally only
+(`scripts/test_answer_sync_worker.py` against `npx wrangler dev --enable-containers=false` with local D1).
+
 ## Requirements
 
 - Cloudflare account on the **Workers Paid** plan (Containers are not on the free plan).

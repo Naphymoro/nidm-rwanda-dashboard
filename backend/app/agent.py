@@ -22,6 +22,7 @@ from . import agent_checks
 from . import agent_journey as journey_chat
 from . import agent_learning as learning
 from . import agent_library as library
+from . import answer_sync
 from . import journey as engine_journey
 from . import engine_store as store
 from .engine_harness import ExperimentRequest, build_plan, harness, public
@@ -720,12 +721,32 @@ def _evidence_texts(thread):
     return texts
 
 
+def _sync_material(lesson):
+    """What the privacy check compares a lesson's answer with: its chat's evidence, and names from the records and the
+    workspace. None when the chat is gone, so the answer can no longer be checked (and is not shared)."""
+    try:
+        thread = load_thread(lesson['workspace_id'], lesson['thread_id'])
+        workspace = get_workspace(lesson['workspace_id'])
+    except HTTPException:
+        return None
+    names = {workspace.get('name') or '', (thread.get('evidence') or {}).get('name') or ''}
+    if thread.get('journey_id'):
+        try:
+            for record in engine_journey.load(thread['workspace_id'], thread['journey_id'])['records']:
+                names |= {part.strip() for key in ('admin_unit', 'source_name') for part in re.split(r'[/,;]', record.get(key) or '')}
+        except HTTPException:
+            pass
+    names = {word for name in names for word in re.findall(r'[^\W\d_][\w\'-]{2,}', name)}  # each word of a name counts
+    return _evidence_texts(thread), names
+
+
 @router.post('/workspaces/{workspace}/threads/{thread_id}/messages/{message_id}/feedback')
 def feedback(workspace: str, thread_id: str, message_id: str, payload: Feedback, x_ndim_agent_token: str | None = Header(default=None)):
     thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
     lesson = learning.record_feedback(thread, message_id, payload.rating, payload.correction, payload.share,
                                       _lesson_context(thread), _evidence_texts(thread))
     save_thread(thread)
+    answer_sync.sync_soon(_sync_material)
     return {key: lesson[key] for key in ('id', 'kind', 'share')} | ({'share_blocked': lesson['share_blocked']} if lesson.get('share_blocked') else {})
 
 
@@ -748,6 +769,57 @@ def learning_term(payload: Term, x_ndim_agent_token: str | None = Header(default
 def learning_forget(item_id: str, x_ndim_agent_token: str | None = Header(default=None)):
     _authorize(x_ndim_agent_token)
     learning.forget(item_id)
+    answer_sync.sync_if_on(_sync_material)  # a forgotten answer that was shared is withdrawn online too
+
+
+class Share(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    share: bool
+
+
+class SyncSettings(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    enabled: bool | None = None
+    url: str | None = Field(default=None, max_length=300)
+    token: str | None = Field(default=None, max_length=300)
+
+
+def _sync_allowed(token):
+    _authorize(token)
+    if not local_mode():
+        # The public demo engine never syncs: its visitors must not be able to send answers in anyone's name.
+        raise HTTPException(403, 'Online sync is available in the desktop app only.')
+
+
+@router.post('/learning/{item_id}/share')
+def learning_share(item_id: str, payload: Share, x_ndim_agent_token: str | None = Header(default=None)):
+    _authorize(x_ndim_agent_token)
+    lesson = learning.set_share(item_id, payload.share)
+    answer_sync.sync_if_on(_sync_material)
+    return {key: lesson[key] for key in ('id', 'kind', 'share')}
+
+
+@router.get('/learning/sync')
+def learning_sync_status(x_ndim_agent_token: str | None = Header(default=None)):
+    """Online sync: whether it is on, and exactly which answers will be shared, are shared, or are held back (why)."""
+    _authorize(x_ndim_agent_token)
+    return JSONResponse(answer_sync.status(_sync_material) | {'available': local_mode()}, headers={'Cache-Control': 'no-store'})
+
+
+@router.put('/learning/sync')
+def learning_sync_settings(payload: SyncSettings, x_ndim_agent_token: str | None = Header(default=None)):
+    _sync_allowed(x_ndim_agent_token)
+    answer_sync.configure(payload.enabled, payload.url, payload.token)
+    if payload.enabled:
+        answer_sync.sync(_sync_material)
+    return answer_sync.status(_sync_material) | {'available': True}
+
+
+@router.post('/learning/sync/run')
+def learning_sync_run(x_ndim_agent_token: str | None = Header(default=None)):
+    _sync_allowed(x_ndim_agent_token)
+    answer_sync.sync(_sync_material)
+    return answer_sync.status(_sync_material) | {'available': True}
 
 
 @router.get('/learning/dataset', response_class=PlainTextResponse)

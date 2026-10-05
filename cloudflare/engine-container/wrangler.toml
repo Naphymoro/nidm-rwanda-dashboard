@@ -27,10 +27,13 @@ new_sqlite_classes = ["NdimEngine"]
 binding = "DB"
 database_name = "ndim-engine-data"
 database_id = "2d92967b-dcc2-4649-99e5-fb36b6d85a94"
+# The shared_answers table (src/shared-answers.ts): npx wrangler d1 migrations apply ndim-engine-data [--local|--remote]
+migrations_dir = "migrations"
 
 [vars]
 NDIM_ALLOWED_ORIGINS = "https://nidm-engine.pages.dev"
 
 # Secrets (set with `npx wrangler secret put NAME`, never in this file):
 #   NDIM_MIRROR_TOKEN  required: shared by the Worker and the engine for the data-folder mirror (any long random string)
+#   NDIM_SYNC_TOKENS   optional: comma-separated access keys for shared answers, one per research team (unset: sharing is off)
 #   DATABASE_URL       optional Postgres connection string (not needed for durability: the D1 mirror keeps the files)
