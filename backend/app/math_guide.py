@@ -285,11 +285,43 @@ def grade_section():
     }
 
 
+@lru_cache(maxsize=1)
+def _sensitivity_example():
+    from .sensitivity import analyse
+    e = example()['encoded']
+    return analyse(180, {'trust_score': r(e.trust_score), 'barrier_score': r(e.adoption_barrier_score)}, samples=256)
+
+
+def sensitivity_section():
+    out = _sensitivity_example()
+    top = out['factors'][:3]
+    return {
+        'id': 'guide-sensitivity', 'number': 11, 'stages': ['compartmental'], 'title': 'Which assumptions matter most? (sensitivity analysis)',
+        'why': 'The band shows doubt about the evidence; this step also asks about the tool\'s own rules. NDIM varies the '
+               'evidence inputs (±0.15 around their values) and the rate constants (each from half to double) all at '
+               'once, thousands of times, and splits the variation in the result between them. A factor with a large total '
+               'index matters; one near 0 barely does. The journey offers it after stage 5.',
+        'formulas': [r'S_i = \frac{\operatorname{Var}(\mathbb{E}[Y \mid X_i])}{\operatorname{Var}(Y)} \qquad '
+                     r'S_{T,i} = \frac{\mathbb{E}[\operatorname{Var}(Y \mid X_{\sim i})]}{\operatorname{Var}(Y)}',
+                     r'\hat S_{T,i} = \frac{\tfrac{1}{2N}\sum_j \big(f(A)_j - f(A_B^{(i)})_j\big)^2}{\operatorname{Var}(Y)} \quad \text{(Jansen)}'],
+        'symbols': [['Y', 'adoption at the end of the period'], ['X_i', 'one input or rate assumption'],
+                    ['S_i', 'first-order index: the share of the variation explained by X_i alone'],
+                    ['S_T,i', 'total index: the share that involves X_i, including its interactions'],
+                    ['A, B, A_B⁽ⁱ⁾', 'Saltelli\'s sample matrices (A with column i taken from B)']],
+        'example': [f'For the example note (trust {r(example()["encoded"].trust_score)}, barrier {r(example()["encoded"].adoption_barrier_score)}), '
+                    f'day 180, {out["runs"]:,} runs: adoption averages {out["mean"]} with a spread of {out["spread"]}.',
+                    'Largest total indices: ' + '; '.join(f'{row["label"]} {row["total"]}' for row in top) + '.',
+                    *out['sentences'][2:3]],
+        'limits': 'The ranges are choices: wider ranges for a factor raise its index. Indices describe this model, not the '
+                  'world: a rate assumption that dominates is exactly what real adoption data should be used to pin down.',
+    }
+
+
 def guide():
     sections = [encoding_section(), settings_section(), compartmental_section(), network_section(), robustness_section(),
-                twin_section(), bayes_section(), ranking_section(), inoculation_section(), grade_section()]
+                twin_section(), bayes_section(), ranking_section(), inoculation_section(), grade_section(), sensitivity_section()]
     return {'title': 'How NDIM works', 'intro': (
-        'NDIM turns field notes into illustrative scenarios in ten steps. Each step below shows the formula the engine '
+        'NDIM turns field notes into illustrative scenarios in ten steps, and step 11 asks which assumptions matter most. Each step below shows the formula the engine '
         'really runs, what every symbol means, a worked example on one sample note, and what the step cannot tell you. '
         'The numbers in the examples are computed by the engine itself.'),
         'example_note': EXAMPLE_NOTE, 'sections': sections,

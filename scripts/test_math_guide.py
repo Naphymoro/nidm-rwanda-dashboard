@@ -26,8 +26,8 @@ class MathGuideTests(unittest.TestCase):
         self.guide = math_guide.guide()
         self.by_id = {s['id']: s for s in self.guide['sections']}
 
-    def test_ten_sections_with_every_part(self):
-        self.assertEqual([s['number'] for s in self.guide['sections']], list(range(1, 11)))
+    def test_eleven_sections_with_every_part(self):
+        self.assertEqual([s['number'] for s in self.guide['sections']], list(range(1, 12)))
         for section in self.guide['sections']:
             for key in ('why', 'formulas', 'symbols', 'example', 'limits', 'stages'):
                 self.assertTrue(section[key], (section['id'], key))

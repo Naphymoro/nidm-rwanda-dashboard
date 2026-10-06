@@ -594,6 +594,10 @@ function nextPart(j){
   else parts.push(el('p',{class:'muted',text:'All required stages are done.'}));
   if(regional.status!=='done'&&!['intake','gate','repository','encoding'].includes(next||'')&&j.stages.find(row=>row.id==='encoding').status==='done')
     parts.push(el('div',{class:'actions'},runButton(regional,false,'Run regional analysis (optional)')));
+  // Optional after stage 5: Sobol sensitivity analysis (about 11,000 runs), so the researcher chooses it.
+  if(j.stages.find(row=>row.id==='compartmental').status==='done'&&!j.optional_done?.sensitivity)
+    parts.push(el('div',{class:'review-form'},el('p',{class:'muted',text:'Optional: which inputs and which of the tool\'s own assumptions drive this result? NDIM varies them all at once and splits the variation between them (Sobol indices). It can take up to half a minute.'}),
+      el('div',{class:'actions'},el('button',{type:'button',class:'btn',disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/sensitivity',{}),null)},icon('play'),'Which assumptions matter most? (optional)'))));
   // Optional after stage 12: 28 network simulations, slow over the internet, so the researcher chooses it.
   if(j.stages.find(row=>row.id==='inoculation').status==='done'&&!j.optional_done?.messenger_seeding)
     parts.push(el('div',{class:'review-form'},el('p',{class:'muted',text:'Optional: compare who a campaign recruits as messengers (at random, the best-connected households, or bridges between villages) on assumed network shapes. It can take up to half a minute.'}),

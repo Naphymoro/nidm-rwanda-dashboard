@@ -150,6 +150,22 @@ class JourneyTests(unittest.TestCase):
                 final = self.client.post(f'{base}/stages/policy', json={'approval_statement': 'Export the draft for review.'})
                 self.assertEqual(final.status_code, 200, final.text)
 
+    def test_sensitivity_is_an_optional_step_after_the_population_model(self):
+        self.capture()
+        self.stage('encoding')
+        early = self.client.post(f'{self.base}/stages/compartmental/sensitivity')
+        self.assertEqual(early.status_code, 409)
+        self.stage('compartmental')
+        body = self.client.post(f'{self.base}/stages/compartmental/sensitivity')
+        self.assertEqual(body.status_code, 200, body.text)
+        self.assertTrue(body.json()['optional_done']['sensitivity'])
+        factors = body.json()['output']['sensitivity']['factors']
+        self.assertEqual(len(factors), 9)
+        said = body.json()['presentation']['stages']['compartmental']['explanation']
+        self.assertIn('Sensitivity analysis:', said)
+        self.assertIn('accepted notes allow', said)
+        self.assertEqual(self.client.post('/engine/sensitivity', json={'samples': 64}).status_code, 200)
+
     def test_stage_order_is_enforced(self):
         self.stage('encoding', expect=409)
         self.capture()

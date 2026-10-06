@@ -188,7 +188,8 @@ def explanation(stage, output, journey):
         return text + (f" Its band runs from {_num(last['adoption_lower'])} to {_num(last['adoption_upper'])} at the end "
                        f"(10th to 90th percentile): how far the curve moves when trust and barrier vary as much as "
                        f"{notes} accepted note{'s' if notes != 1 else ''} allow. It does not include doubt about the "
-                       'model\'s own rules, which are assumptions.')
+                       'model\'s own rules, which are assumptions.') + (
+                           ' Sensitivity analysis: ' + ' '.join(output['sensitivity']['sentences']) if output.get('sensitivity') else '')
     if stage == 'agents':
         net = output['assumptions']['network']
         text = _curve_story(output, f"The agent-based model simulates {net['households']} households on an assumed "

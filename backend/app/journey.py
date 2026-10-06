@@ -558,7 +558,8 @@ def public(journey, full=False):
     body['stages'] = rows
     body['next_stage'] = next_stage
     body['presentation'] = presentation(journey)
-    body['optional_done'] = {'messenger_seeding': bool((output(journey, 'inoculation') or {}).get('messenger_seeding'))}
+    body['optional_done'] = {'messenger_seeding': bool((output(journey, 'inoculation') or {}).get('messenger_seeding')),
+                             'sensitivity': bool((output(journey, 'compartmental') or {}).get('sensitivity'))}
     if full:
         body['outputs'] = {key: value['output'] for key, value in journey['stages'].items()}
         body['events'] = journey['events']
@@ -705,6 +706,37 @@ def messenger_seeding(workspace: str, journey_id: str):
     log(journey, 'optional', 'Messenger recruiting comparison ran', stage='inoculation')
     save(journey)
     return public(journey) | {'stage': 'inoculation', 'output': inoculation['output'], 'cleared_later_stages': []}
+
+
+@router.post('/workspaces/{workspace}/journeys/{journey_id}/stages/compartmental/sensitivity')
+def journey_sensitivity(workspace: str, journey_id: str):
+    """Optional, after stage 5: which inputs and assumptions drive the population model's result (Sobol indices).
+
+    About 11,000 model runs: a few seconds locally, longer on the small cloud container. Adds to stage 5's result and
+    clears nothing."""
+    from .sensitivity import analyse
+    journey = load(workspace, journey_id)
+    stage = journey['stages'].get('compartmental')
+    if not stage:
+        raise HTTPException(409, 'Run stage 5, the compartmental model, before the sensitivity analysis.')
+    stage['output']['sensitivity'] = analyse(stage['output']['horizon_days'], stage['output']['parameters'])
+    log(journey, 'optional', 'Sensitivity analysis ran', stage='compartmental')
+    save(journey)
+    return public(journey) | {'stage': 'compartmental', 'output': stage['output'], 'cleared_later_stages': []}
+
+
+class SensitivityRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
+    horizon_days: int = Field(default=180, ge=7, le=365)
+    parameters: dict[str, float] = Field(default_factory=dict, description='Model parameters, e.g. trust_score, barrier_score.')
+    samples: int = Field(default=1024, ge=64, le=4096, description='Base samples; runs = samples x 11.')
+
+
+@router.post('/sensitivity')
+def sensitivity_route(req: SensitivityRequest):
+    """Sobol indices: which evidence inputs and rate assumptions drive the population model's result."""
+    from .sensitivity import analyse
+    return analyse(req.horizon_days, req.parameters, req.samples)
 
 
 class RobustnessRequest(BaseModel):

@@ -760,6 +760,12 @@ def journey_stage(workspace: str, thread_id: str, stage: str, payload: JourneySt
     return engine_journey.run(workspace, _journey_of(thread), stage, request)
 
 
+@router.post('/workspaces/{workspace}/threads/{thread_id}/journey/sensitivity')
+def journey_sensitivity(workspace: str, thread_id: str, x_ndim_agent_token: str | None = Header(default=None)):
+    thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
+    return engine_journey.journey_sensitivity(workspace, _journey_of(thread))
+
+
 @router.post('/workspaces/{workspace}/threads/{thread_id}/journey/messenger-seeding')
 def journey_messenger_seeding(workspace: str, thread_id: str, x_ndim_agent_token: str | None = Header(default=None)):
     thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
