@@ -661,6 +661,7 @@
 
           <h3>1. Narrative strength</h3>
           <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
+          <p><strong>Where Φ is used:</strong> in the classic workbench's manual scorecard, where a researcher scores each story. The journey's keyword encoder computes trust and barrier scores directly instead (How NDIM works, step 1).</p>
           <p><strong>What the equation is trying to represent:</strong> some stories carry more force than others. A story may be forceful because it is emotional, because it is credible locally, because it touches trust, or because it shows an opening for inoculation.</p>
           <p><strong>Plain-language variables:</strong> E is emotional intensity. C is local credibility. Tau is trust signal. Kappa is inoculation opportunity. Phi is the combined narrative force.</p>
           <p><strong>What increases the score:</strong> a vivid story from a trusted local source, repeated by peers, with a clear fear or hope attached to it.</p>
@@ -683,11 +684,11 @@
             <p>A non-conserved model is different. It allows people to enter or leave the system. That may be needed when there is migration, births, survey dropout, new programme participants, seasonal movement, or an expanding social-media audience. When NDIM uses a non-conserved scenario, it should say so clearly because the interpretation changes.</p>
           </div>
           <div class="math-display">\begin{aligned}
-\frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
+\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \delta(T+R) \\
 \frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
-\frac{dT}{dt} &= \beta_tST + \rho M - \mu T \\
+\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - \mu T - \eta T - \delta T \\
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
-\frac{dR}{dt} &= \gamma I + \eta T
+\frac{dR}{dt} &= \gamma I + \eta T - \delta R
 \end{aligned}</div>
           <p><strong>What a derivative means here:</strong> it is simply the speed of change. The line for S asks how quickly the susceptible group is shrinking. The line for M asks whether misinformation exposure is growing or declining. The line for I asks whether inoculation is reaching people fast enough.</p>
           <p><strong>What increases or decreases the flows:</strong> misinformation contact increases movement into M. Trusted evidence increases movement into T. Inoculation messages increase movement into I. Recovery, correction, and stable adoption move people toward R.</p>
@@ -703,8 +704,8 @@
           <p><strong>Policy meaning:</strong> a national message may not be enough if the household-level bottleneck is repair access, social proof, trust, or fear.</p>
 
           <h3>4. Digital twin feedback: learning from the field</h3>
-          <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
-          <p><strong>Plain meaning:</strong> the digital twin compares what the model predicted with what the field observed. If the two differ, the twin adjusts the assumptions and reruns the scenario.</p>
+          <div class="math-display">initial\ adoption = y_{observed} \qquad trust \mathrel{+}= \Delta_{trust} \qquad barrier \mathrel{+}= \Delta_{barrier}</div>
+          <p><strong>Plain meaning:</strong> the digital twin starts the model again from what the field observed: the adoption share you saw, with trust and barriers moved by the changes you saw. It shows how far the earlier prediction was from the observation, but it does not yet estimate any parameter from that gap.</p>
           <p><strong>How the models feed it:</strong> the compartmental model gives the broad population pathway. The agent-based model gives the household and peer-effect pathway. The twin compares those outputs with field feedback: observed adoption, trust change, barrier change, and inoculation effects.</p>
           <p><strong>Example:</strong> suppose the model predicts fast adoption, but field officers report that many households still fear pressure-cooker safety. The twin treats the earlier prediction as too optimistic. It lowers the trust pathway, raises the barrier pressure, and reruns the forecast.</p>
           <p><strong>Policy meaning:</strong> the twin is useful for scenario learning. It is not a national truth machine unless the observations are repeated, validated, and representative.</p>
@@ -717,7 +718,8 @@
           <p><strong>Policy meaning:</strong> wide uncertainty means more evidence is needed. It should produce caution, not overconfidence.</p>
 
           <h3>6. Policy optimizer: comparing possible actions</h3>
-          <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
+          <div class="math-display">score = lift + 0.30\,trust - 0.22\,barrier - cost \quad\text{(journey)}</div>
+          <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right] \quad\text{(classic workbench)}</div>
           <p><strong>Plain meaning:</strong> the optimizer compares possible actions. It asks which action is likely to improve adoption while keeping cost, risk, and uncertainty under control.</p>
           <p><strong>Example actions:</strong> a peer demonstration, a health-worker message, a radio correction, a repair-support package, a subsidy, or an inoculation message that prebunks a safety rumour.</p>
           <p><strong>What reward means:</strong> reward is a score for usefulness. It is not a moral judgment and it is not a final decision. It is a way to rank options for review.</p>

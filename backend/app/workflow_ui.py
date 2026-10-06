@@ -15672,7 +15672,14 @@ MANUAL_HTML = r"""<!doctype html>
         <summary>Core equations</summary>
         <div class="section-body">
           <h3>Encoding</h3>
-          <p>Encoding turns a narrative into bounded model variables. Manual encoding should include a short justification for each score.</p>
+          <p>Encoding turns a narrative into bounded model variables. NDIM has two ways to do it.</p>
+          <p><strong>The journey (keyword encoder).</strong> NDIM counts words from fixed lists and computes a trust score and a barrier score for each note, each kept between 0.05 and 0.95. A word can count in more than one list; the note's country and place each add 1 to local grounding.</p>
+          <div class="math-display">\begin{aligned}
+trust &= clamp(0.48 + 0.060T^{+} + 0.025H + 0.010S + 0.018L - 0.070T^{-} - 0.025R) \\
+barrier &= clamp(0.30 + 0.095A + 0.075F + 0.07S_a + 0.055B + 0.06N + 0.025R - 0.035P - 0.015H)
+\end{aligned}</div>
+          <p>T⁺ and T⁻ count trust and distrust words, H health words, S social words, L local grounding, R rumour words, A cost words, F fuel and repair words, Sₐ safety words, B habit words, N refusal words and P benefit words. The worked example is in How NDIM works, step 1.</p>
+          <p><strong>The classic workbench (manual scorecard).</strong> A researcher scores each narrative by hand, with a short justification for each score, and the workbench combines the scores into a narrative strength Φ. The journey does not compute Φ.</p>
           <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
           <table>
             <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
@@ -15686,14 +15693,14 @@ MANUAL_HTML = r"""<!doctype html>
 
           <h3>Compartmental NDIM</h3>
           <p>The documented model uses susceptible, misinformation-exposed, truth-aligned, inoculated, and resistant/adoption-aligned compartments. In the basic teaching setup, these compartments conserve the population: people move between states, but the total population share remains one.</p>
-          <div class="math-display">\begin{aligned}
-\frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
-\frac{dM}{dt} &= \beta_mSM - \rho M - \mu M \\
-\frac{dT}{dt} &= \beta_tST + \rho M - \eta T \\
-\frac{dI}{dt} &= \iota S + \eta T - \gamma I \\
-\frac{dR}{dt} &= \gamma I + \mu M
+      <div class="math-display">\begin{aligned}
+\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \delta(T+R) \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
+\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - \mu T - \eta T - \delta T \\
+\frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
+\frac{dR}{dt} &= \gamma I + \eta T - \delta R
 \end{aligned}</div>
-          <p>Read each derivative as a rate of change. For example, if misinformation contact is high, the M compartment grows. If trusted correction and inoculation are strong, the model moves people toward T, I, and R.</p>
+          <p>Read each derivative as a rate of change; the model takes one-day steps and rescales the shares to add up to one. Adoption is T + I + R. Word of mouth comes from everyone who uses it (T and R). Adopters can stop and fall back to S at δ = 0.025 × barrier + 0.008 × misinformation risk + 0.010 × reactance, the same daily stop rate as the household model, so the long-run level (roughly 1 − δ/β_t) rises with trust and falls with barriers. Trust raises β_t = 0.035(1 + φ)(0.65 + trust); barriers raise β_m and δ. All rate formulas and a worked example are in How NDIM works, step 3.</p>
 
           <h3>Agent-based model</h3>
           <p>The agent-based model follows 1,000 simulated households on an assumed social network. By default they live in villages of 100: each household is tied to about 8 near neighbours, a few ties are rewired at random, and each household has about one tie to another village. Other assumed shapes can be chosen: one small-world population, a scale-free network (a few highly connected households and many with few ties), or a well-mixed population with no network at all.</p>
@@ -15703,13 +15710,13 @@ MANUAL_HTML = r"""<!doctype html>
           <p>The network is an assumption, not measured data. If the agent model is lower than the compartmental model, the assumed network structure is slowing spread; if higher, neighbours are doing useful work in the model. Neither says what real villages will do.</p>
 
           <h3>Digital twin feedback</h3>
-          <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
-          <p>The current twin is a prototype feedback loop. It receives the compartmental model, the agent-based model, approved evidence, encoded narratives, and field feedback. It then reruns the scenario after trust, barriers, or intervention strength change.</p>
-          <p>Example: if the population curve predicts strong adoption but field evidence shows safety fear remains high, the twin adjusts the assumptions and reruns the forecast. The new curve is not a final truth; it is a better scenario because it listened to the field signal.</p>
+          <div class="math-display">initial\ adoption = y_{observed} \qquad trust \mathrel{+}= \Delta_{trust} \qquad barrier \mathrel{+}= \Delta_{barrier}</div>
+          <p>The twin re-runs the hybrid model from the field: it starts from the adoption share the researcher observed, with trust and barriers shifted by the changes they saw. There are no defaults. The gap between observed and predicted adoption is shown, but no parameter is estimated from it yet: the twin does not learn by itself, and formal calibration to an observed series is planned.</p>
+          <p>Example: if the model expected strong adoption but field officers report that safety fear remains high, the researcher enters a lower observed share and a higher barrier, and the twin re-runs from there. The new curve is not a truth or a forecast; it is a scenario that starts from what was observed.</p>
 
           <h3>Inoculation diagnosis</h3>
           <p>The upgrade adds a separate diagnosis layer after adoption encoding. The diagnosis estimates misinformation risk, reactance risk, messenger fit, and intervention strength before the inoculation lab drafts any counter-narrative.</p>
-          <div class="math-display">V_i = 0.20T_i + 0.20M_i + 0.18R_i + 0.14G_i - 0.08X_i</div>
+          <div class="math-display">V_i = clamp(0.10 + 0.20T_i + 0.20M_i + 0.18R_i + 0.14G_i - 0.08X_i)</div>
           <table>
             <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
             <tbody>
@@ -15730,8 +15737,11 @@ posterior &= Beta(\alpha + successes,\beta + failures)
           <p>The prior is what the model believed before new evidence. The posterior is what the model believes after approved evidence is added. This matters because a policy recommendation should show uncertainty, not only a single confident-looking number.</p>
 
           <h3>RL optimizer</h3>
+          <p><strong>The journey</strong> ranks four illustrative actions with fixed, assumed lifts and costs, without random exploration. The ranking restates those assumptions; it is not a recommendation.</p>
+          <div class="math-display">score = lift + 0.30\,trust - 0.22\,barrier - cost</div>
+          <p><strong>The classic workbench</strong> runs a small Q-learning optimizer over the same assumed actions, with random exploration:</p>
           <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
-          <p>The optimizer ranks candidate interventions by expected reward. Reward balances adoption gain, cost, risk, and uncertainty. It supports human review; it does not automatically decide policy.</p>
+          <p>Neither estimates lifts or costs from data. Both support human review; neither decides policy.</p>
         </div>
       </details>
 
@@ -16650,6 +16660,7 @@ ACADEMY_HTML = r"""<!doctype html>
 
           <h3>1. Narrative strength</h3>
           <div class="math-display">\Phi_i = 0.30E_i + 0.30C_i + 0.20\tau_i + 0.20\kappa_i</div>
+          <p><strong>Where Φ is used:</strong> in the classic workbench's manual scorecard, where a researcher scores each story. The journey's keyword encoder computes trust and barrier scores directly instead (How NDIM works, step 1).</p>
           <p><strong>What the equation is trying to represent:</strong> some stories carry more force than others. A story may be forceful because it is emotional, because it is credible locally, because it touches trust, or because it shows an opening for inoculation.</p>
           <p><strong>Plain-language variables:</strong> E is emotional intensity. C is local credibility. Tau is trust signal. Kappa is inoculation opportunity. Phi is the combined narrative force.</p>
           <p><strong>What increases the score:</strong> a vivid story from a trusted local source, repeated by peers, with a clear fear or hope attached to it.</p>
@@ -16672,11 +16683,11 @@ ACADEMY_HTML = r"""<!doctype html>
             <p>A non-conserved model is different. It allows people to enter or leave the system. That may be needed when there is migration, births, survey dropout, new programme participants, seasonal movement, or an expanding social-media audience. When NDIM uses a non-conserved scenario, it should say so clearly because the interpretation changes.</p>
           </div>
           <div class="math-display">\begin{aligned}
-\frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
+\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \delta(T+R) \\
 \frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
-\frac{dT}{dt} &= \beta_tST + \rho M - \mu T \\
+\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - \mu T - \eta T - \delta T \\
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
-\frac{dR}{dt} &= \gamma I + \eta T
+\frac{dR}{dt} &= \gamma I + \eta T - \delta R
 \end{aligned}</div>
           <p><strong>What a derivative means here:</strong> it is simply the speed of change. The line for S asks how quickly the susceptible group is shrinking. The line for M asks whether misinformation exposure is growing or declining. The line for I asks whether inoculation is reaching people fast enough.</p>
           <p><strong>What increases or decreases the flows:</strong> misinformation contact increases movement into M. Trusted evidence increases movement into T. Inoculation messages increase movement into I. Recovery, correction, and stable adoption move people toward R.</p>
@@ -16692,8 +16703,8 @@ ACADEMY_HTML = r"""<!doctype html>
           <p><strong>Policy meaning:</strong> a national message may not be enough if the household-level bottleneck is repair access, social proof, trust, or fear.</p>
 
           <h3>4. Digital twin feedback: learning from the field</h3>
-          <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
-          <p><strong>Plain meaning:</strong> the digital twin compares what the model predicted with what the field observed. If the two differ, the twin adjusts the assumptions and reruns the scenario.</p>
+          <div class="math-display">initial\ adoption = y_{observed} \qquad trust \mathrel{+}= \Delta_{trust} \qquad barrier \mathrel{+}= \Delta_{barrier}</div>
+          <p><strong>Plain meaning:</strong> the digital twin starts the model again from what the field observed: the adoption share you saw, with trust and barriers moved by the changes you saw. It shows how far the earlier prediction was from the observation, but it does not yet estimate any parameter from that gap.</p>
           <p><strong>How the models feed it:</strong> the compartmental model gives the broad population pathway. The agent-based model gives the household and peer-effect pathway. The twin compares those outputs with field feedback: observed adoption, trust change, barrier change, and inoculation effects.</p>
           <p><strong>Example:</strong> suppose the model predicts fast adoption, but field officers report that many households still fear pressure-cooker safety. The twin treats the earlier prediction as too optimistic. It lowers the trust pathway, raises the barrier pressure, and reruns the forecast.</p>
           <p><strong>Policy meaning:</strong> the twin is useful for scenario learning. It is not a national truth machine unless the observations are repeated, validated, and representative.</p>
@@ -16706,7 +16717,8 @@ ACADEMY_HTML = r"""<!doctype html>
           <p><strong>Policy meaning:</strong> wide uncertainty means more evidence is needed. It should produce caution, not overconfidence.</p>
 
           <h3>6. Policy optimizer: comparing possible actions</h3>
-          <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right]</div>
+          <div class="math-display">score = lift + 0.30\,trust - 0.22\,barrier - cost \quad\text{(journey)}</div>
+          <div class="math-display">Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'}Q(s',a') - Q(s,a)\right] \quad\text{(classic workbench)}</div>
           <p><strong>Plain meaning:</strong> the optimizer compares possible actions. It asks which action is likely to improve adoption while keeping cost, risk, and uncertainty under control.</p>
           <p><strong>Example actions:</strong> a peer demonstration, a health-worker message, a radio correction, a repair-support package, a subsidy, or an inoculation message that prebunks a safety rumour.</p>
           <p><strong>What reward means:</strong> reward is a score for usefulness. It is not a moral judgment and it is not a final decision. It is a way to rank options for review.</p>
