@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from html import escape as html_escape
 import os
+import time
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
@@ -101,6 +102,15 @@ async def wait_for_restore(request, call_next):
         return JSONResponse({"detail": "Restoring saved data. Try again in a few seconds."}, status_code=503,
                             headers={"Retry-After": "5"})
     return await call_next(request)
+
+
+@app.middleware("http")
+async def time_request(request, call_next):
+    """The engine's own share of a request, as Server-Timing (the Cloudflare Worker adds its steps in front)."""
+    start = time.perf_counter()
+    response = await call_next(request)
+    response.headers["Server-Timing"] = f"engine;dur={(time.perf_counter() - start) * 1000:.0f}"
+    return response
 
 
 class MirrorRestore(BaseModel):

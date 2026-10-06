@@ -46,6 +46,10 @@ class EngineTests(unittest.TestCase):
         self.assertIn(response.status_code, (200, 201), response.text)
         return response.json()
 
+    def test_responses_carry_the_engine_time(self):
+        # The Cloudflare Worker puts its own steps in front; together they show where a slow cloud request spends its time.
+        self.assertRegex(self.client.get('/health').headers['server-timing'], r'^engine;dur=\d+$')
+
     def url(self, run):
         return f"/engine/workspaces/{self.workspace}/runs/{run['run_id']}"
 

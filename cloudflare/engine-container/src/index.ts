@@ -34,13 +34,45 @@ function fromBase64(text: string) {
   return Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
 }
 
+/** Durations of a request's steps, sent back as a Server-Timing header so the cloud delay can be read per step. */
+class Timing {
+  private entries: string[] = [];
+
+  async time<T>(name: string, step: () => Promise<T>): Promise<T> {
+    const start = Date.now();
+    try {
+      return await step();
+    } finally {
+      this.entries.push(`${name};dur=${Date.now() - start}`);
+    }
+  }
+
+  attach(response: Response, existing = response.headers.get("Server-Timing")) {
+    const headers = new Headers(response.headers);
+    headers.set("Server-Timing", [...this.entries, ...(existing ? [existing] : [])].join(", "));
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers, webSocket: response.webSocket });
+  }
+}
+
+/** A failed request answered as the engine answers errors ({detail}), with CORS so the browser can read it. */
+function unavailable(request: Request, env: Env) {
+  const headers = new Headers({ "Content-Type": "application/json", "Retry-After": "5" });
+  const origin = request.headers.get("Origin");
+  if (origin && env.NDIM_ALLOWED_ORIGINS.split(",").map((o) => o.trim()).includes(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Vary", "Origin");
+  }
+  const detail = "The engine is starting or restarting. Nothing was lost; try again in a few seconds.";
+  return new Response(JSON.stringify({ detail }), { status: 503, headers });
+}
+
 export class NdimEngine extends Container<Env> {
   defaultPort = 8080;
   // The engine has no /ping; /health answers once uvicorn is up.
   pingEndpoint = "container/health";
   // The data folder is kept in D1, so a sleep no longer loses work; sleeping after 30 idle minutes saves cost.
   sleepAfter = "30m";
-  private restored: Promise<void> | null = null;
+  private restored: Promise<boolean> | null = null; // true when this call put the saved files back
   private pullPending = false;
   private pulling: Promise<void> = Promise.resolve(); // one pull at a time: overlapping pulls would race on ack
 
@@ -53,8 +85,10 @@ export class NdimEngine extends Container<Env> {
     };
   }
 
-  override onStart() {
-    this.restored = null; // a new container starts empty: restore it again
+  // Not onStart: the library calls it on every startAndWaitForPorts, even with the container already running, and
+  // restore() calls that itself. Resetting there made every request restore the whole data folder again (~2.5 s).
+  override onStop() {
+    this.restored = null; // the next container starts empty: restore it again
   }
 
   private engine(path: string, init: RequestInit = {}) {
@@ -67,6 +101,11 @@ export class NdimEngine extends Container<Env> {
   private restore() {
     this.restored ??= (async () => {
       await this.startAndWaitForPorts();
+      // An empty batch writes nothing; 409 means the engine was already restored (this object restarted while the
+      // container ran), so the saved files need not be read from D1 at all.
+      const probe = await this.engine("/__mirror/restore", { method: "POST", body: JSON.stringify({ files: {}, done: false }) });
+      if (probe.status === 409) return false;
+      if (!probe.ok) throw new Error(`restore failed: ${probe.status} ${await probe.text()}`);
       await ensureTable(this.env.DB);
       const { results } = await this.env.DB.prepare("SELECT key, body FROM files ORDER BY key").all<{ key: string; body: ArrayBuffer }>();
       let files: Record<string, string> = {};
@@ -85,6 +124,7 @@ export class NdimEngine extends Container<Env> {
         size += encoded.length;
       }
       await send(true);
+      return true;
     })().catch((error) => {
       this.restored = null; // try again on the next request
       throw error;
@@ -126,16 +166,38 @@ export class NdimEngine extends Container<Env> {
   }
 
   override async fetch(request: Request): Promise<Response> {
-    await this.restore();
-    const response = await this.containerFetch(request);
+    const timing = new Timing();
+    let response: Response;
+    try {
+      await timing.time("restore", () => this.restore());
+      const retry = request.clone() as Request;
+      response = await timing.time("container", () => this.containerFetch(request));
+      // A replaced container (a deploy rolling out, a crash) starts empty and answers 503 until restored, and onStop
+      // can arrive late. The engine refuses before doing anything, so restoring and sending the request again is safe.
+      if (response.status === 503) {
+        this.restored = null;
+        if (await timing.time("restore", () => this.restore())) {
+          response = await timing.time("container", () => this.containerFetch(retry));
+        }
+      }
+    } catch (error) {
+      // Thrown while the container starts or is replaced (a deploy). Uncaught, it became Cloudflare's opaque error 1101.
+      console.error("engine request failed", request.method, new URL(request.url).pathname, error);
+      return unavailable(request, this.env);
+    }
     if (request.method !== "GET" && request.method !== "HEAD") {
-      await this.pull(); // most changes are saved before the visitor gets the answer
+      await timing.time("pull", () => this.pull()); // most changes are saved before the visitor gets the answer
     }
     if (!this.pullPending) { // and once more shortly after, for anything written while a reply streamed
       this.pullPending = true;
-      await this.schedule(PULL_AFTER_SECONDS, "pullLater");
+      try {
+        await timing.time("schedule", () => this.schedule(PULL_AFTER_SECONDS, "pullLater"));
+      } catch (error) {
+        this.pullPending = false; // the visitor's answer is ready; the next request schedules the pull
+        console.error("scheduling the mirror pull failed", error);
+      }
     }
-    return response;
+    return timing.attach(response);
   }
 }
 
@@ -149,6 +211,19 @@ export default {
       return sharedAnswers(request, env); // answered by the Worker and D1; the container is not started for these
     }
     // One named instance: every request must reach the container that holds the files.
-    return getContainer(env.ENGINE, "main").fetch(request);
+    const timing = new Timing();
+    const safe = request.method === "GET" || request.method === "HEAD";
+    for (let attempt = 0; ; attempt++) {
+      try {
+        // getContainer per attempt: a stub that saw its Durable Object reset (a deploy) stays broken.
+        const response = await timing.time("object", () => getContainer(env.ENGINE, "main").fetch(request));
+        return timing.attach(response);
+      } catch (error: any) {
+        // Only reads are retried: a write may have reached the engine before the error.
+        if (safe && attempt === 0 && error?.retryable) continue;
+        console.error("engine object failed", request.method, path, error);
+        return unavailable(request, env);
+      }
+    }
   },
 };
