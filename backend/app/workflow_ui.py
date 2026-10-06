@@ -15696,9 +15696,11 @@ MANUAL_HTML = r"""<!doctype html>
           <p>Read each derivative as a rate of change. For example, if misinformation contact is high, the M compartment grows. If trusted correction and inoculation are strong, the model moves people toward T, I, and R.</p>
 
           <h3>Agent-based model</h3>
-          <p>The agent-based model is the household-level companion to the population equation. It represents each household as a decision maker with its own trust, barrier level, peer influence, message exposure, and adoption probability.</p>
-          <div class="math-display">P(adopt_i) = logistic(trust_i + peer_i + evidence_i - barrier_i - misinformation_i)</div>
-          <p>This helps test whether the smooth population curve hides local friction. If the agent model is lower than the compartmental model, local peer networks, trust gaps, or access barriers may be slowing adoption.</p>
+          <p>The agent-based model follows 1,000 simulated households on an assumed social network. By default they live in villages of 100: each household is tied to about 8 near neighbours, a few ties are rewired at random, and each household has about one tie to another village. Other assumed shapes can be chosen: one small-world population, a scale-free network (a few highly connected households and many with few ties), or a well-mixed population with no network at all.</p>
+          <div class="math-display">P(adopt_i \text{ on day } t) = \min(1,\; media + peer \times \frac{\text{adopting neighbours of } i}{\text{neighbours of } i} + outreach)</div>
+          <p>Each day a household that has not adopted may adopt through media, through its neighbours (in proportion to the share of its neighbours who already adopted), and through outreach set by intervention_strength, read as the compartmental model reads it. With complex contagion, the neighbour route only opens once at least two neighbours have adopted. An adopter may also stop. On a well-mixed population the curve matches the old population-average version; the network is what changes it.</p>
+          <p>The model runs 20 times, each on its own network with its own chance events, from a fixed seed so results repeat. The band is the 10th to 90th percentile across those runs: it shows chance only, not uncertainty in the scores. A robustness check re-runs the scenario on 7 network shapes; the adoption level counts as holding when the average adoption differs by at most 0.10 across them. An optional step after the Inoculation lab compares who a campaign recruits as messengers (at random, the best-connected households, or bridges between villages).</p>
+          <p>The network is an assumption, not measured data. If the agent model is lower than the compartmental model, the assumed network structure is slowing spread; if higher, neighbours are doing useful work in the model. Neither says what real villages will do.</p>
 
           <h3>Digital twin feedback</h3>
           <div class="math-display">\theta_{t+1} = \theta_t + \lambda(y_{observed} - y_{predicted})</div>
@@ -16682,10 +16684,11 @@ ACADEMY_HTML = r"""<!doctype html>
           <p><strong>Policy meaning:</strong> if misinformation pressure is high, a programme may need trusted messengers and prebunking before technology distribution can succeed.</p>
 
           <h3>3. Agent-based model: the household-level story</h3>
-          <p>The agent-based model asks: what happens if households are different from each other? One household may trust a community health worker. Another may trust a neighbour. Another may face cost, distance, or habit barriers.</p>
-          <div class="math-display">P(adopt_i) = logistic(trust_i + peer_i + evidence_i - barrier_i - misinformation_i)</div>
-          <p><strong>Plain meaning:</strong> household i becomes more likely to adopt when trust, peer support, and evidence are strong. It becomes less likely to adopt when barriers and misinformation are strong.</p>
-          <p><strong>What the user should look for:</strong> if the agent model is lower than the population curve, local household barriers may be slowing adoption. If it is higher, peer effects or trusted messengers may be doing useful work.</p>
+          <p>The agent-based model asks: what happens when households adopt partly because their neighbours do? It follows 1,000 simulated households on an assumed social network, by default villages of 100 households, each tied to about 8 neighbours, with about one tie per household to another village.</p>
+          <div class="math-display">P(adopt_i \text{ on day } t) = \min(1,\; media + peer \times \frac{\text{adopting neighbours of } i}{\text{neighbours of } i} + outreach)</div>
+          <p><strong>Plain meaning:</strong> each day, household i may adopt because of media, because some of its neighbours already use the technology, or because of outreach (intervention_strength). The more of its neighbours have adopted, the stronger the pull. With complex contagion, the pull only starts once two neighbours have adopted.</p>
+          <p><strong>Why 20 runs and a band:</strong> each run draws its own network and its own chance events. The band (10th to 90th percentile) shows chance only. A robustness check repeats the scenario on 7 network shapes and says whether the adoption level holds (average adoption within 0.10) or depends on the shape.</p>
+          <p><strong>What the user should look for:</strong> if the agent model is lower than the population curve, the assumed network is slowing spread; if it is higher, neighbours are carrying adoption in the model. The network is assumed, not measured, so this shows what the structure could do, not what real villages will do.</p>
           <p><strong>Policy meaning:</strong> a national message may not be enough if the household-level bottleneck is repair access, social proof, trust, or fear.</p>
 
           <h3>4. Digital twin feedback: learning from the field</h3>
