@@ -145,6 +145,11 @@ def _curve_story(output, intro):
     return text
 
 
+def accepted_records(journey):
+    """The records the researcher accepted (as journey.accepted, which this module cannot import)."""
+    return [record for record in (journey or {}).get('records', []) if (record.get('review') or {}).get('decision') == 'accept']
+
+
 def explanation(stage, output, journey):
     """Plain-language explanation of a finished stage, written by the engine from its own numbers.
 
@@ -177,8 +182,13 @@ def explanation(stage, output, journey):
                      'reading for review, not a measurement of how people feel.')
         return text
     if stage == 'compartmental':
-        return _curve_story(output, 'The compartmental model treats everyone as one population moving between states: '
+        text = _curve_story(output, 'The compartmental model treats everyone as one population moving between states: '
                                     'not yet persuaded, misinformed, truth-aligned, inoculated, and adopting.')
+        last, notes = output['trajectory'][-1], len(accepted_records(journey))
+        return text + (f" Its band runs from {_num(last['adoption_lower'])} to {_num(last['adoption_upper'])} at the end "
+                       f"(10th to 90th percentile): how far the curve moves when trust and barrier vary as much as "
+                       f"{notes} accepted note{'s' if notes != 1 else ''} allow. It does not include doubt about the "
+                       'model\'s own rules, which are assumptions.')
     if stage == 'agents':
         net = output['assumptions']['network']
         text = _curve_story(output, f"The agent-based model simulates {net['households']} households on an assumed "

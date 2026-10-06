@@ -148,7 +148,9 @@ def compartmental_section():
                     'Trust raises β_t (word of mouth), barrier raises β_m (the misinformed view) and δ (stopping). In the long run '
                     'the level is roughly 1 − δ/β_t: more trust raises it, more barrier lowers it.'],
         'limits': 'Illustrative and uncalibrated: the rates are rules of the tool, not measured. The band around the curve '
-                  'is a fixed width, ±(0.035 + 0.10 × (1 − confidence)), not a statistical interval. A scenario, not a forecast. '
+                  'is the 10th to 90th percentile of 50 re-runs with trust and barrier drawn from Beta distributions holding '
+                  '10 prior counts plus 12 per accepted note, so more notes give a narrower band; it leaves out doubt about '
+                  'the rules themselves (see the sensitivity analysis). A scenario, not a forecast. '
                   'Until October 2026 settled adopters neither spoke nor stopped, so every scenario drifted towards full adoption.',
     }
 

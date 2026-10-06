@@ -48,6 +48,18 @@ class PopulationModelSoundness(unittest.TestCase):
             for barrier in GRID:
                 self.assertGreaterEqual(final(trust, barrier, 0.5) + 1e-9, final(trust, barrier, 0.0))
 
+    def test_band_narrows_with_more_evidence_and_holds_the_curve(self):
+        widths = []
+        for notes in (1, 5, 40):
+            last = run_compartmental_model(180, {'trust_score': 0.6, 'barrier_score': 0.4, 'evidence_records': notes})[-1]
+            self.assertLessEqual(last['adoption_lower'], last['adoption'])
+            self.assertGreaterEqual(last['adoption_upper'], last['adoption'])
+            widths.append(last['adoption_upper'] - last['adoption_lower'])
+        self.assertEqual(widths, sorted(widths, reverse=True))
+        self.assertGreater(widths[0], 2 * widths[-1])
+        again = run_compartmental_model(180, {'trust_score': 0.6, 'barrier_score': 0.4, 'evidence_records': 5})[-1]
+        self.assertEqual(again['adoption_upper'] - again['adoption_lower'], widths[1])  # seeded: reproducible
+
     def test_the_curve_settles(self):
         curve = run_compartmental_model(1500, {'trust_score': 0.6, 'barrier_score': 0.35, 'intervention_strength': 0.2})
         self.assertLess(abs(curve[-1]['adoption'] - curve[-31]['adoption']), 0.002)

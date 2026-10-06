@@ -322,7 +322,8 @@ def model_params(journey, **extra):
             'misinformation_risk': signal['misinformation_risk'],
             'misinformation_decay': max(signal['misinformation_decay'], applied * 0.6) if applied else signal['misinformation_decay'] * 0.25,
             'resistance_growth': max(signal['resistance_growth'], applied * 0.55) if applied else signal['resistance_growth'] * 0.2,
-            'reactance_penalty': signal['reactance_penalty'], 'trusted_messenger_fit': signal['trusted_messenger_fit'], **extra}
+            'reactance_penalty': signal['reactance_penalty'], 'trusted_messenger_fit': signal['trusted_messenger_fit'],
+            'evidence_records': max(1, len(accepted(journey))), **extra}
 
 
 def simulate(mode, horizon, params):

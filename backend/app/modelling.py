@@ -57,19 +57,18 @@ def compartmental_rates(parameters: Dict[str, float]) -> Dict[str, float]:
     }
 
 
-def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
-    """Run the documented NDIM S/M/T/I/R compartment system.
+EVIDENCE_PSEUDO_TRIALS = 12  # per accepted note, the signal update's convention (journey.py bayes stage)
+PRIOR_COUNTS = 10.0  # the prior Beta(6, 4) / Beta(4, 6) carries 10 counts
+BAND_SAMPLES = 50
+BAND_SEED = 11
 
-    Compartments are normalized proportions:
-    S susceptible, M misinformed, T truth-aligned, I inoculated, R durable
-    adoption/resistance. The policy-facing adoption signal is T + I + R.
-    """
+
+def compartmental_path(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
+    """One run of the S/M/T/I/R system: shares and adoption per day, no band."""
     barrier = _clamp(float(parameters.get("barrier_score", 0.35)))
     inoculation_strength = _clamp(float(parameters.get("inoculation_strength", 0.0)))
     misinformation_risk = _clamp(float(parameters.get("misinformation_risk", 0.0)))
-    reactance_penalty = _clamp(float(parameters.get("reactance_penalty", 0.0)))
     initial_adoption = _clamp(float(parameters.get("initial_adoption", 0.10)))
-
     state = _normalize_compartments(
         {
             "S": float(parameters.get("S0", max(0.05, 0.72 - initial_adoption * 0.30))),
@@ -79,12 +78,9 @@ def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> 
             "R": float(parameters.get("R0", max(0.02, initial_adoption * 0.50))),
         }
     )
-
     r = compartmental_rates(parameters)
     beta_t, beta_m, iota, rho, sigma, mu, gamma, eta, waning, delta = (r[k] for k in ("beta_t", "beta_m", "iota", "rho", "sigma", "mu", "gamma", "eta", "waning", "delta"))
-
-    uncertainty = 0.035 + 0.10 * (1.0 - _clamp(float(parameters.get("evidence_strength", parameters.get("confidence", 0.50)))))
-    trajectory: List[Dict[str, float]] = []
+    path: List[Dict[str, float]] = []
     for day in range(horizon_days):
         S, M, T, I, R = state["S"], state["M"], state["T"], state["I"], state["R"]
         # Word of mouth comes from everyone who uses it: the newly convinced (T) and settled adopters (R). When only T
@@ -95,27 +91,60 @@ def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> 
         dT = talk + rho * M - mu * T - eta * T - delta * T
         dI = iota * S + sigma * M * max(I, 0.001) - gamma * I
         dR = gamma * I + eta * T - delta * R
-        state = _normalize_compartments(
-            {
-                "S": S + dS,
-                "M": M + dM,
-                "T": T + dT,
-                "I": I + dI,
-                "R": R + dR,
-            }
-        )
-        adoption = _clamp(state["T"] + state["I"] + state["R"])
+        state = _normalize_compartments({"S": S + dS, "M": M + dM, "T": T + dT, "I": I + dI, "R": R + dR})
+        path.append({"day": float(day), **state, "adoption": _clamp(state["T"] + state["I"] + state["R"])})
+    return path
+
+
+def evidence_band(horizon_days: int, parameters: Dict[str, float], path_fn=None) -> tuple:
+    """10th and 90th percentile adoption per day when trust and barrier vary as much as the evidence allows.
+
+    Trust and barrier are drawn from Beta distributions centred on the scores, with as many counts as the signal update
+    gives them: 10 prior counts plus 12 per accepted note (evidence_records; 3 when not given). More notes, narrower band.
+    The draws use a fixed seed, so a run is reproducible. path_fn returns one run's adoption series.
+    """
+    import numpy as np
+    samples = int(parameters.get("uncertainty_samples", BAND_SAMPLES))
+    path_fn = path_fn or (lambda p: [row["adoption"] for row in compartmental_path(horizon_days, p)])
+    if samples <= 0:
+        return None
+    notes = max(1.0, float(parameters.get("evidence_records", 3)))
+    counts = PRIOR_COUNTS + EVIDENCE_PSEUDO_TRIALS * notes
+    rng = np.random.default_rng(BAND_SEED)
+    trust = min(0.99, max(0.01, float(parameters.get("trust_score", 0.60))))
+    barrier = min(0.99, max(0.01, float(parameters.get("barrier_score", 0.35))))
+    draws = np.array([path_fn({**parameters, "trust_score": float(t), "barrier_score": float(b), "uncertainty_samples": 0})
+                      for t, b in zip(rng.beta(trust * counts, (1 - trust) * counts, samples),
+                                      rng.beta(barrier * counts, (1 - barrier) * counts, samples))])
+    return np.percentile(draws, 10, axis=0), np.percentile(draws, 90, axis=0)
+
+
+def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
+    """Run the documented NDIM S/M/T/I/R compartment system.
+
+    Compartments are normalized proportions:
+    S susceptible, M misinformed, T truth-aligned, I inoculated, R durable
+    adoption/resistance. The policy-facing adoption signal is T + I + R. The band is evidence_band: the 10th to 90th
+    percentile when trust and barrier vary as much as the number of accepted notes allows.
+    """
+    inoculation_strength = _clamp(float(parameters.get("inoculation_strength", 0.0)))
+    misinformation_risk = _clamp(float(parameters.get("misinformation_risk", 0.0)))
+    reactance_penalty = _clamp(float(parameters.get("reactance_penalty", 0.0)))
+    path = compartmental_path(horizon_days, parameters)
+    band = evidence_band(horizon_days, parameters)
+    trajectory: List[Dict[str, float]] = []
+    for day, row in enumerate(path):
+        adoption = row["adoption"]
+        low, high = (float(band[0][day]), float(band[1][day])) if band else (adoption, adoption)
         trajectory.append(
             {
-                "day": float(day),
-                **state,
-                "adoption": adoption,
-                "misinformation": state["M"],
-                "truth_aligned": state["T"],
-                "inoculated": state["I"],
-                "resistant": state["R"],
-                "adoption_lower": _clamp(adoption - uncertainty),
-                "adoption_upper": _clamp(adoption + uncertainty),
+                **row,
+                "misinformation": row["M"],
+                "truth_aligned": row["T"],
+                "inoculated": row["I"],
+                "resistant": row["R"],
+                "adoption_lower": _clamp(min(low, adoption)),
+                "adoption_upper": _clamp(max(high, adoption)),
                 "inoculation_strength": inoculation_strength,
                 "misinformation_risk": misinformation_risk,
                 "reactance_penalty": reactance_penalty,
