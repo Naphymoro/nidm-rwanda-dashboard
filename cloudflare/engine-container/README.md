@@ -49,6 +49,24 @@ npx wrangler deploy
 Then give each research team its key; they paste it in the Learning panel. Tested locally only
 (`scripts/test_answer_sync_worker.py` against `npx wrangler dev --enable-containers=false` with local D1).
 
+## Research assistant (Workers AI)
+
+The engine's research assistant runs on Workers AI through this Worker (`src/ai.ts`): no outside API key or company.
+The engine calls `/__ai/v1/chat/completions` on the Worker's public URL with the `NDIM_AI_TOKEN` secret, as an
+OpenAI-compatible provider; the Worker answers through the AI binding. The Worker picks the model (`NDIM_AI_MODEL`, GLM 5.3
+Flash after the 2026-10-06 comparison), caps replies at 1,500 tokens, stops for the day at `NDIM_AI_DAILY_NEURONS` (9,000,
+under the free 10,000) and allows `NDIM_AI_VISITOR_MESSAGES` (40) assistant messages per visitor per day (a visitor is a
+hash of IP and day). Use is counted in D1 (`ai_usage`, `ai_visitors`). Without the secret there is no assistant.
+
+```bash
+npx wrangler d1 migrations apply ndim-engine-data --remote   # creates ai_usage and ai_visitors
+python3 -c 'import secrets; print(secrets.token_urlsafe(32), end="")' | npx wrangler secret put NDIM_AI_TOKEN
+npx wrangler deploy
+```
+
+Visitors can also use their own key (OpenRouter, OpenAI, Anthropic or DeepSeek) from AI settings: it stays in their
+browser, is sent with each message, and the engine uses it for that reply only. Those messages are not counted.
+
 ## Requirements
 
 - Cloudflare account on the **Workers Paid** plan (Containers are not on the free plan).

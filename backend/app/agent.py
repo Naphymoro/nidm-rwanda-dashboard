@@ -34,21 +34,29 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix='/agent', tags=['agent'])
 
 PROVIDERS = {
-    'anthropic': {'protocol': 'anthropic', 'env': 'ANTHROPIC_API_KEY', 'base_url': 'https://api.anthropic.com/v1', 'model': 'claude-sonnet-5'},
+    'anthropic': {'protocol': 'anthropic', 'env': 'ANTHROPIC_API_KEY', 'base_url': 'https://api.anthropic.com/v1', 'model': 'claude-opus-5-5'},
     'openai': {'protocol': 'openai', 'env': 'OPENAI_API_KEY', 'base_url': 'https://api.openai.com/v1', 'model': 'gpt-4o'},
     'openrouter': {'protocol': 'openai', 'env': 'OPENROUTER_API_KEY', 'base_url': 'https://openrouter.ai/api/v1', 'model': 'openai/gpt-4o'},
     'mistral': {'protocol': 'openai', 'env': 'MISTRAL_API_KEY', 'base_url': 'https://api.mistral.ai/v1', 'model': 'mistral-large-latest'},
+    'deepseek': {'protocol': 'openai', 'env': 'DEEPSEEK_API_KEY', 'base_url': 'https://api.deepseek.com', 'model': 'deepseek-chat'},
     'openai-compatible': {'protocol': 'openai', 'env': 'OPENAI_COMPATIBLE_API_KEY', 'base_url': None, 'model': 'local-model'},
     'ollama': {'protocol': 'openai', 'env': None, 'base_url': 'http://127.0.0.1:11434/v1', 'model': 'llama3.1'},
     'lmstudio': {'protocol': 'openai', 'env': None, 'base_url': 'http://127.0.0.1:1234/v1', 'model': 'local-model'},
 }
 AUTO_ORDER = ('anthropic', 'openai', 'openrouter', 'mistral')
+# "Use your own key": a visitor's key, kept in their browser and sent with each chat message, used for that reply only and
+# never saved, so a shared hosted engine never spends one visitor's key on another. Fixed endpoints only (no base URL from
+# the browser, so the engine cannot be pointed at another host). OpenRouter first: one key reaches DeepSeek, GPT, Claude...
+PERSONAL = ('openrouter', 'openai', 'anthropic', 'deepseek')
+PERSONAL_MODEL = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,119}$')
 # Labels for local models, from the NDIM benchmarks (scripts/local_ai_benchmark, scripts/local_ai_training). The NDIM
 # fine-tunes come from the registry the fine-tune pipeline writes (local_models.json): the version that passed the
 # benchmark gate is the recommended one; a version that failed it says so (NDIM_MODEL_REGISTRY points elsewhere, e.g. at
 # the registry a pipeline run just updated). Then the first matching prefix wins.
 MODEL_REGISTRY = Path(__file__).with_name('local_models.json')
 MODEL_LABELS = [
+    ('@cf/zai-org/glm-5.3-flash', 'GLM 5.3 Flash', 'Runs on Cloudflare Workers AI, within a free daily allowance'),
+    ('@cf/deepseek-ai/', 'DeepSeek (on Cloudflare)', 'Runs on Cloudflare Workers AI, within a free daily allowance'),
     ('ndim-', 'NDIM-tuned (older test version)', 'An earlier NDIM training run, kept for comparison'),
     ('qwen3:1.7b', 'Tiny', 'Fastest, least energy; often misses NDIM rules'),
     ('llama3.2:3b', 'Small', 'Light and quick; weaker at following NDIM rules'),
@@ -96,9 +104,24 @@ def resolve():
         return {'available': False, 'provider': name, 'reason': f'{name} is selected but {spec["env"]} is not set.'}
     if not base:
         return {'available': False, 'provider': name, 'reason': 'Set NDIM_AGENT_BASE_URL for this provider.'}
-    if not local_mode() and not os.getenv('NDIM_AGENT_ACCESS_TOKEN'):
+    # NDIM_AGENT_PUBLIC: the provider caps use itself (the Cloudflare Worker's daily and per-visitor limits), so a
+    # hosted demo may offer the assistant without an access token.
+    if not local_mode() and not os.getenv('NDIM_AGENT_ACCESS_TOKEN') and os.getenv('NDIM_AGENT_PUBLIC') != '1':
         return {'available': False, 'provider': name, 'reason': 'Hosted deployments need NDIM_AGENT_ACCESS_TOKEN before the assistant is enabled.'}
     return {'available': True, 'provider': name, 'protocol': spec['protocol'], 'model': model, 'base_url': base.rstrip('/'), 'api_key': key}
+
+
+def personal(provider, key, model):
+    """Settings for one reply with the visitor's own key (see PERSONAL); nothing is stored."""
+    if provider not in PERSONAL:
+        raise HTTPException(422, f'Your own key works with {", ".join(PERSONAL)}.')
+    if not key or len(key) < 8 or len(key) > 400 or any(c.isspace() for c in key):
+        raise HTTPException(422, 'That API key does not look right.')
+    if model and not PERSONAL_MODEL.match(model):
+        raise HTTPException(422, 'That model name does not look right.')
+    spec = PROVIDERS[provider]
+    return {'available': True, 'provider': provider, 'protocol': spec['protocol'], 'model': model or spec['model'],
+            'base_url': spec['base_url'], 'api_key': key, 'personal': True}
 
 
 def registry_labels():
@@ -422,12 +445,19 @@ def _raise_for(response, provider):
         log.warning('Agent provider %s returned %s: %s', provider, response.status_code, body)
         hint = {401: 'The API key was rejected.', 403: 'The API key is not allowed to use this model.', 404: 'The model or endpoint was not found.',
                 429: 'The provider rate limit or quota was reached.'}.get(response.status_code, 'The provider returned an error.')
-        raise RuntimeError(f'{provider} error {response.status_code}: {hint}')
+        try:
+            said = json.loads(body).get('error', {}).get('message')
+        except (ValueError, AttributeError):
+            said = None
+        if said and provider == 'openai-compatible':  # NDIM's own Worker (daily allowance...): its sentence is for the visitor
+            raise RuntimeError(said)
+        raise RuntimeError(f'{provider} error {response.status_code}: {hint}' + (f' ({provider} said: "{said[:200]}")' if said else ''))
 
 
 def stream_openai(cfg, system, messages):
     """Yields text deltas; returns (text, tool_calls)."""
-    headers = {'Content-Type': 'application/json'}
+    # A named client: Cloudflare's bot check refuses default library user agents (error 1010).
+    headers = {'Content-Type': 'application/json', 'User-Agent': 'NDIM-engine'}
     if cfg.get('api_key'):
         headers['Authorization'] = f'Bearer {cfg["api_key"]}'
     body = {'model': cfg['model'], 'stream': True, 'temperature': 0.3, 'messages': _openai_messages(system, messages),
@@ -453,7 +483,8 @@ def stream_openai(cfg, system, messages):
 
 def stream_anthropic(cfg, system, messages):
     headers = {'Content-Type': 'application/json', 'x-api-key': cfg['api_key'] or '', 'anthropic-version': '2023-06-01'}
-    body = {'model': cfg['model'], 'max_tokens': 4096, 'temperature': 0.3, 'stream': True, 'system': system, 'messages': _anthropic_messages(messages),
+    # No temperature: current Claude models reject sampling parameters (400).
+    body = {'model': cfg['model'], 'max_tokens': 4096, 'stream': True, 'system': system, 'messages': _anthropic_messages(messages),
             'tools': [{'name': t['name'], 'description': t['description'], 'input_schema': t['parameters']} for t in TOOLS]}
     text, blocks = '', {}
     with httpx.Client(timeout=httpx.Timeout(120, connect=15)) as client:
@@ -543,7 +574,9 @@ def status():
     return JSONResponse({'available': cfg['available'], 'provider': cfg.get('provider'), 'model': cfg.get('model'),
                          'model_label': model_label(cfg.get('model'))[0],
                          'reason': cfg.get('reason'), 'configurable': local_mode(), 'token_required': bool(os.getenv('NDIM_AGENT_ACCESS_TOKEN')),
-                         'providers': sorted(PROVIDERS)}, headers={'Cache-Control': 'no-store'})
+                         'providers': sorted(PROVIDERS),
+                         'personal': [{'provider': name, 'model': PROVIDERS[name]['model']} for name in PERSONAL]},
+                        headers={'Cache-Control': 'no-store'})
 
 
 @router.get('/models')
@@ -865,9 +898,11 @@ def learning_dataset(shared_only: bool = False, x_ndim_agent_token: str | None =
 
 
 @router.post('/chat')
-def chat(payload: ChatRequest, x_ndim_agent_token: str | None = Header(default=None)):
+def chat(payload: ChatRequest, x_ndim_agent_token: str | None = Header(default=None),
+         x_ndim_user_provider: str | None = Header(default=None), x_ndim_user_key: str | None = Header(default=None),
+         x_ndim_user_model: str | None = Header(default=None)):
     _authorize(x_ndim_agent_token)
-    cfg = resolve()
+    cfg = personal(x_ndim_user_provider, x_ndim_user_key, x_ndim_user_model) if x_ndim_user_key else resolve()
     if not cfg['available']:
         raise HTTPException(503, cfg['reason'])
     thread = load_thread(payload.workspace_id, payload.thread_id, create=True)

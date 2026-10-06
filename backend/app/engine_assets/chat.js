@@ -31,11 +31,35 @@ const SKILLS = [
 const DEFAULTS = {model:'compartmental', profile:'auto', horizon_days:90, intervention_strength:.3, initial_adoption:.1, narrative_influence:.38, language:'en', expertise:'guided'};
 const state = {workspace:'', threads:[], threadId:null, runs:[], messages:[], local:[], evidence:null, skill:'auto', lesson:null, pending:null,
   settings:{...DEFAULTS}, autorun:false, lessons:[], sample:'', online:false, busy:false, streaming:false, poll:null, gen:0,
-  open:new Map(), reviewing:new Set(), notify:new Set(), queuedNotes:[], agent:null, token:'',
+  open:new Map(), reviewing:new Set(), notify:new Set(), queuedNotes:[], agent:null, token:'', personal:null,
   journey:null, journeyProposal:null, recordsProposal:null, journeyGuide:null, journeyBusy:false, journeyError:null, journeyDraft:{}, journeyAnchor:null,
   correcting:new Set(), correctionDrafts:new Map(), feedbackError:new Map(),
   panel:{open:false, tab:'workbench', runId:null, section:null, query:'', toc:null}};
-const agentOn = () => !!state.agent?.available;
+const agentOn = () => !!state.agent && (state.agent.available || !!state.personal?.key);
+// "Use your own key": kept only in this browser and sent with each assistant message; the engine uses it for that reply
+// and never stores it (agent.py PERSONAL), so a shared hosted engine never spends one visitor's key on another.
+const PERSONAL_LABELS = {openrouter:'OpenRouter: one key for DeepSeek, GPT, Claude, Gemini and more (recommended)', openai:'OpenAI (ChatGPT models)',
+  anthropic:'Anthropic (Claude models)', deepseek:'DeepSeek'};
+function personalHeaders(){
+  const p=state.personal;
+  return p?.key?{'X-NDIM-User-Provider':p.provider,'X-NDIM-User-Key':p.key,...(p.model?{'X-NDIM-User-Model':p.model}:{})}:{};
+}
+function savePersonal(value){
+  state.personal=value;
+  try{value?localStorage.setItem('ndim-personal-key',JSON.stringify(value)):localStorage.removeItem('ndim-personal-key');}catch{}
+  loadAgent();render();renderAISettings();
+}
+function openKeySettings(){
+  // After the click that asked for it: the page closes menus on any click outside them.
+  setTimeout(()=>{if($('settings-menu').hidden)toggleMenu('settings-btn','settings-menu');const key=$('personal-key');if(key){key.scrollIntoView({block:'center'});key.focus();}},0);
+}
+// An error from the free allowance (the Worker's daily or per-visitor limit) offers the visitor's own key.
+function errorCallout(message){
+  const box=callout('error','alert',message);
+  if(!state.personal?.key&&/allowance|assistant messages/i.test(message))
+    return el('div',{},box,el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',onclick:openKeySettings},icon('plug'),'Add your own key')));
+  return box;
+}
 
 // ---------- helpers ----------
 function el(tag, props={}, ...children){
@@ -253,7 +277,7 @@ function aiBlock(parts){
   for(const message of parts){
     if(message.role!=='assistant')continue;
     if(message.content)body.append(el('div',{class:'md',html:markdown(message.content)}));
-    if(message.error)body.append(callout('error','alert',message.error));
+    if(message.error)body.append(errorCallout(message.error));
     if(message.check)body.append(checkCallout(message.check));
     for(const call of message.tool_calls||[]){
       const result=results.get(call.id);
@@ -757,6 +781,7 @@ function renderAISettings(){
     const token=el('input',{type:'password',placeholder:'Access token',value:state.token,'aria-label':'Assistant access token'});
     box.append(el('div',{class:'row'},token,el('button',{type:'button',class:'btn',onclick:()=>{state.token=token.value.trim();try{localStorage.setItem('ndim-agent-token',state.token);}catch{}loadAgent().then(()=>{render();renderAISettings();loadThreads();});}},'Save')));
   }
+  if(!a.configurable&&a.personal)box.append(personalSettings(a));
   if(a.configurable){
     const provider=el('select',{'aria-label':'AI provider'},a.providers.map(name=>el('option',{value:name,text:name})));
     provider.value=a.provider||'anthropic';
@@ -782,12 +807,35 @@ function renderAISettings(){
     }},'Save')),note,keyNote);
   }
 }
+function personalSettings(a){
+  const mine=state.personal;
+  const defaults=Object.fromEntries(a.personal.map(p=>[p.provider,p.model]));
+  const provider=el('select',{'aria-label':'Provider for your own key'},a.personal.map(p=>el('option',{value:p.provider,text:PERSONAL_LABELS[p.provider]||p.provider})));
+  provider.value=mine?.provider||'openrouter';
+  const model=el('input',{'aria-label':'Model','autocomplete':'off',value:mine?.model||''});
+  const hint=()=>{model.placeholder=`Model (default ${defaults[provider.value]})`;};
+  provider.addEventListener('change',hint);hint();
+  const key=el('input',{id:'personal-key',type:'password',placeholder:mine?.key?'Key saved in this browser (type to replace)':'Your API key','aria-label':'Your API key',autocomplete:'off'});
+  const note=el('span',{class:'small muted'});
+  return el('div',{class:'personal-key'},
+    el('div',{class:'menu-title'},'Use your own key',el('small',{text:mine?.key?`On: ${mine.provider}`:'Optional'})),
+    el('span',{class:'small muted',text:'To chat with ChatGPT, Claude, DeepSeek or another model. The key stays in this browser and is sent with each message over HTTPS; NDIM uses it for that reply only and never stores it. Your messages then go to that company, which bills you. Do not paste field notes you may not share with it.'}),
+    el('label',{},'Provider',provider),el('div',{class:'row'},key),
+    el('div',{class:'row'},model,el('button',{type:'button',class:'btn primary',onclick:()=>{
+      const typed=key.value.trim();
+      if(!typed&&!(mine?.key&&mine.provider===provider.value)){note.textContent='Paste your API key first.';key.focus();return;}
+      savePersonal({provider:provider.value,key:typed||mine.key,model:model.value.trim()||null});
+    }},'Save'),mine?.key?el('button',{type:'button',class:'btn',onclick:()=>savePersonal(null)},'Remove'):null),
+    el('span',{class:'small muted'},'New to this? ',el('a',{href:'https://openrouter.ai/keys',target:'_blank',rel:'noopener'},'Get an OpenRouter key'),', add credit there, then pick any model.'),
+    note);
+}
 async function loadAgent(){
   try{state.agent=await api('/agent/status');}catch{state.agent=null;}
-  const on=agentOn();
-  $('model-badge').hidden=!on;$('model-badge').textContent=on?(state.agent.model_label||state.agent.model):'';$('model-badge').title=on?state.agent.model:'';
+  const on=agentOn(), mine=state.personal?.key&&state.agent;
+  const model=mine?(state.personal.model||state.agent.personal?.find(p=>p.provider===state.personal.provider)?.model||state.personal.provider):state.agent?.model;
+  $('model-badge').hidden=!on;$('model-badge').textContent=on?(mine?`${model} · your key`:(state.agent.model_label||model)):'';$('model-badge').title=on?model:'';
   document.querySelector('.welcome p').textContent=on?'Ask a research question, explore the manual, or plan an experiment.':'What would you like to investigate?';
-  document.querySelector('.disclaimer').textContent=on?`Answers are written by ${state.agent.model}. Scientific results come only from NDIM's local tools, and nothing runs until you click Run.`:'NDIM runs local scientific tools, not an AI model. Scores are heuristics and scenarios are illustrative, so check them against the evidence.';
+  document.querySelector('.disclaimer').textContent=on?`Answers are written by ${model}${mine?', with your own key':''}. Scientific results come only from NDIM's local tools, and nothing runs until you click Run.`:'NDIM runs local scientific tools, not an AI model. Scores are heuristics and scenarios are illustrative, so check them against the evidence.';
 }
 
 // ---------- evidence ----------
@@ -840,6 +888,7 @@ async function send(text){
   if(slash){const skill=SKILLS.find(item=>item.id===slash[1]);if(skill){state.skill=skill.id;state.lesson=null;text=slash[2].trim();renderSkill();}}
   $('prompt').value='';autosize();closeMenus();
   if(!state.online){pushLocal({role:'user',text});pushLocal({role:'ai',tone:'error',text:'I am not connected to an NDIM engine. Connect one first (see the welcome screen), then send your message again.'});$('prompt').value=text;return;}
+  if(!state.personal?.key&&state.agent?.personal&&MODEL_WISH.test(text)&&MODEL_NAME.test(text))return aboutModels(text);
   // Labs keep their fixed question and check, so they plan directly even when the assistant is on.
   if(agentOn()&&!state.lesson)return sendAgent(text);
   if(ABOUT.test(text))return aboutNDIM(text);
@@ -867,6 +916,16 @@ async function aboutNDIM(text){
     node:intro?el('div',{class:'md',html:markdown(intro)}):null,
     actions:[{label:'Start a journey',icon:'flask',primary:true,run:()=>startJourney()},
              {label:'Use the sample field notes',icon:'file',run:useSample}]});
+}
+// "Can I use ChatGPT / Claude / DeepSeek?": a fixed answer with the own-key option, before any model is asked.
+const MODEL_NAME=/\b(chat ?gpt|gpt[\w.-]*|openai|claude|anthropic|deepseek|gemini|openrouter|llama|mistral|grok|qwen)\b/i;
+const MODEL_WISH=/\b(use|using|switch|want|prefer|connect|try|instead|change|via|through|with|can (i|you|it|ndim)|does (it|ndim))\b/i;
+function aboutModels(text,{fromAgent=false}={}){
+  pushLocal({role:'user',text});
+  const builtIn=state.agent.available?`NDIM's own assistant runs on ${state.agent.model_label||state.agent.model}${/^@cf\//.test(state.agent.model)?', on Cloudflare, free within a daily allowance':''}.`:'This NDIM engine has no assistant model of its own switched on.';
+  pushLocal({role:'ai',text:`${builtIn} To chat with ChatGPT, Claude, DeepSeek or another model instead, add your own API key. It stays in this browser, NDIM uses it only for your replies, and that company bills you. OpenRouter is the simplest: one key reaches DeepSeek, GPT, Claude, Gemini and many more.`,
+    actions:[{label:'Add your own key',icon:'plug',primary:true,run:openKeySettings},
+             ...(state.agent.available?[{label:`Ask NDIM's assistant instead`,icon:'send',run:()=>{state.local=[];render();sendAgent(text);}}]:[])]});
 }
 // Plan without the assistant: no-AI mode, labs, and the Workbench panel.
 async function planDirect(params,ev,{bubble}={}){
@@ -938,8 +997,8 @@ async function sendAgent(text,{hidden=false}={}){
     if(next&&gen===state.gen)await sendAgent(next,{hidden:true});
   };
   try{
-    const response=await fetch(apiBase+'/agent/chat',{method:'POST',headers:headers(),body:JSON.stringify({workspace_id:state.workspace,thread_id:threadId,message:text,evidence:ev,settings,hidden})});
-    if(!response.ok){const message=await errorText(response);typing.remove();body.append(callout('error','alert',message));setStreaming(false);state.queuedNotes=[];if(!hidden){$('prompt').value=text;autosize();}return;}
+    const response=await fetch(apiBase+'/agent/chat',{method:'POST',headers:headers(personalHeaders()),body:JSON.stringify({workspace_id:state.workspace,thread_id:threadId,message:text,evidence:ev,settings,hidden})});
+    if(!response.ok){const message=await errorText(response);typing.remove();body.append(errorCallout(message));setStreaming(false);state.queuedNotes=[];if(!hidden){$('prompt').value=text;autosize();}return;}
     const reader=response.body.getReader();const decoder=new TextDecoder();let buffer='';
     for(;;){
       const {value,done}=await reader.read();
@@ -976,7 +1035,7 @@ async function sendAgent(text,{hidden=false}={}){
           if(segment)segment.innerHTML=markdown(segmentText);
           body.append(checkCallout(event));
         }else if(event.type==='error'){
-          typing.remove();body.append(callout('error','alert',event.message));
+          typing.remove();body.append(errorCallout(event.message));
         }
         if(follow)scrollToEnd();
       }
@@ -1335,6 +1394,7 @@ $('theme-toggle').onclick=()=>{
 async function init(){
   greet();
   try{state.autorun=localStorage.getItem('ndim-autorun')==='1';state.token=localStorage.getItem('ndim-agent-token')||'';}catch{}
+  try{state.personal=JSON.parse(localStorage.getItem('ndim-personal-key')||'null');}catch{state.personal=null;}
   let closed=false;try{closed=localStorage.getItem('ndim-sidebar')==='closed';}catch{}
   setSidebar(!matchMedia('(max-width:820px)').matches&&!closed);
   writeSettings();render();

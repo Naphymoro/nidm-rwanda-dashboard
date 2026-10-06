@@ -1,5 +1,6 @@
 import { Container, getContainer } from "@cloudflare/containers";
 import { sharedAnswers } from "./shared-answers";
+import { aiProxy, visitorAllowed, visitorRefusal } from "./ai";
 
 // Required by the containers library once a deployment has used outbound interception (an earlier version did; its
 // settings persist): without this export every container start fails with "ctx.exports.ContainerProxy is undefined".
@@ -12,7 +13,15 @@ interface Env {
   NDIM_MIRROR_TOKEN: string;
   NDIM_SYNC_TOKENS?: string; // access keys for shared answers (src/shared-answers.ts); never given to the container
   DATABASE_URL?: string;
+  AI: Ai;
+  NDIM_AI_TOKEN?: string; // the engine's key for /__ai (src/ai.ts); unset: no research assistant
+  NDIM_AI_MODEL?: string;
+  NDIM_AI_BASE_URL?: string; // this Worker's public /__ai/v1: the container reaches the Worker over the internet
+  NDIM_AI_DAILY_NEURONS?: string;
+  NDIM_AI_VISITOR_MESSAGES?: string;
 }
+
+const assistantOn = (env: Env) => Boolean(env.NDIM_AI_TOKEN && env.NDIM_AI_MODEL && env.NDIM_AI_BASE_URL);
 
 // The engine's data folder outlives the container through D1. The Worker restores it into each new container before
 // any visitor's request, and pulls what changed after requests (backend/app/durable_mirror.py describes the engine's
@@ -82,6 +91,15 @@ export class NdimEngine extends Container<Env> {
       NDIM_ALLOWED_ORIGINS: env.NDIM_ALLOWED_ORIGINS,
       NDIM_MIRROR_TOKEN: env.NDIM_MIRROR_TOKEN,
       ...(env.DATABASE_URL ? { DATABASE_URL: env.DATABASE_URL } : {}),
+      // The engine's research assistant, on Workers AI through this Worker (src/ai.ts). NDIM_AGENT_PUBLIC: open to
+      // visitors without an access token, because the Worker caps use per day and per visitor.
+      ...(assistantOn(env) ? {
+        NDIM_AGENT_PROVIDER: "openai-compatible",
+        NDIM_AGENT_BASE_URL: env.NDIM_AI_BASE_URL!,
+        NDIM_AGENT_MODEL: env.NDIM_AI_MODEL!,
+        OPENAI_COMPATIBLE_API_KEY: env.NDIM_AI_TOKEN!,
+        NDIM_AGENT_PUBLIC: "1",
+      } : {}),
     };
   }
 
@@ -202,8 +220,16 @@ export class NdimEngine extends Container<Env> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const path = new URL(request.url).pathname;
+    if (path.startsWith("/__ai/")) {
+      return aiProxy(request, env, ctx); // the engine's model calls; 404 without NDIM_AI_TOKEN
+    }
+    // Messages sent with the visitor's own key (X-NDIM-User-Key) cost the demo nothing and are not counted.
+    if (path === "/agent/chat" && request.method === "POST" && assistantOn(env) && !request.headers.has("X-NDIM-User-Key")
+        && !(await visitorAllowed(request, env))) {
+      return visitorRefusal();
+    }
     if (path.startsWith("/__mirror")) {
       return new Response("Not Found", { status: 404 }); // the mirror routes are the Worker's, never a visitor's
     }

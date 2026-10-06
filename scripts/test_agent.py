@@ -167,6 +167,58 @@ class AgentTests(unittest.TestCase):
             self.assertIn('NDIM_AGENT_ACCESS_TOKEN', status['reason'])
             self.assertEqual(self.client.post('/agent/config', json={'provider': 'openai', 'api_key': 'x'}).status_code, 403)
 
+    def test_public_hosted_mode_needs_no_access_token(self):
+        # The Cloudflare Worker caps use per day and per visitor, so the demo can offer the assistant to everyone.
+        with patch.dict(os.environ, {'NDIM_DEPLOYMENT_MODE': 'cloud', 'NDIM_AGENT_PUBLIC': '1'}):
+            self.assertTrue(self.client.get('/agent/status').json()['available'])
+
+    def test_own_key_is_used_for_that_reply_only_and_never_stored(self):
+        used = []
+
+        def fake(cfg, system, messages):
+            used.append(cfg)
+            yield 'Hi.'
+            return 'Hi.', []
+        own = {'X-NDIM-User-Provider': 'openrouter', 'X-NDIM-User-Key': 'sk-or-visitor-123456', 'X-NDIM-User-Model': 'deepseek/deepseek-chat'}
+        with patch.dict(os.environ, {'NDIM_DEPLOYMENT_MODE': 'cloud'}), patch.object(agent, 'provider_stream', fake):
+            self.assertFalse(self.client.get('/agent/status').json()['available'])  # no engine model, yet the visitor can chat
+            response = self.client.post('/agent/chat', headers=own, json={'workspace_id': self.workspace, 'thread_id': THREAD, 'message': 'Hello'})
+            self.assertEqual(response.status_code, 200, response.text)
+            self.client.post('/agent/chat', json={'workspace_id': self.workspace, 'thread_id': THREAD, 'message': 'Again'})
+        self.assertEqual(len(used), 1, 'without the headers the next message must not reuse the key')
+        self.assertEqual((used[0]['provider'], used[0]['base_url'], used[0]['model'], used[0]['api_key']),
+                         ('openrouter', 'https://openrouter.ai/api/v1', 'deepseek/deepseek-chat', 'sk-or-visitor-123456'))
+        stored = ''.join(p.read_text(errors='ignore') for p in Path(TEMP.name).rglob('*') if p.is_file())
+        self.assertNotIn('sk-or-visitor-123456', stored)
+        status = self.client.get('/agent/status').json()
+        self.assertEqual([p['provider'] for p in status['personal']], ['openrouter', 'openai', 'anthropic', 'deepseek'])
+
+    def test_own_key_refuses_other_providers_and_odd_values(self):
+        for headers in ({'X-NDIM-User-Provider': 'ollama', 'X-NDIM-User-Key': 'sk-123456789'},  # would reach the engine's own network
+                        {'X-NDIM-User-Provider': 'openai', 'X-NDIM-User-Key': 'short'},
+                        {'X-NDIM-User-Provider': 'openai', 'X-NDIM-User-Key': 'sk-123456789', 'X-NDIM-User-Model': 'gpt 4o; drop'}):
+            response = self.client.post('/agent/chat', headers=headers, json={'workspace_id': self.workspace, 'thread_id': THREAD, 'message': 'Hi'})
+            self.assertEqual(response.status_code, 422, headers)
+
+    def test_provider_explanation_is_shown_as_given(self):
+        class Refused:
+            status_code = 429
+
+            def read(self):
+                return json.dumps({'error': {'message': "The research assistant has used today's free allowance."}}).encode()
+        with self.assertRaises(RuntimeError) as caught:
+            agent._raise_for(Refused(), 'openai-compatible')
+        self.assertEqual(str(caught.exception), "The research assistant has used today's free allowance.")
+
+        class Rejected:  # another provider's terse message keeps NDIM's explanation in front of it
+            status_code = 401
+
+            def read(self):
+                return json.dumps({'error': {'message': 'User not found.', 'code': 401}}).encode()
+        with self.assertRaises(RuntimeError) as caught:
+            agent._raise_for(Rejected(), 'openrouter')
+        self.assertEqual(str(caught.exception), 'openrouter error 401: The API key was rejected. (openrouter said: "User not found.")')
+
     def test_local_models_are_listed_with_plain_labels(self):
         tags = {'models': [{'name': 'qwen3:8b', 'size': 5.2e9}, {'name': 'mystery:7b', 'size': 4e9},
                            {'name': 'ndim-qwen3-1.7b:v3', 'size': 3.4e9}, {'name': 'qwen3:1.7b', 'size': 1.4e9}]}
