@@ -120,6 +120,36 @@ class JourneyTests(unittest.TestCase):
         self.assertIn('policy', full['outputs'])
         self.assertTrue(any(event.get('approval_statement') == APPROVAL for event in full['events']))
 
+    def test_every_sample_dataset_runs_the_journey_to_the_policy_draft(self):
+        from app.sample_datasets import DATASETS
+        self.assertEqual(len(DATASETS), 8)
+        for dataset in DATASETS:
+            with self.subTest(dataset=dataset['id']):
+                ws = self.ws
+                created = self.client.post(f'/engine/workspaces/{ws}/journeys', json={'question': dataset['question']})
+                self.assertEqual(created.status_code, 201, created.text)
+                base = f"/engine/workspaces/{ws}/journeys/{created.json()['journey_id']}"
+                body = self.client.post(f'{base}/evidence', json={'records': dataset['records']})
+                self.assertEqual(body.status_code, 200, body.text)
+                records = body.json()['records']
+                self.assertFalse([r for r in records if r['gate']['gate'] == 'blocked'], dataset['id'])
+                self.assertFalse([r for r in records if r['gate']['pii_flags'] or r['gate']['injection_flags'] or r['gate']['quality_flags']], dataset['id'])
+                review = self.client.post(f'{base}/review', json={'decisions': [{'record_id': r['record_id'], 'decision': 'accept'} for r in records],
+                                                                  'approval_statement': APPROVAL})
+                self.assertEqual(review.status_code, 200, review.text)
+                encoding = self.client.post(f'{base}/stages/encoding', json={}).json()['output']
+                self.assertTrue(all(e['themes'] for e in encoding['encoded']))
+                for stage in ('compartmental', 'agents'):
+                    self.assertEqual(self.client.post(f'{base}/stages/{stage}', json={}).status_code, 200)
+                twin = dataset['twin']
+                self.assertEqual(self.client.post(f'{base}/stages/digital', json={'observed_adoption': twin['obs'], 'trust_shift': twin['trust'],
+                    'barrier_shift': twin['barrier'], 'approval_statement': 'Teaching numbers for a synthetic example.'}).status_code, 200)
+                for stage in ('bayes', 'rl', 'graph'):
+                    self.assertEqual(self.client.post(f'{base}/stages/{stage}', json={}).status_code, 200)
+                self.assertEqual(self.client.post(f'{base}/stages/inoculation', json={}).status_code, 200)
+                final = self.client.post(f'{base}/stages/policy', json={'approval_statement': 'Export the draft for review.'})
+                self.assertEqual(final.status_code, 200, final.text)
+
     def test_stage_order_is_enforced(self):
         self.stage('encoding', expect=409)
         self.capture()

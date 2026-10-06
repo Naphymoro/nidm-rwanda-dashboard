@@ -219,6 +219,7 @@ async function openThread(id){
     const [runs,chat]=await Promise.all([Promise.all(thread.runs.map(row=>api(runsURL(row.run_id)))),thread.agent?api(threadURL(id)):null]);
     if(gen!==state.gen)return;
     Object.assign(state,{journeyDraft:{},journeyError:null,recordsProposal:null});await syncJourney(chat);
+    if(!state.tour||state.tour.threadId!==id)restoreTour(id);
     if(gen!==state.gen)return;
     runs.sort((a,b)=>a.created_at.localeCompare(b.created_at));
     const last=runs.at(-1);
@@ -241,7 +242,7 @@ function render(){
   const title=state.threads.find(t=>t.id===state.threadId)?.title||state.messages.find(m=>m.role==='user')?.content?.split('\n')[0]||state.runs[0]?.title||'New chat';
   $('chat-title').textContent=title;
   document.title='NDIM · '+(hasContent()?title:'Research chat');
-  renderMessages();renderAttachments();renderSkill();renderThreads();renderPanel();
+  renderMessages();renderAttachments();renderSkill();renderThreads();renderPanel();renderTour();
 }
 function renderMessages(){
   state.journeyAnchor=state.messages.filter(m=>m.role==='tool'&&m.meta?.journey).at(-1)?.id||null;
@@ -517,7 +518,7 @@ async function syncJourney(chat){
   }else state.journey=null;
   if((state.journeyProposal||state.journey)&&!state.journeyGuide){try{state.journeyGuide=await api('/engine/journey/stages');}catch{}}
 }
-function rerenderJourney(){const old=$('journey-card');if(old)old.replaceWith(journeyCard());}
+function rerenderJourney(){const old=$('journey-card');if(old)old.replaceWith(journeyCard());renderTour();}
 function journeyLocked(){return state.journeyBusy||state.streaming;}
 async function journeyAction(call,note){
   if(journeyLocked())return;
@@ -604,7 +605,13 @@ function runButton(row,primary,label){
 }
 function evidenceForm(){
   const d=state.journeyDraft;
-  if(!d.records)d.records=(state.recordsProposal||[{text:''}]).map(r=>({text:r.text||'',admin_unit:r.admin_unit||'',source_name:r.source_name||'',period:r.period||'',consent:'',language:'en'}));
+  // Tour records: a synthetic sample keeps its "synthetic" permission (true by construction); the researcher's own
+  // uploaded notes start with no permission, which only they can set. NDIM's own proposals never set one.
+  if(!d.records)d.records=(state.tourRecords||state.recordsProposal||[{text:''}]).map(r=>({text:r.text||'',admin_unit:r.admin_unit||'',source_name:r.source_name||'',period:r.period||'',
+    consent:state.tourRecords&&r.consent==='synthetic'?'synthetic':'',language:state.tourRecords&&r.language?r.language:'en',
+    ...(state.tourRecords&&r.translation_en?{translation_en:r.translation_en,translation_checked_by:r.translation_checked_by||''}:{})}));
+  const allConsent=d.records.length>1?field('Permission for all records',(()=>{const s=el('select',{onchange:e=>{if(!e.target.value)return;d.records.forEach(r=>{r.consent=e.target.value;});rerenderJourney();}},
+    [['','Set every record at once…'],...CONSENTS.slice(1)].map(([v,t])=>el('option',{value:v,text:t})));return s;})(),'Or set each record below.'):null;
   const rows=d.records.map((record,index)=>{
     const bind=(key,props)=>{const input=el(props.tag||'input',{...props,tag:null,oninput:e=>{record[key]=e.target.value;}});input.value=record[key]??'';return input;};
     return el('div',{class:'jc-record'},el('b',{text:`Record ${index+1}`}),
@@ -619,8 +626,8 @@ function evidenceForm(){
         field('Translation checked by',bind('translation_checked_by',{placeholder:'Name of the person who checked it'}))));
   });
   return el('div',{class:'review-form'},el('b',{text:'Add your field notes'}),
-    el('p',{class:'muted',text:state.recordsProposal?'NDIM filled this form from your message. Check every field: nothing is added until you click Add to journey.':'Type your notes here, or paste them in the chat and NDIM fills this form for you to check.'}),
-    ...rows,
+    el('p',{class:'muted',text:state.tourRecords?'The guided tour filled this form. Check every field: nothing is added until you click Add to journey.':state.recordsProposal?'NDIM filled this form from your message. Check every field: nothing is added until you click Add to journey.':'Type your notes here, or paste them in the chat and NDIM fills this form for you to check.'}),
+    allConsent,...rows,
     el('div',{class:'actions'},
       el('button',{type:'button',class:'btn',onclick:()=>{d.records.push({text:'',admin_unit:'',source_name:'',period:'',consent:'',language:'en'});rerenderJourney();}},icon('plus'),'Another record'),
       el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
@@ -632,7 +639,7 @@ function evidenceForm(){
           const out={...r,text:r.text.trim()};
           if(r.language!=='en'&&(translation_en||'').trim())Object.assign(out,{translation_en:translation_en.trim(),translation_checked_by:translation_checked_by.trim()});
           return out;});
-        journeyAction(()=>post('/records',{records}),null);
+        journeyAction(()=>post('/records',{records}),null).then(()=>{if(state.journey?.records.length)state.tourRecords=null;});
       }},icon('check'),'Add to journey')));
 }
 function decisionsForm(j){
@@ -708,6 +715,7 @@ function skillItems(filter=''){
   const items=[];
   for(const skill of SKILLS)items.push({section:'Skills',label:skill.name,desc:skill.desc,slash:'/'+skill.id,active:!state.lesson&&state.skill===skill.id,pick:()=>{state.skill=skill.id;state.lesson=null;}});
   for(const lesson of state.lessons)items.push({section:'Guided labs',label:`Lab ${lesson.number} · ${lesson.title}`,desc:`${lesson.subtitle} · ${lesson.duration}`,slash:'/lab'+Number(lesson.number),active:state.lesson?.id===lesson.id,pick:()=>startLab(lesson)});
+  items.push({section:'Tools',label:'Guided tour',desc:'The whole journey with Back and Next, on sample or your own data',slash:'/tour',pick:startTour});
   items.push({section:'Tools',label:'Start a journey',desc:'Field notes to a policy draft, 13 stages, step by step',slash:'/journey',pick:()=>startJourney()});
   items.push({section:'Tools',label:'Workbench',desc:'Inspect, adjust and re-plan experiments',slash:'/workbench',pick:()=>openPanel('workbench')});
   items.push({section:'Tools',label:'Library',desc:'Field manual and reference curriculum',slash:'/library',pick:()=>openPanel('library')});
@@ -1272,6 +1280,161 @@ function renderWorkbench(){
   }
   box.append(el('p',{class:'panel-foot'},'Evidence ledger, SDMX intake, repository and policy export are still in the ',el('a',{href:apiBase+(config.static?'/classic-workbench':'/classic-workbench'),target:'_blank',rel:'noreferrer'},'classic workbench ↗'),'.'));
 }
+// ---------- Guided tour: Back / Next through the real journey, with sample or own data ----------
+// The coach only narrates and points: every action is the researcher's click in the journey card, and every result is
+// the engine's. Progress is kept per chat in this browser, so a reload carries on where it stopped.
+const TOUR_STEPS=[
+  {id:'choose'},
+  {id:'question',title:'Your research question',what:'The journey starts from one question. NDIM uses it word for word in every result and in the policy draft, so it is worth reading carefully.',
+    move:'Read the question in the card below, edit it if you like, then click Confirm question.',done:j=>!!j},
+  {id:'notes',title:'Add the field notes',what:'Each note needs its place, source, period, language and permission. Nothing reaches a model yet: you decide in the next step.',
+    move:t=>t.dataset?'The tour filled in the synthetic notes. Read them, then click Add to journey.':'Check your notes in the card (fill any empty place, source or period, and set the permission), then click Add to journey.',done:j=>j&&j.records.length>0},
+  {id:'gate',stage:'repository',title:'The gate: you decide what counts as evidence',what:'NDIM checked each note for missing details, personal data and instruction-like text. It flags; it never edits. Only the notes you accept reach any model.',
+    move:'Choose Accept or Reject for each record, then click Save decisions.'},
+  {stage:'encoding',what:'NDIM cannot read meaning, so it counts words from fixed lists and turns the counts into a trust score and a barrier score for each note.',math:'guide-encoding',notice:true},
+  {stage:'compartmental',what:'The population is split into five shares: not yet reached, misinformed, convinced, inoculated and settled adopters. Each day people move between them; adoption is convinced + inoculated + settled.',math:'guide-compartmental'},
+  {stage:'agents',what:'1,000 simulated households on an assumed village network adopt through media, neighbours and outreach. Twenty runs show the range chance alone produces, and a robustness check tries seven network shapes.',math:'guide-network'},
+  {stage:'digital',what:'The twin re-runs the model from what was observed in the field. There are no defaults: the numbers are your decision.',math:'guide-twin',twin:true,
+    move:t=>t.dataset?'This is synthetic data, so the tour suggests teaching numbers. Fill them in with the button below (or type your own), then click Run the digital twin.':'Enter the adoption share you observed and the changes in trust and barriers you saw (0 if none), then run the twin.'},
+  {stage:'bayes',what:'A Bayesian update moves a stated starting belief about trust and barriers towards what your notes and field changes say. More notes move it further.',math:'guide-bayes'},
+  {stage:'rl',what:'Four illustrative actions are scored with fixed, assumed lifts and costs. The ranking restates those assumptions: it is not a recommendation.',math:'guide-ranking'},
+  {stage:'graph',what:'A map of which places, themes and signals occur together. The card also offers the optional regional analysis.'},
+  {stage:'inoculation',what:'NDIM drafts a pre-bunk, a refutation and a short counter-message for you to review and edit, and adds them to the twin. Nothing is ever sent.',math:'guide-inoculation'},
+  {stage:'policy',what:'Assembles options for your team to discuss, with an evidence grade. It runs only when you approve it.',move:'Click Approve export in the card.',math:'guide-grade'},
+  {id:'finish'}];
+const TOUR_KEY='ndim-tour';
+function saveTour(){try{state.tour?localStorage.setItem(TOUR_KEY,JSON.stringify({threadId:state.tour.threadId,datasetId:state.tour.dataset?.id||null,own:!!state.tour.own,step:state.tour.step})):localStorage.removeItem(TOUR_KEY);}catch{}}
+async function restoreTour(threadId){
+  let saved=null;try{saved=JSON.parse(localStorage.getItem(TOUR_KEY)||'null');}catch{}
+  if(!saved||saved.threadId!==threadId)return;
+  const samples=await loadSamples();
+  state.tour={threadId,step:saved.step,own:saved.own,dataset:samples?.datasets.find(d=>d.id===saved.datasetId)||null};
+  renderTour();
+}
+async function loadSamples(){if(!state.samples){try{state.samples=await api('/engine/samples');}catch{state.samples=null;}}return state.samples;}
+async function startTour(){
+  closePanel();newChat();
+  state.tour={step:0,dataset:null,own:false,threadId:null};state.tourRecords=null;
+  await loadSamples();renderTour();
+}
+function exitTour(){state.tour=null;state.tourRecords=null;saveTour();renderTour();}
+async function tourWithData(dataset,own){
+  state.tourRecords=dataset?dataset.records:own;
+  await startJourney(dataset?dataset.question:'');
+  state.tour={step:1,dataset:dataset||null,own:!dataset,threadId:state.threadId};
+  saveTour();render();
+}
+function stageRow(j,id){return j?.stages.find(row=>row.id===id);}
+function tourStep(t){
+  const step=TOUR_STEPS[t.step], j=state.journey;
+  const row=step.stage?stageRow(j,step.stage):null;
+  const title=step.title||(row?`${row.title} (journey stage ${row.number} of 13)`:'');
+  const done=step.done?!!step.done(j):row?row.status==='done':step.id==='finish';
+  const move=typeof step.move==='function'?step.move(t):step.move||(row?`Click “Run ${row.number}. ${row.title}” in the card.`:'');
+  return {step,title,done,move};
+}
+function tourShowMe(){
+  const card=$('journey-card');if(!card)return;
+  card.scrollIntoView({block:'center',behavior:'smooth'});
+  const target=card.querySelector('.review-form .btn.primary, .actions .btn.primary');
+  if(target){target.classList.remove('pulse');void target.offsetWidth;target.classList.add('pulse');}
+}
+function parseCSV(text){
+  const rows=[];let row=[],cell='',quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(c==='"')quoted=false;else cell+=c;}
+    else if(c==='"')quoted=true;
+    else if(c===','){row.push(cell);cell='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}
+    else cell+=c;
+  }
+  row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
+  return rows;
+}
+// Column names accepted from exports; author or handle columns are never read (the journey keeps no names).
+const CSV_COLUMNS={text:['text','note','story','content','message','post','body','narrative'],admin_unit:['place','admin_unit','location','district','sector','region'],
+  source_name:['source','source_name','channel','platform'],period:['period','date','month','quarter','collected'],language:['language','lang']};
+async function readOwnData(file){
+  if(!/\.(csv|txt)$/i.test(file.name))throw Error('Upload a .csv file (UTF-8). Download the template to see the columns.');
+  if(file.size>2_000_000)throw Error('This file is over 2 MB. Upload up to 50 notes at a time.');
+  const rows=parseCSV(await file.text());
+  if(rows.length<2)throw Error('The file needs a header row and at least one note.');
+  const header=rows[0].map(h=>h.trim().toLowerCase());
+  const col=key=>header.findIndex(h=>CSV_COLUMNS[key].includes(h));
+  const at={text:col('text'),admin_unit:col('admin_unit'),source_name:col('source_name'),period:col('period'),language:col('language')};
+  if(at.text<0)throw Error(`No text column found. Name it one of: ${CSV_COLUMNS.text.join(', ')}.`);
+  const notes=rows.slice(1).map(r=>{const get=k=>at[k]>=0?(r[at[k]]||'').trim():'';const lang=get('language').toLowerCase();
+    return {text:get('text'),admin_unit:get('admin_unit'),source_name:get('source_name'),period:get('period'),language:['en','rw','fr'].includes(lang)?lang:lang?'other':'en'};}).filter(n=>n.text);
+  if(!notes.length)throw Error('No rows with text were found.');
+  if(notes.length>50)throw Error(`The file has ${notes.length} notes; a journey takes up to 50. Split the file and run one journey per part.`);
+  return notes;
+}
+function downloadTemplate(){
+  const csv='text,place,source,period,language\n"Paste one story or field note per row, unchanged.",Kicukiro / Niboye,Field team interview 1,2026-Q2,en\n';
+  const a=el('a',{href:URL.createObjectURL(new Blob([csv],{type:'text/csv'})),download:'ndim-notes-template.csv'});document.body.append(a);a.click();a.remove();
+}
+function chooseData(){
+  const s=state.samples;
+  if(!s)return [callout('error','alert','The sample datasets could not be loaded from the engine.')];
+  const topics=[...new Set(s.datasets.map(d=>d.topic))];
+  const file=el('input',{type:'file',accept:'.csv,text/csv',hidden:true,onchange:async e=>{
+    const f=e.target.files[0];e.target.value='';if(!f)return;
+    try{await tourWithData(null,await readOwnData(f));}catch(err){state.tourError=err.message;renderTour();}}});
+  return [
+    el('p',{text:'Every step uses the real engine. Pick ready-made synthetic notes, or bring your own.'}),
+    el('div',{class:'tour-topics'},topics.map(topic=>el('div',{class:'tour-topic'},el('b',{text:topic}),
+      ...s.datasets.filter(d=>d.topic===topic).map(d=>el('button',{type:'button',class:'btn'+(d.level==='simple'?' primary':''),title:d.summary,onclick:()=>tourWithData(d)},
+        d.level==='simple'?'Simple':'Thought-provoking',el('small',{text:' · '+d.title})))))),
+    el('p',{class:'small muted',text:s.topic_note+' '+s.note}),
+    el('div',{class:'tour-own'},el('b',{text:'Use my own data'}),
+      el('div',{class:'actions'},
+        el('button',{type:'button',class:'btn',onclick:()=>tourWithData(null,null)},icon('pencil'),'Type or paste my notes'),
+        el('button',{type:'button',class:'btn',onclick:()=>file.click()},icon('clip'),'Upload a CSV (up to 50 notes)'),
+        el('button',{type:'button',class:'btn ghost',onclick:downloadTemplate},icon('down'),'CSV template'),file),
+      el('p',{class:'small muted',text:'Columns: text (required), place, source, period, language. Names of people or accounts are never read. You set the permission for every note in the next steps.'}))];
+}
+function renderTour(){
+  const box=$('tour');if(!box)return;
+  const t=state.tour;
+  const visible=t&&(t.step===0||t.threadId===state.threadId);
+  box.hidden=!visible;
+  if(!visible){box.replaceChildren();return;}
+  const total=TOUR_STEPS.length-2, n=Math.min(Math.max(t.step,0),total);
+  const head=el('div',{class:'tour-head'},el('span',{class:'skill'},icon('cap'),'Guided tour'),
+    t.dataset?el('span',{class:'tag',text:`${t.dataset.topic} · ${t.dataset.level} · synthetic`}):t.own?el('span',{class:'tag',text:'your own data'}):null,
+    el('span',{class:'tour-count',text:t.step===0?'Choose your data':t.step>total?'Finished':`Step ${n} of ${total}`}),
+    el('button',{type:'button',class:'icon-btn','aria-label':'Leave the tour',title:'Leave the tour',onclick:exitTour},icon('x')));
+  const bar=el('div',{class:'tour-bar'},el('i',{style:`width:${Math.round(100*n/total)}%`}));
+  const parts=[head,bar];
+  if(state.tourError){parts.push(callout('error','alert',state.tourError));state.tourError=null;}
+  if(t.step===0){parts.push(el('h4',{text:'Choose your data'}),...chooseData());box.replaceChildren(...parts);return;}
+  const {step,title,done,move}=tourStep(t);
+  if(step.id==='finish'){
+    const other=t.dataset&&state.samples?.datasets.find(d=>d.topic===t.dataset.topic&&d.level!==t.dataset.level);
+    parts.push(el('h4',{text:'You have run the whole journey'}),
+      el('p',{text:'From notes to a policy draft: the gate, the scores, two models, the twin, the update, the ranking, the inoculation drafts and an evidence grade. Every number came from the engine; every decision was yours.'}),
+      el('div',{class:'actions'},
+        other?el('button',{type:'button',class:'btn primary',onclick:()=>{state.tour.step=0;tourWithData(other);}},icon('play'),`Try the ${other.level} version`):null,
+        el('button',{type:'button',class:'btn',onclick:startTour},icon('file'),'Another topic or my own data'),
+        el('button',{type:'button',class:'btn',onclick:()=>openGuide()},icon('cap'),'All the math'),
+        el('button',{type:'button',class:'btn ghost',onclick:exitTour},'Close the tour')));
+    box.replaceChildren(...parts);return;
+  }
+  parts.push(el('h4',{text:title}),el('p',{text:step.what}));
+  if(step.notice&&done&&t.dataset?.notice)parts.push(el('div',{class:'callout'},el('span',{},el('b',{text:'What to notice: '}),t.dataset.notice)));
+  parts.push(el('p',{class:'tour-move'},done?el('span',{class:'ok'},icon('check'),' Done. Read the result in the card, then click Next.'):el('span',{},el('b',{text:'Your move: '}),move)));
+  const extras=[];
+  if(step.twin&&!done&&t.dataset){const tw=t.dataset.twin;extras.push(el('button',{type:'button',class:'btn',onclick:()=>{Object.assign(state.journeyDraft,{obs:String(tw.obs),trust:String(tw.trust),barrier:String(tw.barrier)});rerenderJourney();tourShowMe();}},icon('pencil'),`Fill in the teaching numbers (${tw.obs}, ${tw.trust}, ${tw.barrier})`));}
+  if(step.math)extras.push(el('button',{type:'button',class:'btn ghost',onclick:()=>openGuide(step.math)},icon('cap'),'The math'));
+  parts.push(el('div',{class:'actions tour-nav'},
+    el('button',{type:'button',class:'btn',disabled:t.step<=1,onclick:()=>{state.tour.step--;saveTour();renderTour();}},icon('back'),'Back'),
+    done?null:el('button',{type:'button',class:'btn',onclick:tourShowMe},icon('search'),'Show me'),
+    ...extras,
+    el('span',{class:'spacer'}),
+    el('button',{type:'button',class:'btn primary'+(done?' pulse':''),disabled:!done,title:done?'':'Do this step in the card first',onclick:()=>{state.tour.step++;saveTour();renderTour();if(state.tour.step<TOUR_STEPS.length-1)tourShowMe();}},'Next',icon('chev'))));
+  box.replaceChildren(...parts);
+}
 // ---------- How it works: tutorials and the math (engine /engine/math, written from the engine's code) ----------
 const STAGE_MATH={encoding:'guide-encoding',compartmental:'guide-compartmental',agents:'guide-network',digital:'guide-twin',
   bayes:'guide-bayes',rl:'guide-ranking',inoculation:'guide-inoculation',policy:'guide-grade'};
@@ -1308,6 +1471,7 @@ async function renderGuide(){
   box.replaceChildren(
     el('div',{},el('h3',{text:'How it works'}),el('p',{class:'sub',text:'Tutorials to try, and the math NDIM really runs.'})),
     el('p',{class:'guide-label',text:'Tutorials'}),
+    el('button',{type:'button',class:'btn primary guide-tour',onclick:startTour},icon('play'),'Start the guided tour',el('small',{text:' · step by step, with sample or your own data'})),
     el('div',{class:'guide-labs'},
       ...state.lessons.map(lesson=>el('button',{type:'button',class:'btn',onclick:()=>{closePanel();startLab(lesson);}},icon('cap'),`Lab ${lesson.number} · ${lesson.title}`,el('small',{text:` ${lesson.duration}`}))),
       el('button',{type:'button',class:'btn',onclick:()=>{closePanel();startJourney();}},icon('flask'),'The full journey (13 stages)'),
@@ -1387,6 +1551,7 @@ function suggestions(){
   ];
   for(const [name,label,skill,question] of quick)box.append(el('button',{type:'button',onclick:()=>{state.skill=skill;state.lesson=null;sample();renderSkill();send(question);}},icon(name),label));
   if(agentOn())box.append(el('button',{type:'button',onclick:()=>send('How does the Bayesian update in NDIM change confidence, and when should I use it?')},icon('book'),'Explain a method'));
+  box.append(el('button',{type:'button',onclick:startTour},icon('play'),'Take the guided tour'));
   box.append(el('button',{type:'button',onclick:()=>startJourney()},icon('flask'),'Start a journey'));
   if(state.lessons[0])box.append(el('button',{type:'button',onclick:()=>startLab(state.lessons[0])},icon('cap'),'Start a guided lab'));
 }

@@ -387,3 +387,25 @@ dl.prov dd{margin:0;overflow-wrap:anywhere}
 .guide-example{margin:4px 0 10px;padding-left:20px;font-size:13.5px;line-height:1.55}
 .guide-example li{margin:3px 0;overflow-wrap:anywhere}
 .btn.small{padding:4px 10px;font-size:12.5px;margin-top:6px}
+/* Guided tour coach */
+.tour{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);box-shadow:var(--shadow);padding:10px 14px 12px;margin:0 0 10px;max-height:46vh;overflow:auto}
+.tour-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tour-head .icon-btn{margin-left:4px;width:28px;height:28px}
+.tour-count{margin-left:auto;font-size:12.5px;color:var(--muted)}
+.tour-bar{height:4px;background:var(--soft);border-radius:4px;margin:8px 0 6px;overflow:hidden}
+.tour-bar i{display:block;height:100%;background:var(--series);transition:width .3s ease}
+.tour h4{margin:8px 0 4px;font-size:15px}
+.tour p{margin:4px 0;font-size:14px;line-height:1.5}
+.tour-move{margin-top:6px}
+.tour-move .ok{color:var(--ok);display:inline-flex;align-items:center;gap:4px}
+.tour-nav{margin-top:8px;align-items:center}
+.tour-nav .spacer{flex:1}
+.tour-topics{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:8px 0}
+.tour-topic{display:grid;gap:6px;border:1px solid var(--line);border-radius:10px;padding:8px}
+.tour-topic .btn{white-space:normal;text-align:left;justify-content:flex-start}
+.tour-topic small{color:inherit;opacity:.8}
+.tour-own{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+.guide-tour{margin-bottom:8px;white-space:normal}
+.btn.pulse{animation:ndim-pulse 1.2s ease-out 2}
+@keyframes ndim-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ring) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+@media (prefers-reduced-motion:reduce){.btn.pulse{animation:none;outline:2px solid var(--ring)}}

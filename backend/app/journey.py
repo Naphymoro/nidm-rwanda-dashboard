@@ -564,6 +564,13 @@ def public(journey, full=False):
     return body
 
 
+@router.get('/samples')
+def samples():
+    """Synthetic datasets for the guided tour (four topics, simple and thought-provoking), all marked synthetic."""
+    from .sample_datasets import catalogue
+    return catalogue()
+
+
 @router.get('/math')
 def math():
     """How NDIM works: each step's formula, symbols, a worked example the engine computes, and its limits."""
