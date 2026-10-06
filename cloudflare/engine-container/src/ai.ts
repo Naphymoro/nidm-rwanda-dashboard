@@ -17,7 +17,7 @@ export interface AiEnv {
 
 const DAILY_NEURONS = 9000; // under the free 10,000, leaving room for replies already streaming when the cap is reached
 const VISITOR_MESSAGES = 40;
-const MAX_TOKENS = 1500;
+const MAX_TOKENS = 3000; // reasoning models (GLM, DeepSeek) spend part of it thinking; 1500 left some answers empty
 const RESETS = "It resets at 00:00 UTC (2 a.m. in Kigali). Journeys and every NDIM tool still work with the buttons.";
 
 const today = () => new Date().toISOString().slice(0, 10);

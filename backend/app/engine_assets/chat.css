@@ -370,3 +370,20 @@ dl.prov dd{margin:0;overflow-wrap:anywhere}
 .sync-box p{margin:0}
 .sync-box .jc-choice{justify-self:start}
 #panel-learning{display:grid;gap:10px;align-content:start}
+/* How it works: tutorials and the math */
+.guide-label{margin:14px 0 6px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.guide-labs{display:flex;flex-wrap:wrap;gap:8px}
+.guide-labs .btn{white-space:normal;text-align:left}
+.guide-labs small{color:var(--faint)}
+.guide-step{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);padding:10px 14px;margin:8px 0}
+.guide-step summary{cursor:pointer;list-style-position:outside}
+.guide-step[open] summary{margin-bottom:6px}
+.guide-step p{font-size:14px;line-height:1.55}
+.guide-formula{overflow-x:auto;overflow-y:hidden;padding:6px 8px;margin:6px 0;background:var(--soft);border-radius:8px;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+.guide-formula .katex-display{margin:0}
+.guide-symbols{border-collapse:collapse;font-size:13px;margin:8px 0;width:100%}
+.guide-symbols td{border-top:1px solid var(--line);padding:4px 6px;vertical-align:top}
+.guide-symbols td:first-child{white-space:nowrap;font-weight:600;width:1%}
+.guide-example{margin:4px 0 10px;padding-left:20px;font-size:13.5px;line-height:1.55}
+.guide-example li{margin:3px 0;overflow-wrap:anywhere}
+.btn.small{padding:4px 10px;font-size:12.5px;margin-top:6px}

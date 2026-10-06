@@ -104,6 +104,57 @@ def _encoded_from_data(record: NarrativeRecord, data: Dict[str, Any], mode: Enco
     )
 
 
+# The keyword encoder (encode_rule_based), laid out so the math guide (math_guide.py) can show its arithmetic.
+# Each list is counted as whole words or phrases in the lower-cased text; a word can count in several lists.
+KEYWORDS = {
+    "affordability": ["cost", "costly", "expensive", "price", "money", "loan", "subsidy", "afford", "market", "installment", "saving", "payment"],
+    "fuel_access": ["wood", "firewood", "charcoal", "fuel", "lpg", "electricity", "pellet", "repair", "spare", "vendor", "maintenance", "warranty"],
+    "safety": ["safe", "unsafe", "explode", "explosion", "burn", "pressure", "danger", "risk"],
+    "habit": ["habit", "tradition", "always", "used", "taste", "family", "husband", "mother", "routine", "custom", "usual"],
+    "health": ["smoke", "cough", "eyes", "chest", "health", "clinic", "child", "children", "hospital", "breathing"],
+    "trust_positive": ["trust", "trusted", "believe", "demonstration", "showed", "trained", "health worker", "leader", "technician", "neighbour", "neighbor", "cooperative"],
+    "trust_negative": ["distrust", "fake", "cheated", "broken", "failed", "rumor", "rumour", "doubt", "fear", "unsafe"],
+    "misinformation": ["rumor", "rumour", "misleading", "claim", "heard", "explode", "poison", "witchcraft", "dangerous", "false", "myth"],
+    "social": ["people", "neighbour", "neighbor", "group", "church", "cooperative", "women", "village", "leader", "family", "peer", "meeting", "market"],
+    "emotion": ["worried", "afraid", "fear", "proud", "relieved", "tired", "angry", "hope", "happy", "regret", "ashamed", "stress", "confident"],
+    "positive_stance": ["saved", "save", "faster", "less smoke", "clean", "convenient", "helped", "adopt", "try", "benefit", "accepted", "liked"],
+    "negative_stance": ["not use", "refuse", "stopped", "avoid", "cannot", "can't", "too expensive", "unsafe", "difficult", "rejected", "against"],
+    "local_grounding": ["district", "sector", "village", "market", "cell", "province", "community", "home"],
+}
+# trust = 0.48 + sum(weight x count), then kept between 0.05 and 0.95; terms in this order.
+TRUST_WEIGHTS = {"trust_positive": 0.060, "health": 0.025, "social": 0.010, "local_grounding": 0.018,
+                 "trust_negative": -0.070, "misinformation": -0.025}
+TRUST_BASE = 0.48
+# barrier = 0.30 + pressure - relief, then kept between 0.05 and 0.95.
+BARRIER_PRESSURE = {"affordability": 0.095, "fuel_access": 0.075, "safety": 0.07, "habit": 0.055, "negative_stance": 0.06,
+                    "misinformation": 0.025}
+BARRIER_RELIEF = {"positive_stance": 0.035, "health": 0.015}
+BARRIER_BASE = 0.30
+
+
+def keyword_counts(text: str) -> dict:
+    """How often each keyword list occurs in text (lower-cased), as whole words or phrases."""
+    return {name: sum(len(re.findall(rf"\b{re.escape(word)}\b", text)) for word in words) for name, words in KEYWORDS.items()}
+
+
+def trust_score(counts: dict) -> float:
+    """Before clamping. Same order of operations as the formula it replaced, so the floats are identical."""
+    value = TRUST_BASE
+    for name, weight in TRUST_WEIGHTS.items():
+        value = value + counts[name] * weight if weight > 0 else value - counts[name] * -weight
+    return value
+
+
+def barrier_score(counts: dict) -> float:
+    pressure = 0.0
+    for i, (name, weight) in enumerate(BARRIER_PRESSURE.items()):
+        pressure = counts[name] * weight if i == 0 else pressure + counts[name] * weight
+    relief = 0.0
+    for i, (name, weight) in enumerate(BARRIER_RELIEF.items()):
+        relief = counts[name] * weight if i == 0 else relief + counts[name] * weight
+    return BARRIER_BASE + pressure - relief
+
+
 def encode_rule_based(
     record: NarrativeRecord,
     mode: EncodingMode = EncodingMode.manual,
@@ -116,25 +167,13 @@ def encode_rule_based(
     tag_text = " ".join(str(tag).lower() for tag in (record.tags or []))
     route = str(provenance.get("evidence_mode") or record.metadata.source_type or "").lower()
 
-    def hits(words: list[str]) -> int:
-        return sum(len(re.findall(rf"\b{re.escape(word)}\b", text)) for word in words)
-
     def clamp(value: float, low: float = 0.05, high: float = 0.95) -> float:
         return max(low, min(high, value))
 
-    affordability = hits(["cost", "costly", "expensive", "price", "money", "loan", "subsidy", "afford", "market", "installment", "saving", "payment"])
-    fuel_access = hits(["wood", "firewood", "charcoal", "fuel", "lpg", "electricity", "pellet", "repair", "spare", "vendor", "maintenance", "warranty"])
-    safety = hits(["safe", "unsafe", "explode", "explosion", "burn", "pressure", "danger", "risk"])
-    habit = hits(["habit", "tradition", "always", "used", "taste", "family", "husband", "mother", "routine", "custom", "usual"])
-    health = hits(["smoke", "cough", "eyes", "chest", "health", "clinic", "child", "children", "hospital", "breathing"])
-    trust_positive = hits(["trust", "trusted", "believe", "demonstration", "showed", "trained", "health worker", "leader", "technician", "neighbour", "neighbor", "cooperative"])
-    trust_negative = hits(["distrust", "fake", "cheated", "broken", "failed", "rumor", "rumour", "doubt", "fear", "unsafe"])
-    misinformation = hits(["rumor", "rumour", "misleading", "claim", "heard", "explode", "poison", "witchcraft", "dangerous", "false", "myth"])
-    social = hits(["people", "neighbour", "neighbor", "group", "church", "cooperative", "women", "village", "leader", "family", "peer", "meeting", "market"])
-    emotion = hits(["worried", "afraid", "fear", "proud", "relieved", "tired", "angry", "hope", "happy", "regret", "ashamed", "stress", "confident"])
-    positive_stance = hits(["saved", "save", "faster", "less smoke", "clean", "convenient", "helped", "adopt", "try", "benefit", "accepted", "liked"])
-    negative_stance = hits(["not use", "refuse", "stopped", "avoid", "cannot", "can't", "too expensive", "unsafe", "difficult", "rejected", "against"])
-    local_grounding = hits(["district", "sector", "village", "market", "cell", "province", "community", "home"])
+    counts = keyword_counts(text)
+    affordability, fuel_access, safety, habit, health = (counts[k] for k in ("affordability", "fuel_access", "safety", "habit", "health"))
+    trust_positive, trust_negative, misinformation, social = (counts[k] for k in ("trust_positive", "trust_negative", "misinformation", "social"))
+    emotion, positive_stance, negative_stance, local_grounding = (counts[k] for k in ("emotion", "positive_stance", "negative_stance", "local_grounding"))
     if "for" in tag_text:
         positive_stance += 1
     if "against" in tag_text:
@@ -155,6 +194,7 @@ def encode_rule_based(
         local_grounding += 1
     if provenance.get("question_title") or provenance.get("evidence_mode_label"):
         local_grounding += 1
+    counts.update(local_grounding=local_grounding, positive_stance=positive_stance, negative_stance=negative_stance)
 
     themes = []
     theme_scores = {
@@ -172,11 +212,8 @@ def encode_rule_based(
         if score > 0:
             themes.append(theme)
 
-    barrier_pressure = affordability * 0.095 + fuel_access * 0.075 + safety * 0.07 + habit * 0.055 + negative_stance * 0.06 + misinformation * 0.025
-    barrier_relief = positive_stance * 0.035 + health * 0.015
-    barrier = clamp(0.30 + barrier_pressure - barrier_relief)
-
-    trust = clamp(0.48 + trust_positive * 0.060 + health * 0.025 + social * 0.010 + local_grounding * 0.018 - trust_negative * 0.070 - misinformation * 0.025)
+    barrier = clamp(barrier_score(counts))
+    trust = clamp(trust_score(counts))
     confidence = clamp(0.38 + confidence_bonus + min(local_grounding, 5) * 0.045 + min(len(text.split()), 140) / 1150 + min(len(themes), 6) * 0.025)
     sentiment = clamp((positive_stance + trust_positive + health * 0.4 + emotion * 0.12 - negative_stance - trust_negative - safety * 0.2 - misinformation * 0.15) / 10, -0.8, 0.8)
     # The keyword sentiment read every Kinyarwanda tweet as neutral; the classifier, when installed, replaces it.

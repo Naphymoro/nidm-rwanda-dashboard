@@ -65,6 +65,7 @@ MODEL_LABELS = [
     ('qwen3:14b', 'Large', 'Close to Standard, more memory and energy'),
 ]
 MAX_STEPS = 8
+EMPTY_REPLY = 'The model returned an empty answer twice. Please ask again, perhaps in shorter or simpler words.'
 HISTORY = 40
 THREAD_ID = re.compile(r'^[0-9a-f][0-9a-f-]{7,63}$')
 _busy = set()
@@ -208,10 +209,10 @@ TOOLS = [
      'description': 'List recent experiments in this workspace (id, question, status, skill, reviewed).',
      'parameters': {'type': 'object', 'properties': {'limit': {'type': 'integer', 'minimum': 1, 'maximum': 30}}}},
     {'name': 'search_library',
-     'description': 'Search the NDIM field manual and reference curriculum. Use it to explain methods, models, governance and exercises, and cite what you use.',
-     'parameters': {'type': 'object', 'properties': {'query': {'type': 'string'}, 'source': {'type': 'string', 'enum': ['all', 'manual', 'curriculum']}}, 'required': ['query']}},
+     'description': 'Search the NDIM library: "How NDIM works" (source guide: the formulas the engine really runs, with worked examples; prefer it for any math or "how is this computed" question), the field manual and the reference curriculum. Cite what you use.',
+     'parameters': {'type': 'object', 'properties': {'query': {'type': 'string'}, 'source': {'type': 'string', 'enum': ['all', 'guide', 'manual', 'curriculum']}}, 'required': ['query']}},
     {'name': 'read_library',
-     'description': 'Read one field manual or curriculum section by id (from search_library).',
+     'description': 'Read one library section (How NDIM works, field manual or curriculum) by id from search_library.',
      'parameters': {'type': 'object', 'properties': {'section_id': {'type': 'string'}}, 'required': ['section_id']}},
     {'name': 'list_lessons',
      'description': 'List the guided labs (id, title, skill, question) the researcher can take.',
@@ -221,6 +222,11 @@ TOOLS += journey_chat.TOOLS
 LABELS = {**journey_chat.LABELS, 'plan_experiment': 'Planning an experiment', 'get_run': 'Reading experiment results', 'compare_runs': 'Comparing experiments',
           'list_runs': 'Listing experiments', 'search_library': 'Searching the library', 'read_library': 'Reading the library',
           'list_lessons': 'Listing guided labs'}
+EXPERTISE_STYLE = {
+    'guided': 'guided (plain language). Define every symbol and term the first time, one idea per short paragraph, everyday words; keep the formula but explain each part.',
+    'researcher': 'researcher (methods). Give the formulas and assumptions directly, name the stage and parameters, keep definitions short.',
+    'expert': 'expert (full audit). Give every formula, constant, default and clamp, the stage where it applies and its limits; skip basic definitions.',
+}
 SETTING_KEYS = ('model', 'profile', 'horizon_days', 'intervention_strength', 'initial_adoption', 'narrative_influence', 'expertise', 'language')
 
 
@@ -334,7 +340,7 @@ def system_prompt(thread, settings):
     evidence = thread.get('evidence')
     domain = workspace.get('settings', {}).get('domain') or workspace.get('domain', '')
     lines = [
-        'You are NDIM, a research assistant for the Narrative Diffusion and Inoculation Model: a deterministic digital twin of how narratives spread and shape adoption of clean cooking and energy in Rwanda. You work like a careful colleague in a chat: clear, warm, concise, no filler. Use short paragraphs and Markdown (bold, lists, small tables) when it helps.',
+        'You are NDIM, research assistant and teacher for the Narrative Diffusion and Inoculation Model: an illustrative, uncalibrated model of how stories spread and shape adoption of clean cooking and energy in Rwanda (results are reproducible: random parts use fixed seeds). You work like a careful colleague in a chat: clear, warm, no filler; brief for tasks, patient and step by step when teaching. Use short paragraphs and Markdown (bold, lists, small tables) when it helps. Reply in the language the researcher writes in.',
         '',
         (f'EVIDENCE IS ATTACHED to this chat ("{evidence.get("name")}"); plan_experiment uses it automatically, so never ask for evidence.'
          if evidence else 'No evidence is attached to this chat yet: ask for it before planning an experiment.'),
@@ -351,6 +357,13 @@ def system_prompt(thread, settings):
         '- For methods, governance, exercises or model explanations, search the library (field manual and curriculum) and cite the section titles you used.',
         '- If the researcher has not attached evidence and wants an experiment, ask them to add it (the + button: upload, paste, or the sample field notes).',
         '',
+        'How you teach (whenever someone asks how something works, what a term means, or why a number came out as it did):',
+        '- First search_library with source "guide" (How NDIM works: the formulas the engine really runs, each with a worked example) and read the section. The older manual can describe superseded formulas; when they differ, the guide is right.',
+        '- Then teach in this order: (1) the idea in one or two plain sentences; (2) the formula exactly as the guide gives it, written in plain text (for example: trust = 0.48 + 0.060 x trust words + ...), since the chat does not display LaTeX; (3) a walk through the numbers: the guide\'s worked example, or this chat\'s own engine results when there are any; (4) what the step cannot tell you; (5) one short question to check understanding or one next step (another step of the guide, or a guided lab).',
+        '- Never invent formulas, weights, constants or numbers, and never round the guide\'s constants differently. If the guide and the engine results do not cover something, say so.',
+        f'- Explanation level: {EXPERTISE_STYLE.get(settings.get("expertise") or "guided", EXPERTISE_STYLE["guided"])}',
+        '- Tutorials: the How it works panel (sidebar) has the guided labs, the full journey and every step of the math. Point learners to it, and use list_lessons to suggest a lab.',
+        '',
         f'Workspace: {workspace.get("name")} (domain: {domain or "not set"}).',
         f'Researcher settings (defaults for plans): {json.dumps({k: settings.get(k) for k in SETTING_KEYS if k in settings})}.',
         *([f'The researcher picked the {settings["preferred_skill"]} workflow in the composer; use it for the next plan unless they say otherwise.']
@@ -364,7 +377,7 @@ def system_prompt(thread, settings):
     else:
         lines += ['', 'No evidence is attached to this chat yet.']
     asked = next((m['content'] for m in reversed(thread['messages']) if m['role'] == 'user' and not m.get('hidden')), '')
-    taught = learning.recall(asked, thread['workspace_id'])
+    taught = learning.recall(asked, thread['workspace_id']) if local_mode() else []  # see _learning_allowed
     if taught:
         lines += ['', *taught]
     lines += ['', *journey_chat.PROMPT]
@@ -575,7 +588,8 @@ def status():
                          'model_label': model_label(cfg.get('model'))[0],
                          'reason': cfg.get('reason'), 'configurable': local_mode(), 'token_required': bool(os.getenv('NDIM_AGENT_ACCESS_TOKEN')),
                          'providers': sorted(PROVIDERS),
-                         'personal': [{'provider': name, 'model': PROVIDERS[name]['model']} for name in PERSONAL]},
+                         'personal': [{'provider': name, 'model': PROVIDERS[name]['model']} for name in PERSONAL],
+                         'learning': local_mode()},
                         headers={'Cache-Control': 'no-store'})
 
 
@@ -807,8 +821,17 @@ def _sync_material(lesson):
     return _evidence_texts(thread), names
 
 
+def _learning_allowed(token):
+    _authorize(token)
+    if not local_mode():
+        # A hosted engine is shared: one visitor's approval or correction would be recalled into everyone's answers, and the
+        # lessons and dataset would show every visitor's questions. Learning belongs to a researcher's own computer.
+        raise HTTPException(403, 'Learning from feedback is available in the desktop app only.')
+
+
 @router.post('/workspaces/{workspace}/threads/{thread_id}/messages/{message_id}/feedback')
 def feedback(workspace: str, thread_id: str, message_id: str, payload: Feedback, x_ndim_agent_token: str | None = Header(default=None)):
+    _learning_allowed(x_ndim_agent_token)
     thread = _card_thread(workspace, thread_id, x_ndim_agent_token)
     lesson = learning.record_feedback(thread, message_id, payload.rating, payload.correction, payload.share,
                                       _lesson_context(thread), _evidence_texts(thread))
@@ -820,21 +843,23 @@ def feedback(workspace: str, thread_id: str, message_id: str, payload: Feedback,
 @router.get('/learning')
 def learning_overview(x_ndim_agent_token: str | None = Header(default=None)):
     _authorize(x_ndim_agent_token)
+    if not local_mode():
+        return JSONResponse({'available': False}, headers={'Cache-Control': 'no-store'})
     data = learning.load()
     lessons = [{key: item.get(key) for key in ('id', 'kind', 'question', 'answer', 'workspace_id', 'created_at', 'share')}
                for item in reversed(data['lessons'])]
-    return JSONResponse(learning.summary() | {'items': lessons, 'term_list': data['terms']}, headers={'Cache-Control': 'no-store'})
+    return JSONResponse(learning.summary() | {'available': True, 'items': lessons, 'term_list': data['terms']}, headers={'Cache-Control': 'no-store'})
 
 
 @router.post('/learning/terms')
 def learning_term(payload: Term, x_ndim_agent_token: str | None = Header(default=None)):
-    _authorize(x_ndim_agent_token)
+    _learning_allowed(x_ndim_agent_token)
     return learning.add_term(payload.term, payload.meaning, payload.workspace_id)
 
 
 @router.delete('/learning/{item_id}', status_code=204)
 def learning_forget(item_id: str, x_ndim_agent_token: str | None = Header(default=None)):
-    _authorize(x_ndim_agent_token)
+    _learning_allowed(x_ndim_agent_token)
     learning.forget(item_id)
     answer_sync.sync_if_on(_sync_material)  # a forgotten answer that was shared is withdrawn online too
 
@@ -860,7 +885,7 @@ def _sync_allowed(token):
 
 @router.post('/learning/{item_id}/share')
 def learning_share(item_id: str, payload: Share, x_ndim_agent_token: str | None = Header(default=None)):
-    _authorize(x_ndim_agent_token)
+    _learning_allowed(x_ndim_agent_token)
     lesson = learning.set_share(item_id, payload.share)
     answer_sync.sync_if_on(_sync_material)
     return {key: lesson[key] for key in ('id', 'kind', 'share')}
@@ -892,7 +917,7 @@ def learning_sync_run(x_ndim_agent_token: str | None = Header(default=None)):
 @router.get('/learning/dataset', response_class=PlainTextResponse)
 def learning_dataset(shared_only: bool = False, x_ndim_agent_token: str | None = Header(default=None)):
     """Fine-tuning examples as JSON lines; shared_only gives what online sync may send (answers and engine numbers)."""
-    _authorize(x_ndim_agent_token)
+    _learning_allowed(x_ndim_agent_token)
     return PlainTextResponse('\n'.join(json.dumps(row, ensure_ascii=False) for row in learning.dataset(shared_only)) + '\n',
                              headers={'Cache-Control': 'no-store'})
 
@@ -926,6 +951,12 @@ def chat(payload: ChatRequest, x_ndim_agent_token: str | None = Header(default=N
             for _ in range(MAX_STEPS):
                 system = system_prompt(thread, settings)
                 text, calls = yield from _relay(provider_stream(cfg, system, _history(thread)))
+                if not text.strip() and not calls:
+                    # Reasoning models sometimes spend the whole reply thinking and return nothing; ask once more.
+                    text, calls = yield from _relay(provider_stream(cfg, system, _history(thread)))
+                if not text.strip() and not calls:
+                    text = EMPTY_REPLY
+                    yield _event({'type': 'text', 'delta': text})
                 reply = _message('assistant', text, tool_calls=calls or None)
                 if not calls and text:
                     sources = [system, *(m['content'] for m in thread['messages'] if m['role'] in ('tool', 'user'))]

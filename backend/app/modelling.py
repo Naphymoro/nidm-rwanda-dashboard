@@ -29,13 +29,8 @@ def run_prototype_adoption_curve(horizon_days: int, parameters: Dict[str, float]
     return trajectory
 
 
-def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
-    """Run the documented NDIM S/M/T/I/R compartment system.
-
-    Compartments are normalized proportions:
-    S susceptible, M misinformed, T truth-aligned, I inoculated, R durable
-    adoption/resistance. The policy-facing adoption signal is T + I + R.
-    """
+def compartmental_rates(parameters: Dict[str, float]) -> Dict[str, float]:
+    """The daily rates of the S/M/T/I/R system from the model parameters (run_compartmental_model; shown by math_guide.py)."""
     trust = _clamp(float(parameters.get("trust_score", 0.60)))
     barrier = _clamp(float(parameters.get("barrier_score", 0.35)))
     phi = _clamp(float(parameters.get("narrative_influence", parameters.get("phi", 0.38))))
@@ -46,6 +41,30 @@ def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> 
     resistance_growth = _clamp(float(parameters.get("resistance_growth", 0.0)))
     reactance_penalty = _clamp(float(parameters.get("reactance_penalty", 0.0)))
     messenger_fit = _clamp(float(parameters.get("trusted_messenger_fit", 0.0)))
+    return {
+        "beta_t": float(parameters.get("beta_t", 0.035 * (1.0 + phi) * (0.65 + trust))),
+        "beta_m": float(parameters.get("beta_m", 0.030 * (0.55 + barrier + misinformation_risk * 0.35 + reactance_penalty * 0.18))),
+        "iota": float(parameters.get("iota", 0.006 + 0.020 * intervention + 0.030 * inoculation_strength + 0.010 * messenger_fit)),
+        "rho": float(parameters.get("rho", 0.010 + 0.020 * trust + 0.012 * intervention + 0.010 * messenger_fit)),
+        "sigma": float(parameters.get("sigma", 0.008 + 0.020 * inoculation_strength + 0.018 * misinformation_decay)),
+        "mu": float(parameters.get("mu", 0.004 + 0.010 * barrier)),
+        "gamma": float(parameters.get("gamma", 0.008 + 0.018 * intervention + 0.012 * trust + 0.012 * resistance_growth)),
+        "eta": float(parameters.get("eta", 0.006 + 0.012 * trust + 0.006 * resistance_growth)),
+        "waning": float(parameters.get("waning", 0.001 + 0.004 * max(0.0, barrier - trust))),
+    }
+
+
+def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> List[Dict[str, float]]:
+    """Run the documented NDIM S/M/T/I/R compartment system.
+
+    Compartments are normalized proportions:
+    S susceptible, M misinformed, T truth-aligned, I inoculated, R durable
+    adoption/resistance. The policy-facing adoption signal is T + I + R.
+    """
+    barrier = _clamp(float(parameters.get("barrier_score", 0.35)))
+    inoculation_strength = _clamp(float(parameters.get("inoculation_strength", 0.0)))
+    misinformation_risk = _clamp(float(parameters.get("misinformation_risk", 0.0)))
+    reactance_penalty = _clamp(float(parameters.get("reactance_penalty", 0.0)))
     initial_adoption = _clamp(float(parameters.get("initial_adoption", 0.10)))
 
     state = _normalize_compartments(
@@ -58,15 +77,8 @@ def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> 
         }
     )
 
-    beta_t = float(parameters.get("beta_t", 0.035 * (1.0 + phi) * (0.65 + trust)))
-    beta_m = float(parameters.get("beta_m", 0.030 * (0.55 + barrier + misinformation_risk * 0.35 + reactance_penalty * 0.18)))
-    iota = float(parameters.get("iota", 0.006 + 0.020 * intervention + 0.030 * inoculation_strength + 0.010 * messenger_fit))
-    rho = float(parameters.get("rho", 0.010 + 0.020 * trust + 0.012 * intervention + 0.010 * messenger_fit))
-    sigma = float(parameters.get("sigma", 0.008 + 0.020 * inoculation_strength + 0.018 * misinformation_decay))
-    mu = float(parameters.get("mu", 0.004 + 0.010 * barrier))
-    gamma = float(parameters.get("gamma", 0.008 + 0.018 * intervention + 0.012 * trust + 0.012 * resistance_growth))
-    eta = float(parameters.get("eta", 0.006 + 0.012 * trust + 0.006 * resistance_growth))
-    waning = float(parameters.get("waning", 0.001 + 0.004 * max(0.0, barrier - trust)))
+    r = compartmental_rates(parameters)
+    beta_t, beta_m, iota, rho, sigma, mu, gamma, eta, waning = (r[k] for k in ("beta_t", "beta_m", "iota", "rho", "sigma", "mu", "gamma", "eta", "waning"))
 
     uncertainty = 0.035 + 0.10 * (1.0 - _clamp(float(parameters.get("evidence_strength", parameters.get("confidence", 0.50)))))
     trajectory: List[Dict[str, float]] = []

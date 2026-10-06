@@ -54,7 +54,7 @@ Then give each research team its key; they paste it in the Learning panel. Teste
 The engine's research assistant runs on Workers AI through this Worker (`src/ai.ts`): no outside API key or company.
 The engine calls `/__ai/v1/chat/completions` on the Worker's public URL with the `NDIM_AI_TOKEN` secret, as an
 OpenAI-compatible provider; the Worker answers through the AI binding. The Worker picks the model (`NDIM_AI_MODEL`, GLM 5.3
-Flash after the 2026-10-06 comparison), caps replies at 1,500 tokens, stops for the day at `NDIM_AI_DAILY_NEURONS` (9,000,
+Flash after the 2026-10-06 comparison), caps replies at 3,000 tokens (reasoning included), stops for the day at `NDIM_AI_DAILY_NEURONS` (9,000,
 under the free 10,000) and allows `NDIM_AI_VISITOR_MESSAGES` (40) assistant messages per visitor per day (a visitor is a
 hash of IP and day). Use is counted in D1 (`ai_usage`, `ai_visitors`). Without the secret there is no assistant.
 

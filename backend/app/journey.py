@@ -564,6 +564,13 @@ def public(journey, full=False):
     return body
 
 
+@router.get('/math')
+def math():
+    """How NDIM works: each step's formula, symbols, a worked example the engine computes, and its limits."""
+    from .math_guide import guide
+    return guide()
+
+
 @router.get('/journey/stages')
 def stage_guide():
     # Each stage's limits come with it, so ndim-mcp can describe a stage before it runs without its own copy of them.

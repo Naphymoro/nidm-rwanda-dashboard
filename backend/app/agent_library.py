@@ -1,4 +1,4 @@
-"""Field manual and reference curriculum as searchable sections for the chat agent and its Library panel."""
+"""How NDIM works, the field manual and the reference curriculum as searchable sections for the chat agent and its Library panel."""
 import functools
 import html
 import math
@@ -11,6 +11,7 @@ SOURCES = {'manual': ('Field manual', MANUAL_HTML), 'curriculum': ('Reference cu
 HEADING = re.compile(r'<(h[1-3])\b[^>]*>(.*?)</\1>', re.S | re.I)
 BLOCK = re.compile(r'</?(p|div|li|ul|ol|tr|table|section|article|br|h[1-6]|pre|blockquote)\b[^>]*>', re.I)
 WORD = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
+GUIDE_BOOST = 1.6
 STOP = frozenset('the a an and or of to in on for with is are be by as at it this that from how what why when which can not'.split())
 
 
@@ -34,7 +35,8 @@ def _slug(value):
 @functools.lru_cache(maxsize=1)
 def sections():
     """Split each document at h1-h3 headings. Ids are stable while headings stay the same."""
-    out = []
+    from .math_guide import library_sections  # How NDIM works first: the formulas the engine really runs
+    out = [{'source': 'guide', 'source_label': 'How NDIM works', **section} for section in library_sections()]
     for source, (label, document) in SOURCES.items():
         body = re.sub(r'<(script|style)\b.*?</\1>', ' ', document, flags=re.S | re.I)
         marks = list(HEADING.finditer(body))
@@ -83,7 +85,8 @@ def search(query, source='all', limit=5):
             idf = math.log(1 + (total - frequency[term] + .5) / (frequency[term] + .5))
             score += idf * count * 2.2 / (count + 1.2 * (.25 + .75 * lengths[position] / average))
         if score > 0:
-            scored.append((score, item))
+            # How NDIM works is written from the engine's code; older manual pages can describe superseded formulas.
+            scored.append((score * (GUIDE_BOOST if item['source'] == 'guide' else 1.0), item))
     scored.sort(key=lambda pair: -pair[0])
     return [{'id': item['id'], 'source': item['source_label'], 'title': item['title'], 'snippet': _snippet(item['text'], terms)}
             for _, item in scored[:limit]]

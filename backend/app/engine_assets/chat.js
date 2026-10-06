@@ -578,7 +578,8 @@ function latestStage(j){
 function stageResult(j,id,current){
   const row=j.stages.find(item=>item.id===id), view=j.presentation.stages[id];
   return el('div',{class:'jc-result'+(current?' current':'')},el('b',{text:`${row.number}. ${row.title}`}),
-    ...(view.explanation?[el('p',{text:view.explanation})]:view.sentences.map(sentence=>el('p',{text:sentence}))),callout('warn','alert',view.limits));
+    ...(view.explanation?[el('p',{text:view.explanation})]:view.sentences.map(sentence=>el('p',{text:sentence}))),callout('warn','alert',view.limits),
+    STAGE_MATH[id]?el('button',{type:'button',class:'btn ghost small',onclick:()=>openGuide(STAGE_MATH[id])},icon('cap'),'The math behind this step'):null);
 }
 function nextPart(j){
   if(!j.records.length)return [evidenceForm()];
@@ -1111,7 +1112,7 @@ async function sendFeedback(message,body){
   renderMessages();
 }
 function feedbackBar(message){
-  if(!agentOn())return null;
+  if(!agentOn()||state.agent?.learning===false)return null;  // hosted engines do not learn (agent.py _learning_allowed)
   const fb=message.feedback, error=state.feedbackError.get(message.id);
   if(state.correcting.has(message.id)){
     const draft=state.correctionDrafts.get(message.id)??message.content;
@@ -1141,6 +1142,12 @@ async function renderLearning(){
   const box=$('panel-learning');
   let data, sync;
   try{[data,sync]=await Promise.all([api('/agent/learning'),api('/agent/learning/sync')]);}catch(err){box.replaceChildren(callout('error','alert',err.message));return;}
+  if(data.available===false){
+    box.replaceChildren(el('h3',{text:'Feedback'}),
+      el('p',{text:'In the NDIM desktop app, NDIM learns from you: 👍 approves a reply, Correct replaces it with your wording, and your team can add local terms (for example imbabura = improved cookstove). NDIM recalls them in later answers, and enough of them can train a new local model version.'}),
+      el('p',{class:'muted',text:'This online demo is shared by everyone, so learning is switched off here: one visitor\'s corrections must not change what NDIM tells the others.'}));
+    return;
+  }
   const term=el('input',{placeholder:'Term, e.g. imbabura',maxlength:'120'}), meaning=el('input',{placeholder:'Meaning, e.g. improved cookstove',maxlength:'600'});
   const usable=data.usable_examples, ready=data.fine_tune_ready_at;
   box.replaceChildren(
@@ -1210,11 +1217,12 @@ function renderPanel(){
   $('panel-toggle').setAttribute('aria-expanded',String(open));
   document.querySelectorAll('[data-open-panel]').forEach(button=>button.classList.toggle('on',open&&state.panel.tab===button.dataset.openPanel));
   if(!open)return;
-  for(const tab of ['workbench','library','learning']){
+  for(const tab of ['guide','workbench','library','learning']){
     $('tab-'+tab).setAttribute('aria-selected',String(state.panel.tab===tab));
     $('panel-'+tab).hidden=state.panel.tab!==tab;
   }
-  if(state.panel.tab==='workbench')renderWorkbench();else if(state.panel.tab==='learning')renderLearning();else renderLibrary();
+  if(state.panel.tab==='workbench')renderWorkbench();else if(state.panel.tab==='learning')renderLearning();
+  else if(state.panel.tab==='guide')renderGuide();else renderLibrary();
 }
 function paramForm(values,{skill}={}){
   const range=(name,label,value)=>{const out=el('output',{text:Number(value).toFixed(2)});const input=el('input',{type:'range',name,min:'0',max:'1',step:'0.01',value:String(value),oninput:()=>out.textContent=Number(input.value).toFixed(2)});return el('label',{class:'full'},el('span',{},label,' ',out),input);};
@@ -1263,6 +1271,53 @@ function renderWorkbench(){
     box.append(el('div',{class:'ai-body'},stepsBlock(selected),details(selected)));
   }
   box.append(el('p',{class:'panel-foot'},'Evidence ledger, SDMX intake, repository and policy export are still in the ',el('a',{href:apiBase+(config.static?'/classic-workbench':'/classic-workbench'),target:'_blank',rel:'noreferrer'},'classic workbench ↗'),'.'));
+}
+// ---------- How it works: tutorials and the math (engine /engine/math, written from the engine's code) ----------
+const STAGE_MATH={encoding:'guide-encoding',compartmental:'guide-compartmental',agents:'guide-network',digital:'guide-twin',
+  bayes:'guide-bayes',rl:'guide-ranking',inoculation:'guide-inoculation',policy:'guide-grade'};
+const KATEX='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/';
+let katexReady=null;
+function loadKatex(){
+  if(window.katex)return Promise.resolve(true);
+  katexReady??=new Promise(resolve=>{
+    const script=el('script',{src:KATEX+'katex.min.js',onload:()=>resolve(true),onerror:()=>resolve(false)});
+    document.head.append(el('link',{rel:'stylesheet',href:KATEX+'katex.min.css'}),script);
+  });
+  return katexReady;
+}
+function openGuide(sectionId){state.panel.guideOpen=sectionId||null;state.panel.guideScroll=!!sectionId;openPanel('guide');}
+async function renderGuide(){
+  const box=$('panel-guide');
+  if(!state.panel.guide){
+    box.replaceChildren(el('p',{class:'small muted',text:'Loading…'}));
+    try{state.panel.guide=await api('/engine/math');}catch(err){box.replaceChildren(callout('error','alert',err.message));return;}
+  }
+  const g=state.panel.guide;
+  const teach=(section)=>{$('prompt').value=`Teach me step ${section.number}, “${section.title}”, using its worked example. Go one idea at a time and check that I follow.`;autosize();$('prompt').focus();};
+  const academy=(config.routes&&config.routes.academy)||'/academy';
+  const sections=g.sections.map(section=>el('details',{class:'guide-step',id:section.id,open:state.panel.guideOpen===section.id,
+      ontoggle:event=>{if(event.target.open)state.panel.guideOpen=section.id;else if(state.panel.guideOpen===section.id)state.panel.guideOpen=null;}},
+    el('summary',{},el('b',{text:`${section.number}. ${section.title}`})),
+    el('p',{text:section.why}),
+    ...section.formulas.map(tex=>el('div',{class:'guide-formula','data-tex':tex,text:tex})),
+    el('table',{class:'guide-symbols'},el('tbody',{},section.symbols.map(([sym,meaning])=>el('tr',{},el('td',{text:sym}),el('td',{text:meaning}))))),
+    el('p',{class:'guide-label',text:'Worked example (computed by the engine)'}),
+    el('ol',{class:'guide-example'},section.example.map(line=>el('li',{text:line}))),
+    callout('warn','alert',section.limits),
+    el('div',{class:'actions'},el('button',{type:'button',class:'btn',onclick:()=>teach(section)},icon('spark'),'Ask NDIM to teach me this'))));
+  box.replaceChildren(
+    el('div',{},el('h3',{text:'How it works'}),el('p',{class:'sub',text:'Tutorials to try, and the math NDIM really runs.'})),
+    el('p',{class:'guide-label',text:'Tutorials'}),
+    el('div',{class:'guide-labs'},
+      ...state.lessons.map(lesson=>el('button',{type:'button',class:'btn',onclick:()=>{closePanel();startLab(lesson);}},icon('cap'),`Lab ${lesson.number} · ${lesson.title}`,el('small',{text:` ${lesson.duration}`}))),
+      el('button',{type:'button',class:'btn',onclick:()=>{closePanel();startJourney();}},icon('flask'),'The full journey (13 stages)'),
+      el('a',{class:'btn ghost',href:academy,target:'_blank',rel:'noopener'},icon('book'),'Learning Academy ↗')),
+    el('p',{class:'guide-label',text:'The math, step by step'}),
+    el('p',{class:'small',text:g.intro}),
+    ...sections);
+  const open=state.panel.guideOpen&&$(state.panel.guideOpen);
+  if(open&&state.panel.guideScroll){open.scrollIntoView({block:'start'});state.panel.guideScroll=false;}
+  if(await loadKatex())box.querySelectorAll('[data-tex]').forEach(node=>{try{window.katex.render(node.dataset.tex,node,{displayMode:true,throwOnError:false});}catch{}});
 }
 async function loadTOC(){if(!state.panel.toc){try{state.panel.toc=(await api('/agent/library')).sections;}catch(err){state.panel.toc=[];}}return state.panel.toc;}
 async function renderLibrary(){

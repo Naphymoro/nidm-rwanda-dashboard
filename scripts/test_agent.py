@@ -167,6 +167,26 @@ class AgentTests(unittest.TestCase):
             self.assertIn('NDIM_AGENT_ACCESS_TOKEN', status['reason'])
             self.assertEqual(self.client.post('/agent/config', json={'provider': 'openai', 'api_key': 'x'}).status_code, 403)
 
+    def test_empty_reply_is_retried_once_then_explained(self):
+        fake, seen = scripted(('', []), ('Here is the answer.', []))
+        with patch.object(agent, 'provider_stream', fake):
+            stream = events(self.chat('How is the trust score computed?'))
+        self.assertEqual(''.join(e['delta'] for e in stream if e['type'] == 'text'), 'Here is the answer.')
+        self.assertEqual(len(seen), 2)
+        fake, seen = scripted(('', []), ('  ', []))
+        with patch.object(agent, 'provider_stream', fake):
+            stream = events(self.chat('And the barrier score?'))
+        self.assertEqual(''.join(e['delta'] for e in stream if e['type'] == 'text').strip(), agent.EMPTY_REPLY)
+
+    def test_hosted_engines_do_not_learn_from_visitors(self):
+        with patch.dict(os.environ, {'NDIM_DEPLOYMENT_MODE': 'cloud', 'NDIM_AGENT_PUBLIC': '1'}):
+            self.assertFalse(self.client.get('/agent/status').json()['learning'])
+            self.assertEqual(self.client.get('/agent/learning').json(), {'available': False})
+            self.assertEqual(self.client.get('/agent/learning/dataset').status_code, 403)
+            self.assertEqual(self.client.post('/agent/learning/terms', json={'term': 'imbabura', 'meaning': 'improved cookstove'}).status_code, 403)
+            self.assertEqual(self.client.post(f'/agent/workspaces/{self.workspace}/threads/{THREAD}/messages/x/feedback',
+                                              json={'rating': 'up'}).status_code, 403)
+
     def test_public_hosted_mode_needs_no_access_token(self):
         # The Cloudflare Worker caps use per day and per visitor, so the demo can offer the assistant to everyone.
         with patch.dict(os.environ, {'NDIM_DEPLOYMENT_MODE': 'cloud', 'NDIM_AGENT_PUBLIC': '1'}):
@@ -280,7 +300,7 @@ class AgentTests(unittest.TestCase):
 
     def test_library_sections_cover_both_sources(self):
         sources = {item['source'] for item in agent_library.sections()}
-        self.assertEqual(sources, {'manual', 'curriculum'})
+        self.assertEqual(sources, {'guide', 'manual', 'curriculum'})
 
 
 QUESTION = 'How might trusted messengers change clean cooking adoption?'
