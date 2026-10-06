@@ -121,6 +121,42 @@ KEYWORDS = {
     "negative_stance": ["not use", "refuse", "stopped", "avoid", "cannot", "can't", "too expensive", "unsafe", "difficult", "rejected", "against"],
     "local_grounding": ["district", "sector", "village", "market", "cell", "province", "community", "home"],
 }
+# Topic word lists, added to the clean-cooking lists above when a journey names its topic. Words a topic makes
+# meaningful that the cooking lists miss: for vaccines the rumour vocabulary and clinic access, for AI in the classroom
+# device access, data worries and the replacement fear, for the just transition livelihoods and fairness.
+TOPIC_KEYWORDS = {
+    "vaccines": {
+        "misinformation": ["infertility", "infertile", "barren", "microchip", "tested on", "experiment", "video", "fainted"],
+        "safety": ["side effect", "side effects", "fainted", "injection", "harm"],
+        "trust_positive": ["nurse", "doctor", "health centre", "health center", "community health worker"],
+        "affordability": ["transport", "travel", "trip", "costs", "fees"],
+        "health": ["vaccine", "vaccinated", "cancer", "measles", "polio", "hpv"],
+    },
+    "ai_education": {
+        "fuel_access": ["electricity", "internet", "tablet", "tablets", "device", "devices", "data bundle", "charger"],
+        "safety": ["privacy", "records", "watched", "surveillance", "data goes"],
+        "misinformation": ["replace teachers", "replace the teacher", "lose their jobs"],
+        "trust_positive": ["school leader", "demonstrated"],  # not bare "teacher": teachers are as often afraid as trusted
+        "affordability": ["fees", "costs", "data"],
+        "positive_stance": ["learned", "learning", "improved", "pass", "explained"],
+    },
+    "just_transition": {
+        "affordability": ["income", "jobs", "job", "livelihood", "wages", "school fees", "costs"],
+        "trust_negative": ["unfair", "only the rich", "corrupt", "profit", "promised", "promise", "left behind"],
+        "positive_stance": ["retraining", "trained", "hired", "earn more", "support the change"],
+        "trust_positive": ["cooperative leader", "technician"],
+        "habit": ["twenty years", "generations"],
+    },
+}
+TOPICS = ("clean_cooking", *TOPIC_KEYWORDS)
+
+
+def keyword_lists(topic: str | None = None) -> dict:
+    """The clean-cooking lists plus the topic's additions (duplicates dropped, cooking lists first)."""
+    extra = TOPIC_KEYWORDS.get(topic or "", {})
+    return {name: list(dict.fromkeys(words + extra.get(name, []))) for name, words in KEYWORDS.items()}
+
+
 # trust = 0.48 + sum(weight x count), then kept between 0.05 and 0.95; terms in this order.
 TRUST_WEIGHTS = {"trust_positive": 0.060, "health": 0.025, "social": 0.010, "local_grounding": 0.018,
                  "trust_negative": -0.070, "misinformation": -0.025}
@@ -132,9 +168,36 @@ BARRIER_RELIEF = {"positive_stance": 0.035, "health": 0.015}
 BARRIER_BASE = 0.30
 
 
-def keyword_counts(text: str) -> dict:
-    """How often each keyword list occurs in text (lower-cased), as whole words or phrases."""
-    return {name: sum(len(re.findall(rf"\b{re.escape(word)}\b", text)) for word in words) for name, words in KEYWORDS.items()}
+# Negation: a trust or benefit word with one of these among the three words before it counts the other way
+# ("I do not trust" is distrust; "it did not save money" is a refusal), instead of raising trust.
+NEGATORS = {"not", "no", "never", "nobody", "hardly", "cannot", "can't", "dont", "don't", "doesn't", "didn't", "won't",
+            "isn't", "wasn't", "aren't", "weren't", "nor", "without", "longer"}
+NEGATABLE = {"trust_positive": "trust_negative", "positive_stance": "negative_stance"}
+NEGATION_WINDOW = 3
+
+
+def negated(text: str, start: int) -> bool:
+    before = re.findall(r"[a-z']+", text[max(0, start - 40):start])[-NEGATION_WINDOW:]
+    return any(word in NEGATORS for word in before)
+
+
+def keyword_counts(text: str, topic: str | None = None) -> dict:
+    """How often each keyword list occurs in text (lower-cased), as whole words or phrases. Negated trust and benefit
+    words are counted as distrust and refusal words instead. topic adds that topic's lists (TOPIC_KEYWORDS)."""
+    lists = keyword_lists(topic)
+    counts = {name: 0 for name in lists}
+    for name, words in lists.items():
+        taken = []  # within one list, a phrase inside a longer match counts once ("community health worker")
+        for word in sorted(words, key=len, reverse=True):
+            for match in re.finditer(rf"\b{re.escape(word)}\b", text):
+                if any(start <= match.start() and match.end() <= end for start, end in taken):
+                    continue
+                taken.append((match.start(), match.end()))
+                if name in NEGATABLE and negated(text, match.start()):
+                    counts[NEGATABLE[name]] += 1
+                else:
+                    counts[name] += 1
+    return counts
 
 
 def trust_score(counts: dict) -> float:
@@ -160,6 +223,7 @@ def encode_rule_based(
     mode: EncodingMode = EncodingMode.manual,
     note: str = "deterministic heuristic fallback",
     sentiment_text: Optional[str] = None,
+    topic: Optional[str] = None,
 ) -> EncodedNarrative:
     """sentiment_text: the original wording when record.text is a checked English translation (the classifier reads Kinyarwanda)."""
     text = record.text.lower()
@@ -170,7 +234,7 @@ def encode_rule_based(
     def clamp(value: float, low: float = 0.05, high: float = 0.95) -> float:
         return max(low, min(high, value))
 
-    counts = keyword_counts(text)
+    counts = keyword_counts(text, topic)
     affordability, fuel_access, safety, habit, health = (counts[k] for k in ("affordability", "fuel_access", "safety", "habit", "health"))
     trust_positive, trust_negative, misinformation, social = (counts[k] for k in ("trust_positive", "trust_negative", "misinformation", "social"))
     emotion, positive_stance, negative_stance, local_grounding = (counts[k] for k in ("emotion", "positive_stance", "negative_stance", "local_grounding"))

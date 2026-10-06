@@ -134,6 +134,8 @@ class JourneyCreate(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     question: str = Field(min_length=8, max_length=1000)
     country: str = Field(default='Rwanda', min_length=2, max_length=80)
+    topic: Literal['clean_cooking', 'vaccines', 'ai_education', 'just_transition'] = Field(
+        default='clean_cooking', description='Chooses the word lists added to the keyword encoder (encoding.TOPIC_KEYWORDS).')
 
 
 class EvidenceRequest(BaseModel):
@@ -376,8 +378,9 @@ def run_stage(journey, stage, req):
     if stage == 'encoding':
         kept = accepted(journey)
         records = [narrative(record, journey['country']) for record in kept]
-        encoded = [encode_rule_based(record, EncodingMode.manual, 'journey: deterministic English keyword encoder',
-                                     sentiment_text=source['text']) for record, source in zip(records, kept)]
+        topic = journey.get('topic', 'clean_cooking')  # journeys made before topics were added read as clean cooking
+        encoded = [encode_rule_based(record, EncodingMode.manual, f'journey: deterministic English keyword encoder ({topic} word lists)',
+                                     sentiment_text=source['text'], topic=topic) for record, source in zip(records, kept)]
         diagnoses = [diagnose_inoculation_rule_based(record, item) for record, item in zip(records, encoded)]
         return {'encoded': [item.model_dump(mode='json') for item in encoded],
                 'diagnoses': [item.model_dump(mode='json') for item in diagnoses],
@@ -550,6 +553,7 @@ def progress(journey):
 def public(journey, full=False):
     rows, next_stage = progress(journey)
     body = {key: journey[key] for key in ('journey_id', 'workspace_id', 'question', 'country', 'created_at', 'updated_at')}
+    body['topic'] = journey.get('topic', 'clean_cooking')
     body['records'] = [{key: record[key] for key in ('record_id', 'admin_unit', 'source_name', 'source_type', 'period', 'language',
                                                      'consent', 'content_sha256', 'gate', 'review')} | {'excerpt': record['text'][:160]}
                        | ({'translation_excerpt': record['translation_en'][:160], 'translation_checked_by': record['translation_checked_by']}
@@ -592,7 +596,7 @@ def stage_guide():
 @router.post('/workspaces/{workspace}/journeys', status_code=201)
 def create(workspace: str, req: JourneyCreate):
     store.folder(workspace)  # 404 for an unknown workspace
-    journey = {'journey_id': str(uuid4()), 'workspace_id': workspace, 'question': req.question, 'country': req.country,
+    journey = {'journey_id': str(uuid4()), 'workspace_id': workspace, 'question': req.question, 'country': req.country, 'topic': req.topic,
                'created_at': store.now(), 'records': [], 'stages': {}, 'events': []}
     log(journey, 'created', 'Journey created', code_version=fingerprint())
     save(journey)

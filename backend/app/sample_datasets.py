@@ -27,7 +27,7 @@ def _records(*rows):
 
 
 DATASETS = [
-    {'id': 'cooking-simple', 'topic': 'Clean cooking', 'level': 'simple',
+    {'id': 'cooking-simple', 'topic': 'Clean cooking', 'topic_id': 'clean_cooking', 'level': 'simple',
      'title': 'Trusted messengers and improved stoves',
      'summary': 'Three households weigh the price of an improved stove against what a trusted health worker showed them.',
      'question': 'How might trusted messengers change clean cooking adoption?',
@@ -41,7 +41,7 @@ DATASETS = [
      'twin': {'obs': 0.2, 'trust': 0.0, 'barrier': 0.05},
      'notice': 'Look at which words moved each score: "trust", "showed" and "health worker" raise trust; "price", '
                '"repair" and "rumour" raise barriers.'},
-    {'id': 'cooking-provoking', 'topic': 'Clean cooking', 'level': 'thought-provoking',
+    {'id': 'cooking-provoking', 'topic': 'Clean cooking', 'topic_id': 'clean_cooking', 'level': 'thought-provoking',
      'title': 'When the trusted messenger repeats the rumour',
      'summary': 'A respected health worker passes on an explosion rumour; trust and fear arrive through the same person.',
      'question': 'Why might clean cooking stall even where people trust the messengers?',
@@ -55,11 +55,8 @@ DATASETS = [
          ('My neighbour has used an LPG stove for a year without any problem. She cooks faster and saves money, but when I '
           'told my family, my husband said it is not our tradition and we should not change.', 'Kicukiro / Gatenga')),
      'twin': {'obs': 0.12, 'trust': -0.05, 'barrier': 0.08},
-     'notice': 'Record 1 raises trust only through "health worker" (the lists have "trust" and "trusted" but not "trusts") '
-               'while "heard" and "explode" count as rumour words. Record 2 says "I do not trust" and still counts "trust". '
-               'In record 3, "many buyers believe them" counts "believe" as a trust word although they believe a rumour. '
-               'A human reader sees a trusted messenger spreading fear; counting words cannot.'},
-    {'id': 'transition-simple', 'topic': 'Just transition', 'level': 'simple',
+     'notice': 'Record 1 raises trust only through "health worker" (the lists have "trust" and "trusted", not "trusts") while "heard" and "explode" count as rumour words. Record 2, "I do not trust the subsidy", counts as distrust: NDIM reads a "not" or "no" among the three words before a trust word. In record 3, "many buyers believe them" still counts "believe" as trust although they believe a rumour: counting words cannot tell whom people believe.'},
+    {'id': 'transition-simple', 'topic': 'Just transition', 'topic_id': 'just_transition', 'level': 'simple',
      'title': 'Moving away from charcoal, fairly',
      'summary': 'A charcoal producer, a cooperative leader and a women\'s group talk about who gains and who loses.',
      'question': 'How might a fair transition plan change support for moving away from charcoal?',
@@ -71,9 +68,8 @@ DATASETS = [
          ('The women\'s group says cleaner fuel means less smoke and less time collecting wood. They hope the transition '
           'plan includes payment by installments so poorer families are not left behind.', 'Muhanga / Nyamabuye')),
      'twin': {'obs': 0.18, 'trust': 0.02, 'barrier': 0.04},
-     'notice': 'The encoder knows "charcoal", "wood", "fuel", "loan" and "payment" from clean cooking, so this topic still '
-               'gets cost and fuel signals. It has no words for jobs or fairness, so those themes stay invisible.'},
-    {'id': 'transition-provoking', 'topic': 'Just transition', 'level': 'thought-provoking',
+     'notice': 'The just-transition list adds livelihood words ("income", "jobs") and stances such as "support the change" to the clean-cooking lists, so record 1 shows the cost of losing an income. "Charcoal", "wood" and "fuel" still read as fuel words.'},
+    {'id': 'transition-provoking', 'topic': 'Just transition', 'topic_id': 'just_transition', 'level': 'thought-provoking',
      'title': 'Who carries the cost of a charcoal ban?',
      'summary': 'Traders, technicians and rumours about who benefits: fairness stories that can turn people against the change.',
      'question': 'Who carries the cost when a city bans charcoal, and how might their stories shape support for the transition?',
@@ -89,10 +85,8 @@ DATASETS = [
          ('A teacher said the transition is good for the children\'s health because there is less smoke, but parents in '
           'her class worry more about food prices than about air. They believe the change helps only the rich.', 'Gasabo / Remera')),
      'twin': {'obs': 0.1, 'trust': -0.04, 'barrier': 0.1},
-     'notice': 'Fairness stories ("helps only the rich", "jobs went to the city") are about trust in the process, yet the '
-               'encoder has no fairness words. Record 4 is in Kinyarwanda: the scores read its English translation, and the '
-               'gate asks you to check that translation before accepting.'},
-    {'id': 'ai-simple', 'topic': 'AI in the classroom', 'level': 'simple',
+     'notice': 'The topic list catches some fairness words ("profit", "promised", "only the rich"), and "nobody hired him" in record 2 reads as a refusal. It still cannot tell that record 1 is a rumour about who profits. Record 4 is in Kinyarwanda: the scores read its English translation, and the gate asks you to check that translation before accepting.'},
+    {'id': 'ai-simple', 'topic': 'AI in the classroom', 'topic_id': 'ai_education', 'level': 'simple',
      'title': 'Parents, teachers and an AI tutor',
      'summary': 'Parents decide about an AI tutoring app after a teacher demonstrates it.',
      'question': 'How might teacher demonstrations change parents\' acceptance of AI tutors in schools?',
@@ -104,9 +98,8 @@ DATASETS = [
          ('A girl in senior two said the tutor helped her prepare for exams faster, and she benefits from practising at '
           'her own pace. Her classmates asked the teacher to use it in the next term.', 'Huye / Ngoma')),
      'twin': {'obs': 0.25, 'trust': 0.03, 'barrier': 0.04},
-     'notice': 'Words like "showed", "trust", "leader", "cost" and "afford" carry over from clean cooking; "tablet", '
-               '"exam" and "teacher" are not in any list, so they do not change the scores.'},
-    {'id': 'ai-provoking', 'topic': 'AI in the classroom', 'level': 'thought-provoking',
+     'notice': 'The AI-in-the-classroom list adds device and data words ("tablet", "data") as access and cost barriers, and "explained" as a benefit. "Teacher" is deliberately not a trust word: in these notes teachers are as often afraid as trusted.'},
+    {'id': 'ai-provoking', 'topic': 'AI in the classroom', 'topic_id': 'ai_education', 'level': 'thought-provoking',
      'title': 'Will AI widen the gap between schools?',
      'summary': 'Rural schools without power, a replacement rumour, and teachers who fear being watched.',
      'question': 'Could AI tutors widen the gap between schools, and what stories might shape that?',
@@ -120,10 +113,8 @@ DATASETS = [
          ('Students say the AI helps them finish homework quickly, but some copy the answers without learning. One '
           'teacher found three identical essays and now doubts the tool is helping anyone.', 'Kicukiro / Gatenga')),
      'twin': {'obs': 0.15, 'trust': -0.06, 'barrier': 0.07},
-     'notice': 'Record 3 says "I do not trust" and the encoder still counts "trust". The equity story in record 1 '
-               '(no electricity, left behind) is read only as a fuel word ("electricity") and a rumour word ("heard"), '
-               'so the scores miss the main point. Record 4 (copying answers) matches no list at all.'},
-    {'id': 'vaccine-simple', 'topic': 'Vaccines', 'level': 'simple',
+     'notice': 'Record 3, "I do not trust an app", counts as distrust and "nobody explained" as a refusal; record 4\'s "without learning" also reads as a refusal. The equity story in record 1 (no electricity, left behind) shows up only as access words ("electricity", "tablets") and a rumour word ("heard"): the scores still miss the main point.'},
+    {'id': 'vaccine-simple', 'topic': 'Vaccines', 'topic_id': 'vaccines', 'level': 'simple',
      'title': 'Community health workers and the HPV vaccine',
      'summary': 'Mothers decide about the HPV vaccine for their daughters after talking with community health workers.',
      'question': 'How might community health workers change trust in the HPV vaccine?',
@@ -135,10 +126,8 @@ DATASETS = [
          ('The health centre is far from our village and the trip costs money, so some families delay. If the vaccine '
           'were given at school, parents say more girls would receive it.', 'Nyaruguru / Kibeho')),
      'twin': {'obs': 0.55, 'trust': 0.02, 'barrier': 0.03},
-     'notice': '"Health worker", "trust", "children" and "health" raise trust; "rumour" and "heard" lower it and '
-               '"money" raises barriers ("costs" is not in the lists, only "cost"). In record 2, "some mothers believe it" '
-               'counts "believe" as a trust word although they believe the rumour. The encoder has no vaccine words.'},
-    {'id': 'vaccine-provoking', 'topic': 'Vaccines', 'level': 'thought-provoking',
+     'notice': '"Community health worker", "trust" and the vaccine words raise trust; "rumour" and "heard" lower it; "trip", "costs" and "money" raise barriers. In record 2, "some mothers believe it" still counts "believe" as a trust word although they believe the rumour.'},
+    {'id': 'vaccine-provoking', 'topic': 'Vaccines', 'topic_id': 'vaccines', 'level': 'thought-provoking',
      'title': 'When a respected leader repeats a vaccine rumour',
      'summary': 'A church leader, a video on a phone, and a mother who trusts the nurse but not the vaccine.',
      'question': 'What happens when a trusted local leader repeats a vaccine rumour?',
@@ -154,14 +143,13 @@ DATASETS = [
          ('The head teacher invited a doctor to answer parents\' questions. After the meeting some fathers who refused '
           'before accepted, because they could ask about the fainting video themselves.', 'Kicukiro / Niboye')),
      'twin': {'obs': 0.4, 'trust': -0.05, 'barrier': 0.06},
-     'notice': 'Record 1 is a trusted leader spreading a rumour: trust words and rumour words in one voice. Record 2 '
-               '("I do not trust the vaccine, but I trust the nurse") holds two opposite stances the encoder cannot '
-               'separate. Record 5 is the kind of prebunking-by-dialogue the inoculation lab drafts.'},
+     'notice': 'Record 1 is a trusted leader spreading a rumour: trust words ("trust", "leader") and rumour words ("heard", "tested on") in one voice. Record 2 ("I do not trust the vaccine, but I trust the nurse") counts one distrust word and two trust words, so it reads as mixed. Record 5 counts "video" as a rumour word although it describes the doctor answering questions about the video, the kind of prebunking by dialogue the inoculation lab drafts.'},
 ]
 
 BY_ID = {dataset['id']: dataset for dataset in DATASETS}
-TOPIC_NOTE = ('NDIM\'s word lists were built for clean cooking. On other topics the encoder reads only the general trust, '
-              'rumour, cost, health, social and feeling words, so read the scores as rough signals.')
+TOPIC_NOTE = ('NDIM\'s word lists were built for clean cooking; each topic adds a short list of its own (vaccine rumours, '
+              'device access and data worries, livelihoods and fairness). They are still word counts, so read the scores '
+              'as rough signals.')
 
 
 def catalogue():

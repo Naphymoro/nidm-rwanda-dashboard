@@ -67,7 +67,9 @@ def encoding_section():
         'why': 'How the trust score and the barrier score of each note are computed. NDIM cannot read meaning, so it counts words. Each accepted note is lower-cased and checked against fixed '
                'word lists (trust words, cost words, rumour words and so on). The counts are turned into a trust score '
                'and a barrier score, each kept between 0.05 and 0.95. A word can count in more than one list, and the note\'s '
-               'country and place each add 1 to local grounding.',
+               'country and place each add 1 to local grounding. A trust or benefit word with "not", "no", "never" or '
+               'similar among the three words before it counts the other way ("I do not trust" is distrust). A journey\'s '
+               'topic (vaccines, AI in the classroom, just transition) adds a short list of that topic\'s words.',
         'formulas': [
             r'\text{trust} = \operatorname{clamp}\big(0.48 + 0.060\,T^{+} + 0.025\,H + 0.010\,S + 0.018\,L - 0.070\,T^{-} - 0.025\,R\big)',
             r'\text{barrier} = \operatorname{clamp}\big(0.30 + 0.095\,A + 0.075\,F + 0.07\,S_a + 0.055\,B + 0.06\,N + 0.025\,R - 0.035\,P - 0.015\,H\big)',
@@ -82,7 +84,8 @@ def encoding_section():
             f'trust = {trust_line} = {r(e.trust_score)}',
             f'barrier = {barrier_line} = {r(e.adoption_barrier_score)}',
             f'The engine\'s encoder gives trust {r(e.trust_score)} and barrier {r(e.adoption_barrier_score)} for this note.'],
-        'limits': 'A keyword count, not understanding: “not trusted” still counts the word “trusted”. The weights are the '
+        'limits': 'A keyword count, not understanding: negation is caught only within three words, and “many buyers believe '
+                  'the rumour” still counts “believe” as trust. The weights are the '
                   'tool\'s conventions, not estimated from data. English only (a checked translation is read for '
                   'non-English notes). Sentiment comes from a separate classifier and does not enter these scores.',
     }

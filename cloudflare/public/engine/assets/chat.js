@@ -498,12 +498,13 @@ function details(run){
 const NOTE = '(Note from the app, not typed by the researcher) ';
 const journeyURL = (path='') => threadURL(state.threadId)+'/journey'+path;
 const CONSENTS = [['','Choose permission…'],['research_use','Permission confirmed for research use'],['synthetic','Synthetic / demo data'],['unconfirmed','Permission not confirmed']];
+const TOPICS = [['clean_cooking','Clean cooking'],['vaccines','Vaccines'],['ai_education','AI in the classroom'],['just_transition','Just transition']];
 const GATE_LABEL = {eligible:'Passed the gate',review_before_accepting:'Check before accepting',blocked:'Blocked'};
 // Start a journey without the assistant: the card opens in a new chat; the researcher types the question.
-async function startJourney(question=''){
+async function startJourney(question='',topic='clean_cooking'){
   newChat();
   state.threadId=newId();
-  state.journeyProposal={question};state.journeyDraft={question};
+  state.journeyProposal={question,topic};state.journeyDraft={question,topic};
   if(!state.journeyGuide){try{state.journeyGuide=await api('/engine/journey/stages');}catch{}}
   render();
   $('journey-card')?.querySelector('textarea')?.focus();
@@ -560,12 +561,15 @@ function proposalPart(){
   if(!p)return [el('p',{class:'muted',text:'No journey in this chat yet.'})];
   if(state.journeyDraft.question===undefined)state.journeyDraft.question=p.question;
   const area=draftInput('question',{tag:'textarea',rows:'2',maxlength:'1000','aria-label':'Research question',placeholder:'e.g. How might trusted messengers change clean cooking adoption?'});
+  if(state.journeyDraft.topic===undefined)state.journeyDraft.topic=p.topic||'clean_cooking';
+  const topic=el('select',{'aria-label':'Topic',onchange:e=>{state.journeyDraft.topic=e.target.value;}},TOPICS.map(([v,t])=>el('option',{value:v,text:t})));topic.value=state.journeyDraft.topic;
   return [el('div',{class:'md',html:markdown(state.journeyGuide?.intro||'')}),
     el('div',{class:'review-form'},field('Your question, as the journey will use it (edit if needed)',area),
+      field('Topic',topic,'Adds this topic\'s word lists to the keyword encoder (for example vaccine rumours or device access).'),
       el('div',{class:'actions'},el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
         const question=(state.journeyDraft.question||'').trim();
         if(question.length<8){state.journeyError='The question needs at least 8 characters.';rerenderJourney();return;}
-        journeyAction(()=>post('',{question}),'The researcher confirmed the question in the journey card and the journey started. In two sentences, ask for their field notes, pasted in this chat: each story with its place, source and period. When they give them, call propose_journey_records; they set permission in the card.');
+        journeyAction(()=>post('',{question,topic:state.journeyDraft.topic||'clean_cooking'}),'The researcher confirmed the question in the journey card and the journey started. In two sentences, ask for their field notes, pasted in this chat: each story with its place, source and period. When they give them, call propose_journey_records; they set permission in the card.');
       }},icon('check'),'Confirm question')))];
 }
 function progressPart(j){
@@ -1324,7 +1328,7 @@ async function startTour(){
 function exitTour(){state.tour=null;state.tourRecords=null;saveTour();renderTour();}
 async function tourWithData(dataset,own){
   state.tourRecords=dataset?dataset.records:own;
-  await startJourney(dataset?dataset.question:'');
+  await startJourney(dataset?dataset.question:'',dataset?.topic_id||'clean_cooking');
   state.tour={step:1,dataset:dataset||null,own:!dataset,threadId:state.threadId};
   saveTour();render();
 }

@@ -239,11 +239,11 @@ def run_tool(name, args, thread):
     return {'error': f'Unknown tool {name}'}, {}
 
 
-def start(thread, question, country='Rwanda'):
+def start(thread, question, country='Rwanda', topic='clean_cooking'):
     """The Confirm question click: the only way a journey starts in a chat."""
     if thread.get('journey_id'):
         raise HTTPException(409, 'This chat already has a journey.')
-    body = engine_journey.create(thread['workspace_id'], JourneyCreate(question=question, country=country))
+    body = engine_journey.create(thread['workspace_id'], JourneyCreate(question=question, country=country, topic=topic))
     thread['journey_id'] = body['journey_id']
     thread.pop('journey_proposal', None)
     return body

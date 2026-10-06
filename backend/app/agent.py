@@ -689,6 +689,8 @@ class JourneyStart(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     question: str = Field(min_length=8, max_length=1000)
     country: str = Field(default='Rwanda', min_length=2, max_length=80)
+    topic: Literal['clean_cooking', 'vaccines', 'ai_education', 'just_transition'] = Field(
+        default='clean_cooking', description='Chooses the word lists added to the keyword encoder (encoding.TOPIC_KEYWORDS).')
 
 
 class JourneyStage(BaseModel):
@@ -727,7 +729,7 @@ def journey_start(workspace: str, thread_id: str, payload: JourneyStart, x_ndim_
     with _busy_lock:
         if (workspace, thread_id) in _busy:
             raise HTTPException(409, 'The assistant is answering in this chat. Wait for it to finish.')
-    body = journey_chat.start(thread, payload.question, payload.country)
+    body = journey_chat.start(thread, payload.question, payload.country, payload.topic)
     thread['title'] = thread.get('title') or payload.question[:80]
     save_thread(thread)
     return body
