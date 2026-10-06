@@ -1,5 +1,5 @@
 from typing import Dict, List
-from .network_model import network_assumptions, run_network_model
+from .network_model import network_assumptions, rates as network_rates, run_network_model
 from .schemas import ModelMode
 
 
@@ -51,6 +51,9 @@ def compartmental_rates(parameters: Dict[str, float]) -> Dict[str, float]:
         "gamma": float(parameters.get("gamma", 0.008 + 0.018 * intervention + 0.012 * trust + 0.012 * resistance_growth)),
         "eta": float(parameters.get("eta", 0.006 + 0.012 * trust + 0.006 * resistance_growth)),
         "waning": float(parameters.get("waning", 0.001 + 0.004 * max(0.0, barrier - trust))),
+        # Adopters stop (back to S) at the household model's daily stop rate, so both models share one rule. Without it
+        # R had no exit and adoption tended to 1 whatever the trust and barrier (they changed only the speed).
+        "delta": float(parameters.get("delta", network_rates(parameters)["friction"])),
     }
 
 
@@ -78,17 +81,20 @@ def run_compartmental_model(horizon_days: int, parameters: Dict[str, float]) -> 
     )
 
     r = compartmental_rates(parameters)
-    beta_t, beta_m, iota, rho, sigma, mu, gamma, eta, waning = (r[k] for k in ("beta_t", "beta_m", "iota", "rho", "sigma", "mu", "gamma", "eta", "waning"))
+    beta_t, beta_m, iota, rho, sigma, mu, gamma, eta, waning, delta = (r[k] for k in ("beta_t", "beta_m", "iota", "rho", "sigma", "mu", "gamma", "eta", "waning", "delta"))
 
     uncertainty = 0.035 + 0.10 * (1.0 - _clamp(float(parameters.get("evidence_strength", parameters.get("confidence", 0.50)))))
     trajectory: List[Dict[str, float]] = []
     for day in range(horizon_days):
         S, M, T, I, R = state["S"], state["M"], state["T"], state["I"], state["R"]
-        dS = -beta_m * S * M - beta_t * S * T - iota * S + waning * (M + T)
+        # Word of mouth comes from everyone who uses it: the newly convinced (T) and settled adopters (R). When only T
+        # spread it, it died out once T emptied into R, and higher trust then lowered long-run adoption.
+        talk = beta_t * S * (T + R)
+        dS = -beta_m * S * M - talk - iota * S + waning * (M + T) + delta * (T + R)
         dM = beta_m * S * M - rho * M - sigma * M * max(I, 0.001)
-        dT = beta_t * S * T + rho * M - mu * T - eta * T
+        dT = talk + rho * M - mu * T - eta * T - delta * T
         dI = iota * S + sigma * M * max(I, 0.001) - gamma * I
-        dR = gamma * I + eta * T
+        dR = gamma * I + eta * T - delta * R
         state = _normalize_compartments(
             {
                 "S": S + dS,

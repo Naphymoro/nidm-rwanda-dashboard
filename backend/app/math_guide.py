@@ -122,13 +122,16 @@ def compartmental_section():
         'why': 'The population is split into five shares that always add up to 1: S not yet reached, M holding a '
                'misinformed view, T convinced by trustworthy information, I inoculated (prepared against the rumour) and R '
                'settled adopters. Each day people move between the shares at the rates below. Adoption is T + I + R. '
-               'The model takes one-day steps and rescales the shares to add up to 1 after each step.',
+               'Word of mouth comes from everyone who uses it (T and R), and adopters can stop and fall back to S at the '
+               'same daily rate as in the household model, so the long-run level depends on trust and barriers, not only '
+               'the speed. The model takes one-day steps and rescales the shares to add up to 1 after each step.',
         'formulas': [
-            r'\Delta S = -\beta_m S M - \beta_t S T - \iota S + w(M + T)',
+            r'\Delta S = -\beta_m S M - \beta_t S (T + R) - \iota S + w(M + T) + \delta (T + R)',
             r'\Delta M = \beta_m S M - \rho M - \sigma M I',
-            r'\Delta T = \beta_t S T + \rho M - \mu T - \eta T',
+            r'\Delta T = \beta_t S (T + R) + \rho M - \mu T - \eta T - \delta T',
             r'\Delta I = \iota S + \sigma M I - \gamma I',
-            r'\Delta R = \gamma I + \eta T \qquad \text{adoption} = T + I + R',
+            r'\Delta R = \gamma I + \eta T - \delta R \qquad \text{adoption} = T + I + R',
+            r'\delta = 0.025\,\text{barrier} + 0.008\,m + 0.010\,x \quad \text{(the household model\'s daily stop rate)}',
             r'\beta_t = 0.035\,(1 + \phi)(0.65 + \text{trust}) \qquad \beta_m = 0.030\,(0.55 + \text{barrier} + 0.35\,m + 0.18\,x)',
             r'\iota = 0.006 + 0.020\,s + 0.030\,i + 0.010\,f \qquad \rho = 0.010 + 0.020\,\text{trust} + 0.012\,s + 0.010\,f',
             r'\gamma = 0.008 + 0.018\,s + 0.012\,\text{trust} + 0.012\,g \qquad \eta = 0.006 + 0.012\,\text{trust} + 0.006\,g',
@@ -141,10 +144,12 @@ def compartmental_section():
                     f'β_t = 0.035 × (1 + {params["narrative_influence"]}) × (0.65 + {params["trust_score"]}) = {r(rate["beta_t"], 4)} a day',
                     f'β_m = 0.030 × (0.55 + {params["barrier_score"]}) = {r(rate["beta_m"], 4)} a day',
                     f'ι = {r(rate["iota"], 4)}, ρ = {r(rate["rho"], 4)}, γ = {r(rate["gamma"], 4)}, η = {r(rate["eta"], 4)}, '
-                    f'μ = {r(rate["mu"], 4)}, w = {r(rate["waning"], 4)} a day.',
-                    'Trust raises β_t (spread of trustworthy information), barrier raises β_m (spread of the misinformed view).'],
+                    f'μ = {r(rate["mu"], 4)}, w = {r(rate["waning"], 4)}, δ = 0.025 × {params["barrier_score"]} = {r(rate["delta"], 4)} a day.',
+                    'Trust raises β_t (word of mouth), barrier raises β_m (the misinformed view) and δ (stopping). In the long run '
+                    'the level is roughly 1 − δ/β_t: more trust raises it, more barrier lowers it.'],
         'limits': 'Illustrative and uncalibrated: the rates are rules of the tool, not measured. The band around the curve '
-                  'is a fixed width, ±(0.035 + 0.10 × (1 − confidence)), not a statistical interval. A scenario, not a forecast.',
+                  'is a fixed width, ±(0.035 + 0.10 × (1 − confidence)), not a statistical interval. A scenario, not a forecast. '
+                  'Until October 2026 settled adopters neither spoke nor stopped, so every scenario drifted towards full adoption.',
     }
 
 
