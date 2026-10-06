@@ -842,6 +842,7 @@ async function send(text){
   if(!state.online){pushLocal({role:'user',text});pushLocal({role:'ai',tone:'error',text:'I am not connected to an NDIM engine. Connect one first (see the welcome screen), then send your message again.'});$('prompt').value=text;return;}
   // Labs keep their fixed question and check, so they plan directly even when the assistant is on.
   if(agentOn()&&!state.lesson)return sendAgent(text);
+  if(ABOUT.test(text))return aboutNDIM(text);
   if(text.length<8){pushLocal({role:'user',text});pushLocal({role:'ai',text:'Could you ask that as a research question? For example: “What trust signals and barriers appear in these field notes?” or “What if the intervention were weaker?”'});return;}
   if(!state.evidence){
     state.pending=text;
@@ -853,6 +854,19 @@ async function send(text){
   const ev=state.evidence, lesson=state.lesson;
   const run=await planDirect({question:text,skill:lesson?lesson.skill:state.skill,...state.settings,lesson_id:lesson?.id||null},ev,{bubble:text});
   if(run){state.lesson=null;renderAttachments();renderSkill();if(state.autorun&&!run.blockers.length)act(run,'start');}
+}
+// Without the assistant, "tell me about NDIM" or "help" is not a research question: answer with fixed text and the
+// engine's own journey intro instead of asking for evidence to plan an experiment.
+const ABOUT=/^(help|hi|hello|hey|start|\?)\b|what can (you|it|ndim|nidm) do\??$|how (do i (use|start|begin)|does (this|it|ndim|nidm) work)\b|\b(about|what is|what's|explain|introduce|who are)\b.*\b(ndim|nidm|this tool|this app)\b|\b(about|are) you\??$|^(ndim|nidm)\??$/i;
+async function aboutNDIM(text){
+  pushLocal({role:'user',text});
+  if(!state.journeyGuide){try{state.journeyGuide=await api('/engine/journey/stages');}catch{}}
+  const intro=state.journeyGuide?.intro;
+  pushLocal({role:'ai',
+    text:'NDIM, the Narrative Diffusion and Inoculation Model, works from your field evidence (interview excerpts, field notes). It checks each record, scores trust, barriers and themes with a keyword heuristic, runs illustrative, uncalibrated adoption scenarios and drafts messages and a policy draft for your review, with an audit trail. No AI model is connected here, so this reply is fixed text: NDIM runs its own tools and you decide at each step.',
+    node:intro?el('div',{class:'md',html:markdown(intro)}):null,
+    actions:[{label:'Start a journey',icon:'flask',primary:true,run:()=>startJourney()},
+             {label:'Use the sample field notes',icon:'file',run:useSample}]});
 }
 // Plan without the assistant: no-AI mode, labs, and the Workbench panel.
 async function planDirect(params,ev,{bubble}={}){

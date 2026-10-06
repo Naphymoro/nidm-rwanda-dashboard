@@ -568,6 +568,10 @@ function nextPart(j){
   else parts.push(el('p',{class:'muted',text:'All required stages are done.'}));
   if(regional.status!=='done'&&!['intake','gate','repository','encoding'].includes(next||'')&&j.stages.find(row=>row.id==='encoding').status==='done')
     parts.push(el('div',{class:'actions'},runButton(regional,false,'Run regional analysis (optional)')));
+  // Optional after stage 12: 28 network simulations, slow over the internet, so the researcher chooses it.
+  if(j.stages.find(row=>row.id==='inoculation').status==='done'&&!j.optional_done?.messenger_seeding)
+    parts.push(el('div',{class:'review-form'},el('p',{class:'muted',text:'Optional: compare who a campaign recruits as messengers (at random, the best-connected households, or bridges between villages) on assumed network shapes. It can take up to half a minute.'}),
+      el('div',{class:'actions'},el('button',{type:'button',class:'btn',disabled:journeyLocked(),onclick:()=>journeyAction(()=>post('/messenger-seeding',{}),null)},icon('play'),'Compare messenger recruiting (optional)'))));
   return parts;
 }
 function runButton(row,primary,label){
@@ -577,14 +581,17 @@ function evidenceForm(){
   const d=state.journeyDraft;
   if(!d.records)d.records=(state.recordsProposal||[{text:''}]).map(r=>({text:r.text||'',admin_unit:r.admin_unit||'',source_name:r.source_name||'',period:r.period||'',consent:'',language:'en'}));
   const rows=d.records.map((record,index)=>{
-    const bind=(key,props)=>{const input=el(props.tag||'input',{...props,tag:null,oninput:e=>{record[key]=e.target.value;}});input.value=record[key];return input;};
+    const bind=(key,props)=>{const input=el(props.tag||'input',{...props,tag:null,oninput:e=>{record[key]=e.target.value;}});input.value=record[key]??'';return input;};
     return el('div',{class:'jc-record'},el('b',{text:`Record ${index+1}`}),
       field('Story or field note, unchanged',bind('text',{tag:'textarea',rows:'3',maxlength:'20000'})),
       el('div',{class:'jc-row'},field('Place',bind('admin_unit',{placeholder:'e.g. Kicukiro / Niboye'})),field('Source',bind('source_name',{placeholder:'e.g. Field team interview 4'})),
         field('Period',bind('period',{placeholder:'e.g. 2026-Q2'}))),
       el('div',{class:'jc-row'},field('Permission',(()=>{const s=el('select',{onchange:e=>{record.consent=e.target.value;}},CONSENTS.map(([v,t])=>el('option',{value:v,text:t})));s.value=record.consent;return s;})()),
-        field('Language',(()=>{const s=el('select',{onchange:e=>{record.language=e.target.value;}},[['en','English'],['rw','Kinyarwanda'],['fr','French'],['other','Other']].map(([v,t])=>el('option',{value:v,text:t})));s.value=record.language;return s;})(),
-          'The encoder reads English only; other languages are blocked at the gate.')));
+        field('Language',(()=>{const s=el('select',{onchange:e=>{record.language=e.target.value;rerenderJourney();}},[['en','English'],['rw','Kinyarwanda'],['fr','French'],['other','Other']].map(([v,t])=>el('option',{value:v,text:t})));s.value=record.language;return s;})(),
+          'The encoder reads English only: a record in another language needs an English translation that a person has checked.')),
+      record.language==='en'?null:el('div',{class:'jc-row'},
+        field('English translation, checked',bind('translation_en',{tag:'textarea',rows:'3',maxlength:'20000'}),'Trust, barrier and theme scores read this translation; sentiment reads the original.'),
+        field('Translation checked by',bind('translation_checked_by',{placeholder:'Name of the person who checked it'}))));
   });
   return el('div',{class:'review-form'},el('b',{text:'Add your field notes'}),
     el('p',{class:'muted',text:state.recordsProposal?'NDIM filled this form from your message. Check every field: nothing is added until you click Add to journey.':'Type your notes here, or paste them in the chat and NDIM fills this form for you to check.'}),
@@ -594,7 +601,12 @@ function evidenceForm(){
       el('button',{type:'button',class:'btn primary',disabled:journeyLocked(),onclick:()=>{
         const missing=d.records.findIndex(r=>!r.text.trim()||!r.admin_unit.trim()||!r.source_name.trim()||!r.period.trim()||!r.consent);
         if(missing>=0){state.journeyError=`Record ${missing+1} needs its text, place, source, period and permission.`;rerenderJourney();return;}
-        const records=d.records.map(r=>({...r,text:r.text.trim()}));
+        const half=d.records.findIndex(r=>r.language!=='en'&&!(r.translation_en||'').trim()!==!(r.translation_checked_by||'').trim());
+        if(half>=0){state.journeyError=`Record ${half+1}: give the English translation and who checked it, or leave both empty.`;rerenderJourney();return;}
+        const records=d.records.map(({translation_en,translation_checked_by,...r})=>{
+          const out={...r,text:r.text.trim()};
+          if(r.language!=='en'&&(translation_en||'').trim())Object.assign(out,{translation_en:translation_en.trim(),translation_checked_by:translation_checked_by.trim()});
+          return out;});
         journeyAction(()=>post('/records',{records}),null);
       }},icon('check'),'Add to journey')));
 }
@@ -606,6 +618,7 @@ function decisionsForm(j){
     const choice=(v,label)=>el('label',{class:'jc-choice'},el('input',{type:'radio',name:'decide-'+record.record_id,value:v,disabled:(blocked&&v==='accept')||!!record.review,checked:value===v,onchange:()=>{d[record.record_id]=v;}}),el('span',{text:label}));
     return el('div',{class:'jc-record'},el('div',{},el('b',{text:record.admin_unit}),el('small',{class:'muted',text:` · ${record.source_name} · ${record.period} · ${human(record.consent)}`})),
       el('p',{text:record.excerpt+(record.excerpt.length>=160?'…':'')}),
+      record.translation_excerpt?el('p',{class:'muted',text:`English translation (checked by ${record.translation_checked_by}): ${record.translation_excerpt}${record.translation_excerpt.length>=160?'…':''}`}):null,
       el('div',{class:'small',text:`${GATE_LABEL[g.gate]||g.gate}${flags.length?': '+flags.join('; '):''}`}),
       el('div',{class:'jc-row'},choice('accept','Accept'),choice('reject','Reject')));
   });
@@ -829,6 +842,7 @@ async function send(text){
   if(!state.online){pushLocal({role:'user',text});pushLocal({role:'ai',tone:'error',text:'I am not connected to an NDIM engine. Connect one first (see the welcome screen), then send your message again.'});$('prompt').value=text;return;}
   // Labs keep their fixed question and check, so they plan directly even when the assistant is on.
   if(agentOn()&&!state.lesson)return sendAgent(text);
+  if(ABOUT.test(text))return aboutNDIM(text);
   if(text.length<8){pushLocal({role:'user',text});pushLocal({role:'ai',text:'Could you ask that as a research question? For example: “What trust signals and barriers appear in these field notes?” or “What if the intervention were weaker?”'});return;}
   if(!state.evidence){
     state.pending=text;
@@ -840,6 +854,19 @@ async function send(text){
   const ev=state.evidence, lesson=state.lesson;
   const run=await planDirect({question:text,skill:lesson?lesson.skill:state.skill,...state.settings,lesson_id:lesson?.id||null},ev,{bubble:text});
   if(run){state.lesson=null;renderAttachments();renderSkill();if(state.autorun&&!run.blockers.length)act(run,'start');}
+}
+// Without the assistant, "tell me about NDIM" or "help" is not a research question: answer with fixed text and the
+// engine's own journey intro instead of asking for evidence to plan an experiment.
+const ABOUT=/^(help|hi|hello|hey|start|\?)\b|what can (you|it|ndim|nidm) do\??$|how (do i (use|start|begin)|does (this|it|ndim|nidm) work)\b|\b(about|what is|what's|explain|introduce|who are)\b.*\b(ndim|nidm|this tool|this app)\b|\b(about|are) you\??$|^(ndim|nidm)\??$/i;
+async function aboutNDIM(text){
+  pushLocal({role:'user',text});
+  if(!state.journeyGuide){try{state.journeyGuide=await api('/engine/journey/stages');}catch{}}
+  const intro=state.journeyGuide?.intro;
+  pushLocal({role:'ai',
+    text:'NDIM, the Narrative Diffusion and Inoculation Model, works from your field evidence (interview excerpts, field notes). It checks each record, scores trust, barriers and themes with a keyword heuristic, runs illustrative, uncalibrated adoption scenarios and drafts messages and a policy draft for your review, with an audit trail. No AI model is connected here, so this reply is fixed text: NDIM runs its own tools and you decide at each step.',
+    node:intro?el('div',{class:'md',html:markdown(intro)}):null,
+    actions:[{label:'Start a journey',icon:'flask',primary:true,run:()=>startJourney()},
+             {label:'Use the sample field notes',icon:'file',run:useSample}]});
 }
 // Plan without the assistant: no-AI mode, labs, and the Workbench panel.
 async function planDirect(params,ev,{bubble}={}){
@@ -1008,7 +1035,7 @@ function poll(runId){
 // ---------- learning: researchers teach the assistant ----------
 // A thumbs-up approves a reply as written, Correct replaces it with the researcher's words, a thumbs-down alone is only
 // logged. NDIM recalls what it was taught in its next answers; nothing is learned from replies nobody checked. With
-// online sync on, only answers marked for sharing leave this computer, never questions or evidence.
+// online sync on (off by default), only answers marked for sharing leave this computer, never questions or evidence.
 const feedbackURL = id => threadURL(state.threadId)+'/messages/'+encodeURIComponent(id)+'/feedback';
 async function sendFeedback(message,body){
   state.feedbackError.delete(message.id);
@@ -1037,7 +1064,7 @@ function feedbackBar(message){
   }
   if(fb){
     const label=fb.kind==='correction'?'Your correction was learned':fb.kind==='answer'?'Approved: NDIM will reuse this answer':'Marked not helpful (not learned)';
-    return el('div',{class:'fb-bar done'},icon(fb.kind==='flagged'?'x':'check'),el('span',{text:label+(fb.share?' · shared when online':'')}),
+    return el('div',{class:'fb-bar done'},icon(fb.kind==='flagged'?'x':'check'),el('span',{text:label+(fb.share?' · marked for sharing':'')}),
       fb.blocked?el('small',{class:'muted',text:' '+fb.blocked}):null,
       el('button',{type:'button',class:'btn ghost',onclick:()=>{state.correcting.add(message.id);renderMessages();}},icon('pencil'),'Correct'));
   }
@@ -1049,8 +1076,8 @@ function feedbackBar(message){
 }
 async function renderLearning(){
   const box=$('panel-learning');
-  let data;
-  try{data=await api('/agent/learning');}catch(err){box.replaceChildren(callout('error','alert',err.message));return;}
+  let data, sync;
+  try{[data,sync]=await Promise.all([api('/agent/learning'),api('/agent/learning/sync')]);}catch(err){box.replaceChildren(callout('error','alert',err.message));return;}
   const term=el('input',{placeholder:'Term, e.g. imbabura',maxlength:'120'}), meaning=el('input',{placeholder:'Meaning, e.g. improved cookstove',maxlength:'600'});
   const usable=data.usable_examples, ready=data.fine_tune_ready_at;
   box.replaceChildren(
@@ -1063,9 +1090,46 @@ async function renderLearning(){
     el('ul',{class:'learn-list'},data.term_list.map(t=>el('li',{},el('span',{},el('b',{text:t.term}),' = '+t.meaning),forgetButton(t.id)))),
     el('b',{text:'What NDIM learned from replies'}),
     data.items.length?el('ul',{class:'learn-list'},data.items.map(item=>el('li',{},
-      el('span',{},el('span',{class:'tag',text:{answer:'approved',correction:'corrected',flagged:'not helpful'}[item.kind]}),item.share?el('span',{class:'tag',text:'shared online'}):null,
-        el('small',{class:'muted',text:' '+(item.question||'(after a journey step)').slice(0,120)}),el('p',{text:item.answer.slice(0,400)})),forgetButton(item.id)))):
-      el('p',{class:'muted',text:'Nothing yet. Use 👍, 👎 or Correct under NDIM’s replies.'}));
+      el('span',{},el('span',{class:'tag',text:{answer:'approved',correction:'corrected',flagged:'not helpful'}[item.kind]}),item.share?el('span',{class:'tag',text:'marked for sharing'}):null,
+        el('small',{class:'muted',text:' '+(item.question||'(after a journey step)').slice(0,120)}),el('p',{text:item.answer.slice(0,400)})),
+      el('span',{class:'learn-actions'},item.kind!=='flagged'?shareButton(item.id,item.share):null,forgetButton(item.id))))):
+      el('p',{class:'muted',text:'Nothing yet. Use 👍, 👎 or Correct under NDIM’s replies.'}),
+    syncSection(sync));
+}
+
+// ---------- online sync: only answers the researcher marked for sharing leave this computer ----------
+// Off by default. The list shows exactly what will be sent (only the answer text) and what is held back, and why.
+function shareButton(id,shared){
+  return el('button',{type:'button',class:'btn ghost small',title:shared?'Stop sharing this answer (it is deleted online at the next sync)':'Share this answer when online sync is on',
+    onclick:async()=>{await api('/agent/learning/'+encodeURIComponent(id)+'/share',{method:'POST',body:JSON.stringify({share:!shared})});renderLearning();}},shared?'Stop sharing':'Share');
+}
+function syncSection(sync){
+  const head=el('b',{text:'Online sync'});
+  if(!sync.available)return el('div',{class:'sync-box'},head,el('p',{class:'muted',text:'Online sync is available in the desktop app only. What NDIM learns here stays here.'}));
+  const save=async(body,button)=>{if(button)button.disabled=true;try{await api('/agent/learning/sync',{method:'PUT',body:JSON.stringify(body)});}catch(err){state.syncError=err.message;}renderLearning();};
+  const toggle=el('input',{type:'checkbox',id:'sync-toggle',checked:sync.enabled});
+  const key=el('input',{type:'password',placeholder:'Access key from your research team',maxlength:'300','aria-label':'Access key',autocomplete:'off'});
+  toggle.addEventListener('change',()=>{state.syncError=null;
+    if(toggle.checked&&!sync.has_token&&!key.value.trim()){toggle.checked=false;state.syncError='Enter the access key your research team was given, then turn sync on.';renderLearning();return;}
+    save(toggle.checked?{enabled:true,...(key.value.trim()?{token:key.value.trim()}:{})}:{enabled:false});});
+  const counts={shared:0,'will share':0,'held back':0};sync.outbox.forEach(row=>counts[row.status]++);
+  const last=sync.last_sync;
+  return el('div',{class:'sync-box'},head,
+    el('p',{class:'muted',text:'When sync is on, the answers you mark for sharing are sent to the NDIM sync service after a privacy check, and answers other researchers shared are used here, below your own team’s answers. Only the answer text is sent: never your questions, field notes, workspace or names. Everything NDIM learned stays on this computer either way.'}),
+    el('label',{class:'jc-choice'},toggle,el('span',{text:sync.enabled?'Online sync is on':'Online sync is off'})),
+    !sync.has_token?el('label',{class:'jc-field'},key):null,
+    state.syncError?callout('error','alert',state.syncError):null,
+    last&&last.error?callout('warn','alert','Last sync failed: '+last.error):null,
+    el('p',{class:'muted',text:`${counts.shared} shared · ${counts['will share']} waiting to be shared · ${counts['held back']} held back · ${sync.others} answer(s) from other researchers`+
+      (last?` · last sync ${new Date(last.at).toLocaleString()}`:'')}),
+    sync.withdraw?el('p',{class:'muted',text:`${sync.withdraw} answer(s) you stopped sharing will be deleted online at the next sync${sync.enabled?'':' (turn sync on to delete them)'}.`}):null,
+    sync.enabled?el('button',{type:'button',class:'btn',onclick:e=>{e.target.disabled=true;api('/agent/learning/sync/run',{method:'POST'}).catch(err=>{state.syncError=err.message;}).finally(renderLearning);}},'Sync now'):null,
+    el('b',{text:'What will be shared'}),
+    sync.outbox.length?el('ul',{class:'learn-list',id:'sync-outbox'},sync.outbox.map(row=>el('li',{},
+      el('span',{},el('span',{class:'tag'+(row.status==='held back'?' warn':''),text:row.status}),el('p',{text:row.answer}),
+        row.reasons.length?el('small',{class:'muted',text:'Kept on this computer: '+row.reasons.join(' ')}):null),
+      shareButton(row.id,true)))):
+      el('p',{class:'muted',text:'Nothing is marked for sharing. Use Share on an approved or corrected answer above.'}));
 }
 function forgetButton(id){return el('button',{type:'button',class:'icon-btn',title:'Forget this','aria-label':'Forget this',onclick:async()=>{await api('/agent/learning/'+encodeURIComponent(id),{method:'DELETE'});renderLearning();}},icon('trash'));}
 
@@ -1094,7 +1158,7 @@ function paramForm(values,{skill}={}){
   const select=(name,label,value,options)=>{const node=el('select',{name},options.map(([v,t])=>el('option',{value:v,text:t})));node.value=value;return el('label',{},label,node);};
   return el('form',{class:'form'},
     skill!==undefined?select('skill','Workflow',skill==='auto'?'scenario':skill,[['evidence','Evidence interpretation'],['scenario','Scenario comparison'],['sensitivity','Sensitivity experiment']]):null,
-    select('model','Model',values.model,[['compartmental','Compartmental'],['hybrid','Hybrid'],['agent_based','Agent-based proxy']]),
+    select('model','Model',values.model,[['compartmental','Compartmental'],['hybrid','Hybrid'],['agent_based','Agent-based (network)']]),
     range('intervention_strength','Intervention strength',values.intervention_strength),
     range('initial_adoption','Initial adoption',values.initial_adoption),
     range('narrative_influence','Narrative influence',values.narrative_influence),
