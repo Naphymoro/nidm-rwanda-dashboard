@@ -47,7 +47,7 @@ function personalHeaders(){
 function savePersonal(value){
   state.personal=value;
   try{value?localStorage.setItem('ndim-personal-key',JSON.stringify(value)):localStorage.removeItem('ndim-personal-key');}catch{}
-  loadAgent();render();renderAISettings();
+  paintAgent();render();renderAISettings();
 }
 function openKeySettings(){
   // After the click that asked for it: the page closes menus on any click outside them.
@@ -831,11 +831,15 @@ function personalSettings(a){
 }
 async function loadAgent(){
   try{state.agent=await api('/agent/status');}catch{state.agent=null;}
+  paintAgent();
+}
+// Badge, greeting and disclaimer from what is known now (also straight after the own key changes, before any request).
+function paintAgent(){
   const on=agentOn(), mine=state.personal?.key&&state.agent;
   const model=mine?(state.personal.model||state.agent.personal?.find(p=>p.provider===state.personal.provider)?.model||state.personal.provider):state.agent?.model;
   $('model-badge').hidden=!on;$('model-badge').textContent=on?(mine?`${model} · your key`:(state.agent.model_label||model)):'';$('model-badge').title=on?model:'';
   document.querySelector('.welcome p').textContent=on?'Ask a research question, explore the manual, or plan an experiment.':'What would you like to investigate?';
-  document.querySelector('.disclaimer').textContent=on?`Answers are written by ${model}${mine?', with your own key':''}. Scientific results come only from NDIM's local tools, and nothing runs until you click Run.`:'NDIM runs local scientific tools, not an AI model. Scores are heuristics and scenarios are illustrative, so check them against the evidence.';
+  document.querySelector('.disclaimer').textContent=on?`Answers are written by ${mine?model:(state.agent.model_label||model)}${mine?', with your own key':''}. Scientific results come only from NDIM's local tools, and nothing runs until you click Run.`:'NDIM runs local scientific tools, not an AI model. Scores are heuristics and scenarios are illustrative, so check them against the evidence.';
 }
 
 // ---------- evidence ----------
