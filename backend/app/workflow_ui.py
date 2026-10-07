@@ -14973,7 +14973,7 @@ X-NDIM-LLM-Model: selected model or deployment</pre>
       </table>
       <div class="math-display">\begin{aligned}
 \frac{dS}{dt} &= -\beta_mSM - \beta_tST - \iota S \\
-\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI - wM \\
 \frac{dT}{dt} &= \beta_tST + \rho M - \mu T \\
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
 \frac{dR}{dt} &= \gamma I + \eta T
@@ -15694,13 +15694,13 @@ barrier &= clamp(0.30 + 0.095A + 0.075F + 0.07S_a + 0.055B + 0.06N + 0.025R - 0.
           <h3>Compartmental NDIM</h3>
           <p>The documented model uses susceptible, misinformation-exposed, truth-aligned, inoculated, and resistant/adoption-aligned compartments. In the basic teaching setup, these compartments conserve the population: people move between states, but the total population share remains one.</p>
       <div class="math-display">\begin{aligned}
-\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \delta(T+R) \\
-\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
-\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - \mu T - \eta T - \delta T \\
+\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \mu T + \delta(T+R) \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI - wM \\
+\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - (w + \mu + \eta + \delta)T \\
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
 \frac{dR}{dt} &= \gamma I + \eta T - \delta R
 \end{aligned}</div>
-          <p>Read each derivative as a rate of change; the model takes one-day steps and rescales the shares to add up to one. Adoption is T + I + R. Word of mouth comes from everyone who uses it (T and R). Adopters can stop and fall back to S at δ = 0.025 × barrier + 0.008 × misinformation risk + 0.010 × reactance, the same daily stop rate as the household model, so the long-run level (roughly 1 − δ/β_t) rises with trust and falls with barriers. Trust raises β_t = 0.035(1 + φ)(0.65 + trust); barriers raise β_m and δ. All rate formulas and a worked example are in How NDIM works, step 3.</p>
+          <p>Read each derivative as a rate of change. Every flow leaves one compartment and enters another, so the changes add up to zero and the population is conserved; the model takes one-day steps. Adoption is T + I + R. The misinformed and convinced views fade back to S (w), and convinced people can lose interest (μ). Word of mouth comes from everyone who uses it (T and R). Adopters can stop and fall back to S at δ = 0.025 × barrier + 0.008 × misinformation risk + 0.010 × reactance, the same daily stop rate as the household model, so the long-run level (roughly 1 − δ/β_t) rises with trust and falls with barriers. Trust raises β_t = 0.035(1 + φ)(0.65 + trust); barriers raise β_m and δ. All rate formulas and a worked example are in How NDIM works, step 3.</p>
 
           <h3>Agent-based model</h3>
           <p>The agent-based model follows 1,000 simulated households on an assumed social network. By default they live in villages of 100: each household is tied to about 8 near neighbours, a few ties are rewired at random, and each household has about one tie to another village. Other assumed shapes can be chosen: one small-world population, a scale-free network (a few highly connected households and many with few ties), or a well-mixed population with no network at all.</p>
@@ -16661,9 +16661,9 @@ ACADEMY_HTML = r"""<!doctype html>
             <p>A non-conserved model is different. It allows people to enter or leave the system. That may be needed when there is migration, births, survey dropout, new programme participants, seasonal movement, or an expanding social-media audience. When NDIM uses a non-conserved scenario, it should say so clearly because the interpretation changes.</p>
           </div>
           <div class="math-display">\begin{aligned}
-\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \delta(T+R) \\
-\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
-\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - \mu T - \eta T - \delta T \\
+\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \mu T + \delta(T+R) \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI - wM \\
+\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - (w + \mu + \eta + \delta)T \\
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
 \frac{dR}{dt} &= \gamma I + \eta T - \delta R
 \end{aligned}</div>

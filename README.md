@@ -52,7 +52,7 @@ NDIM's results are **illustrative and uncalibrated**: scenarios, not forecasts.
   lower it. The household model simulates 1,000 households on an assumed village network.
 - The constants in the formulas (for example the trust base 0.48) were **set by NDIM's developers as illustrative
   defaults, not estimated from data**. The sensitivity analysis shows that two of them, the adopter stop rate and the
-  word-of-mouth rate, account for most of the variation in results (total indices about 0.88, against about 0.21 for
+  word-of-mouth rate, account for most of the variation in results (total indices about 0.86, against about 0.21 for
   the evidence inputs). **Calibrating them to real adoption data is the most important next step.**
 - The uncertainty band shows only how far the evidence lets trust and barrier move; it leaves out doubt about the rules.
 

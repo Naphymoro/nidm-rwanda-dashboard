@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Population model conserves people: two flows had one end only (the fading of views back to S added people;
+  convinced people losing interest removed them), a leak of up to 0.2% of the population a day that a daily
+  rescaling hid (about 39% cumulatively over 180 days). Every flow now has a source and a destination; the changes
+  sum to zero, checked on the raw equations. Found by a tester.
+
 ## 0.10.0-alpha.1 (2026-10-07)
 
 Web and engine release: NDIM is hosted on Cloudflare and teaches its own math.

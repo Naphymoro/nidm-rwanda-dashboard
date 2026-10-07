@@ -684,9 +684,9 @@
             <p>A non-conserved model is different. It allows people to enter or leave the system. That may be needed when there is migration, births, survey dropout, new programme participants, seasonal movement, or an expanding social-media audience. When NDIM uses a non-conserved scenario, it should say so clearly because the interpretation changes.</p>
           </div>
           <div class="math-display">\begin{aligned}
-\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \delta(T+R) \\
-\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI \\
-\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - \mu T - \eta T - \delta T \\
+\frac{dS}{dt} &= -\beta_mSM - \beta_tS(T+R) - \iota S + w(M+T) + \mu T + \delta(T+R) \\
+\frac{dM}{dt} &= \beta_mSM - \rho M - \sigma MI - wM \\
+\frac{dT}{dt} &= \beta_tS(T+R) + \rho M - (w + \mu + \eta + \delta)T \\
 \frac{dI}{dt} &= \iota S + \sigma MI - \gamma I \\
 \frac{dR}{dt} &= \gamma I + \eta T - \delta R
 \end{aligned}</div>

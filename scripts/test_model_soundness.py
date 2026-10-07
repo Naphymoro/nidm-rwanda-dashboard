@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 os.environ['NDIM_DATA_DIR'] = tempfile.mkdtemp(prefix='nidm-soundness-')
-from app.modelling import run_compartmental_model
+from app.modelling import compartmental_changes, compartmental_rates, run_compartmental_model
 
 GRID = [0.1, 0.3, 0.5, 0.7, 0.9]
 
@@ -27,6 +27,20 @@ class PopulationModelSoundness(unittest.TestCase):
                     shares = [day[k] for k in 'SMTIR']
                     self.assertAlmostEqual(sum(shares), 1.0, places=9)
                     self.assertTrue(all(0.0 <= v <= 1.0 for v in shares))
+
+    def test_population_is_conserved_by_the_equations_themselves(self):
+        # On the raw daily changes, before the rescaling: every flow has a source and a destination.
+        import random
+        rng = random.Random(7)
+        for _ in range(500):
+            shares = [rng.random() for _ in range(5)]
+            state = dict(zip('SMTIR', [v / sum(shares) for v in shares]))
+            params = {key: rng.random() for key in ('trust_score', 'barrier_score', 'narrative_influence', 'intervention_strength',
+                                                   'inoculation_strength', 'misinformation_risk', 'reactance_penalty',
+                                                   'trusted_messenger_fit', 'resistance_growth', 'misinformation_decay')}
+            change = compartmental_changes(state, compartmental_rates(params))
+            self.assertAlmostEqual(sum(change.values()), 0.0, places=14)
+            self.assertTrue(all(state[k] + change[k] >= 0 for k in state), 'one day never takes more people than a share holds')
 
     def test_long_run_level_depends_on_trust_and_barrier(self):
         # Before the adopter stop rate, every pair ended near 0.95-1.0.

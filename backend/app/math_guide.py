@@ -129,9 +129,9 @@ def compartmental_section():
                'same daily rate as in the household model, so the long-run level depends on trust and barriers, not only '
                'the speed. The model takes one-day steps and rescales the shares to add up to 1 after each step.',
         'formulas': [
-            r'\Delta S = -\beta_m S M - \beta_t S (T + R) - \iota S + w(M + T) + \delta (T + R)',
-            r'\Delta M = \beta_m S M - \rho M - \sigma M I',
-            r'\Delta T = \beta_t S (T + R) + \rho M - \mu T - \eta T - \delta T',
+            r'\Delta S = -\beta_m S M - \beta_t S (T + R) - \iota S + w(M + T) + \mu T + \delta (T + R)',
+            r'\Delta M = \beta_m S M - \rho M - \sigma M I - w M',
+            r'\Delta T = \beta_t S (T + R) + \rho M - (w + \mu + \eta + \delta) T',
             r'\Delta I = \iota S + \sigma M I - \gamma I',
             r'\Delta R = \gamma I + \eta T - \delta R \qquad \text{adoption} = T + I + R',
             r'\delta = 0.025\,\text{barrier} + 0.008\,m + 0.010\,x \quad \text{(the household model\'s daily stop rate)}',
@@ -366,12 +366,12 @@ POPULATION_PARAMETERS = {  # modelling.compartmental_rates, written as parameter
     '\\rho_0': (0.010, 'misinformed-to-convinced base rate'), '\\rho_\\tau': (0.020, 'per unit of trust'),
     '\\rho_s': (0.012, 'per unit of intervention strength'), '\\rho_f': (0.010, 'per unit of messenger fit'),
     '\\sigma_0': (0.008, 'inoculation of the misinformed, base'), '\\sigma_i': (0.020, 'per unit of inoculation strength'),
-    '\\sigma_d': (0.018, 'per unit of misinformation decay'), '\\mu_0': (0.004, 'convinced losing interest, base'),
+    '\\sigma_d': (0.018, 'per unit of misinformation decay'), '\\mu_0': (0.004, 'convinced people losing interest (back to S), base'),
     '\\mu_b': (0.010, 'per unit of barrier'), '\\gamma_0': (0.008, 'inoculated settling, base'),
     '\\gamma_s': (0.018, 'per unit of intervention strength'), '\\gamma_\\tau': (0.012, 'per unit of trust'),
     '\\gamma_g': (0.012, 'per unit of resistance growth'), '\\eta_0': (0.006, 'convinced settling, base'),
     '\\eta_\\tau': (0.012, 'per unit of trust'), '\\eta_g': (0.006, 'per unit of resistance growth'),
-    'w_0': (0.001, 'waning back to S, base'), 'w_1': (0.004, 'waning per unit of barrier above trust'),
+    'w_0': (0.001, 'fading of the misinformed and convinced views back to S, base'), 'w_1': (0.004, 'fading per unit of barrier above trust'),
     '\\delta_b': (0.025, 'adopter stop rate per unit of barrier'), '\\delta_m': (0.008, 'per unit of misinformation risk'),
     '\\delta_x': (0.010, 'per unit of reactance'),
 }
@@ -438,9 +438,9 @@ def _settings_math():
 
 def _population_math():
     return {
-        'formulas': [r'\Delta S = -\beta_m S M - \beta_t S (T + R) - \iota S + w(M + T) + \delta (T + R)',
-                     r'\Delta M = \beta_m S M - \rho M - \sigma M I',
-                     r'\Delta T = \beta_t S (T + R) + \rho M - \mu T - \eta T - \delta T',
+        'formulas': [r'\Delta S = -\beta_m S M - \beta_t S (T + R) - \iota S + w(M + T) + \mu T + \delta (T + R)',
+                     r'\Delta M = \beta_m S M - \rho M - \sigma M I - w M',
+                     r'\Delta T = \beta_t S (T + R) + \rho M - (w + \mu + \eta + \delta) T',
                      r'\Delta I = \iota S + \sigma M I - \gamma I',
                      r'\Delta R = \gamma I + \eta T - \delta R \qquad A = T + I + R',
                      r'\beta_t = k_t(1+\phi)(c_t+\tau)', r'\beta_m = k_m(c_m + b + w_{mm} m + w_{mx} x)',
@@ -450,7 +450,7 @@ def _population_math():
                      r'\eta = \eta_0 + \eta_\tau \tau + \eta_g g', r'w = w_0 + w_1 \max(0, b - \tau)'],
         'derivation': [
             _step('Mass action: new adopters appear when people not yet reached (S) meet people who use it (T + R), so the flow is proportional to the product.', r'\text{flow}_{S\to T} = \beta_t\, S\,(T+R)'),
-            _step('Every flow leaves one share and enters another, so the changes add up to zero and the shares always add up to 1.', r'\Delta S + \Delta M + \Delta T + \Delta I + \Delta R = 0'),
+            _step('Every flow leaves one compartment and enters another: misinformation and word of mouth move people out of S, the misinformed view and lost interest fade back to S, adopters who stop return to S. So the changes add up to zero and the population is conserved. (Until 7 October 2026 two flows had one end only and the code rescaled the shares each day to hide it; a tester found it.)', r'\Delta S + \Delta M + \Delta T + \Delta I + \Delta R = 0'),
             _step('Long run, ignoring misinformation and outreach (M, I and ι small), adoption A = T + R obeys a logistic law with losses.', r'\frac{dA}{dt} \approx \beta_t (1 - A) A - \delta A = A\big[\beta_t(1-A) - \delta\big]'),
             _step('Setting the change to zero gives two resting points: nobody adopts, or a stable level.', r'A^{*} = 0 \quad\text{or}\quad A^{*} = 1 - \frac{\delta}{\beta_t}'),
             _step('Adoption survives only if word of mouth outpaces stopping: the ratio plays the role of a reproduction number.', r'R_0 = \frac{\beta_t}{\delta} > 1 \;\Longleftrightarrow\; A^{*} > 0'),

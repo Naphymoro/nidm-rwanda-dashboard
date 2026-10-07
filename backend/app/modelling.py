@@ -79,21 +79,37 @@ def compartmental_path(horizon_days: int, parameters: Dict[str, float]) -> List[
         }
     )
     r = compartmental_rates(parameters)
-    beta_t, beta_m, iota, rho, sigma, mu, gamma, eta, waning, delta = (r[k] for k in ("beta_t", "beta_m", "iota", "rho", "sigma", "mu", "gamma", "eta", "waning", "delta"))
     path: List[Dict[str, float]] = []
     for day in range(horizon_days):
-        S, M, T, I, R = state["S"], state["M"], state["T"], state["I"], state["R"]
-        # Word of mouth comes from everyone who uses it: the newly convinced (T) and settled adopters (R). When only T
-        # spread it, it died out once T emptied into R, and higher trust then lowered long-run adoption.
-        talk = beta_t * S * (T + R)
-        dS = -beta_m * S * M - talk - iota * S + waning * (M + T) + delta * (T + R)
-        dM = beta_m * S * M - rho * M - sigma * M * max(I, 0.001)
-        dT = talk + rho * M - mu * T - eta * T - delta * T
-        dI = iota * S + sigma * M * max(I, 0.001) - gamma * I
-        dR = gamma * I + eta * T - delta * R
-        state = _normalize_compartments({"S": S + dS, "M": M + dM, "T": T + dT, "I": I + dI, "R": R + dR})
+        change = compartmental_changes(state, r)
+        # The changes sum to zero (compartmental_changes), so this rescaling only removes floating-point drift. Until
+        # 2026-10-07 two flows had one end only and it silently corrected a leak of up to 0.2% of people a day.
+        state = _normalize_compartments({key: state[key] + change[key] for key in state})
         path.append({"day": float(day), **state, "adoption": _clamp(state["T"] + state["I"] + state["R"])})
     return path
+
+
+def compartmental_changes(state: Dict[str, float], r: Dict[str, float]) -> Dict[str, float]:
+    """One day's change of each share. Every flow leaves one compartment and enters another, so the changes sum to zero
+    and the population is conserved (scripts/test_model_soundness.py checks this on the raw changes)."""
+    S, M, T, I, R = state["S"], state["M"], state["T"], state["I"], state["R"]
+    flows = {  # (from, to): people moving per day
+        ("S", "M"): r["beta_m"] * S * M,  # misinformation spreads by contact
+        ("S", "T"): r["beta_t"] * S * (T + R),  # word of mouth from everyone who uses it (T and R)
+        ("S", "I"): r["iota"] * S,  # outreach and inoculation
+        ("M", "T"): r["rho"] * M,  # misinformed people convinced by trustworthy information
+        ("M", "I"): r["sigma"] * M * max(I, 0.001),  # misinformed people inoculated
+        ("M", "S"): r["waning"] * M,  # the misinformed view fades
+        ("T", "S"): (r["waning"] + r["mu"] + r["delta"]) * T,  # fading, losing interest, stopping
+        ("T", "R"): r["eta"] * T,  # convinced people settle
+        ("I", "R"): r["gamma"] * I,  # inoculated people settle
+        ("R", "S"): r["delta"] * R,  # settled adopters stop
+    }
+    change = {key: 0.0 for key in state}
+    for (source, target), amount in flows.items():
+        change[source] -= amount
+        change[target] += amount
+    return change
 
 
 def evidence_band(horizon_days: int, parameters: Dict[str, float], path_fn=None) -> tuple:
