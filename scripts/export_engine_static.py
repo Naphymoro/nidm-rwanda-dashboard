@@ -34,8 +34,11 @@ LINKS = {
     '/manual': '/manual/',
     '/function-coverage': COVERAGE_URL,
 }
+# The public engine the static pages use when the link has no ?api= (so https://nidm-engine.pages.dev/engine/ works).
+DEFAULT_API = 'https://ndim-engine.couma.workers.dev'
 CONFIG_JS = (
-    "window.NDIM_ENGINE={static:true,routes:{studio:'/engine/',workbench:'/engine/workbench/',academy:'/engine/academy/'}};\n"
+    "window.NDIM_ENGINE={static:true,defaultApi:'" + DEFAULT_API + "',"
+    "routes:{studio:'/engine/',workbench:'/engine/workbench/',academy:'/engine/academy/'}};\n"
 )
 SCRIPT_TAG = re.compile(r'<script defer src="/engine/assets/(?:engine|chat)\.js"></script>')
 

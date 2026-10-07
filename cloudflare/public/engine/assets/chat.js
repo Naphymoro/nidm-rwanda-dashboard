@@ -5,13 +5,14 @@
 const $ = id => document.getElementById(id);
 const config = window.NDIM_ENGINE || {};
 
-// Static (Cloudflare Pages) builds have no backend of their own: the engine URL comes from ?api= or the last one used.
+// Static (Cloudflare Pages) builds have no backend of their own: the engine URL comes from ?api=, else the last one
+// used, else the build's default engine (config.defaultApi), so the plain page link works.
 function resolveApiBase(){
   if(!config.static)return '';
   const key='ndim-api-base';
   const store=(action,value)=>{try{return action==='get'?localStorage.getItem(key)||'':value?localStorage.setItem(key,value):localStorage.removeItem(key);}catch{return '';}};
   const raw=new URLSearchParams(location.search).get('api');
-  if(raw===null)return store('get');
+  if(raw===null)return store('get')||config.defaultApi||'';
   try{
     const url=new URL(raw);
     if(!/^https?:$/.test(url.protocol))throw Error('protocol');

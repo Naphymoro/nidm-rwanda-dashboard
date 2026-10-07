@@ -9,7 +9,7 @@ transition**.
 
 | | Link |
 |---|---|
-| **Research Studio** (start here) | https://nidm-engine.pages.dev/engine/?api=https://ndim-engine.couma.workers.dev |
+| **Research Studio** (start here) | https://nidm-engine.pages.dev/studio |
 | Engine API (health check) | https://ndim-engine.couma.workers.dev/health |
 | Field manual | https://nidm-engine.pages.dev/manual/ |
 | Learning Academy (curriculum) | https://nidm-engine.pages.dev/academy/ |
