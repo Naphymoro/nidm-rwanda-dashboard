@@ -116,7 +116,18 @@ function inline(text){
     .replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<em>$2</em>')
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noreferrer">$1</a>');
 }
+// Math in replies: $$...$$ or \\[...\\] on display, \\(...\\) inline. Taken out before escaping, put back as KaTeX
+// targets (renderTex); the LaTeX source shows if KaTeX cannot load.
+const MATH_TOKEN=/\u0000M(\d+)\u0000/g;
 function markdown(src){
+  const maths=[];
+  const hold=(tex,display)=>{maths.push({tex:tex.trim(),display});return `\u0000M${maths.length-1}\u0000`;};
+  src=String(src).replace(/\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]/g,(m,a,b)=>hold(a??b,true)).replace(/\\\(([\s\S]+?)\\\)/g,(m,a)=>hold(a,false));
+  const html=markdownBlocks(src);
+  return maths.length?html.replace(MATH_TOKEN,(m,i)=>{const {tex,display}=maths[Number(i)];
+    return display?`<span class="guide-formula md-math" data-tex="${escapeHTML(tex)}">${escapeHTML(tex)}</span>`:`<span data-tex-inline="${escapeHTML(tex)}">${escapeHTML(tex)}</span>`;}):html;
+}
+function markdownBlocks(src){
   const lines=escapeHTML(src).split('\n');
   const out=[];let i=0;
   while(i<lines.length){
@@ -248,6 +259,7 @@ function renderMessages(){
   state.journeyAnchor=state.messages.filter(m=>m.role==='tool'&&m.meta?.journey).at(-1)?.id||null;
   $('main').classList.toggle('empty',!hasContent());
   $('thread').replaceChildren(...timeline(),...state.local.map(localMessage));
+  if($('thread').querySelector('[data-tex],[data-tex-inline]'))loadKatex().then(ok=>{if(ok)renderTex($('thread'));});
 }
 // Agent messages form turns (user bubble + assistant block). Experiments the assistant planned appear inside its
 // reply; experiments planned directly (workbench, labs, no-AI mode) appear as their own turns, in time order.
@@ -1470,9 +1482,17 @@ async function renderGuide(){
       ontoggle:event=>{if(event.target.open)state.panel.guideOpen=section.id;else if(state.panel.guideOpen===section.id)state.panel.guideOpen=null;}},
     el('summary',{},el('b',{text:`${section.number}. ${section.title}`})),
     el('p',{text:section.why}),
+    el('p',{class:'guide-label',text:'The model'}),
     ...section.formulas.map(tex=>el('div',{class:'guide-formula','data-tex':tex,text:tex})),
     el('table',{class:'guide-symbols'},el('tbody',{},section.symbols.map(([sym,meaning])=>el('tr',{},el('td',{text:sym}),el('td',{text:meaning}))))),
-    el('p',{class:'guide-label',text:'Worked example (computed by the engine)'}),
+    section.derivation?.length?el('p',{class:'guide-label',text:'Derivation'}):null,
+    section.derivation?.length?el('ol',{class:'guide-derivation'},section.derivation.map(step=>el('li',{},el('span',{text:step.text}),
+      step.tex?el('div',{class:'guide-formula','data-tex':step.tex,text:step.tex}):null))):null,
+    section.parameters?.length?el('p',{class:'guide-label',text:'Values NDIM uses'}):null,
+    section.parameters?.length?el('p',{class:'small muted',text:section.parameters_note}):null,
+    section.parameters?.length?el('table',{class:'guide-symbols guide-values'},el('tbody',{},section.parameters.map(([sym,value,meaning])=>el('tr',{},
+      el('td',{class:/\\|[_^]/.test(sym)?'tex-inline':'','data-tex-inline':/\\|[_^]/.test(sym)?sym:null,text:sym}),el('td',{text:String(value)}),el('td',{text:meaning}))))):null,
+    el('p',{class:'guide-label',text:'Worked example (the numbers, computed by the engine)'}),
     el('ol',{class:'guide-example'},section.example.map(line=>el('li',{text:line}))),
     callout('warn','alert',section.limits),
     el('div',{class:'actions'},el('button',{type:'button',class:'btn',onclick:()=>teach(section)},icon('spark'),'Ask NDIM to teach me this'))));
@@ -1489,20 +1509,30 @@ async function renderGuide(){
     ...sections);
   const open=state.panel.guideOpen&&$(state.panel.guideOpen);
   if(open&&state.panel.guideScroll){open.scrollIntoView({block:'start'});state.panel.guideScroll=false;}
-  if(await loadKatex())box.querySelectorAll('[data-tex]').forEach(node=>{try{window.katex.render(node.dataset.tex,node,{displayMode:true,throwOnError:false});}catch{}});
+  if(await loadKatex())renderTex(box);
+}
+// Display formulas ([data-tex]) and inline symbols ([data-tex-inline]) with KaTeX; the source stays visible offline.
+function renderTex(root){
+  if(!window.katex)return;
+  root.querySelectorAll('[data-tex]').forEach(node=>{try{window.katex.render(node.dataset.tex,node,{displayMode:true,throwOnError:false,strict:'ignore'});}catch{}});
+  root.querySelectorAll('[data-tex-inline]').forEach(node=>{try{window.katex.render(node.dataset.texInline,node,{displayMode:false,throwOnError:false,strict:'ignore'});}catch{}});
 }
 async function loadTOC(){if(!state.panel.toc){try{state.panel.toc=(await api('/agent/library')).sections;}catch(err){state.panel.toc=[];}}return state.panel.toc;}
 async function renderLibrary(){
   const box=$('panel-library');
+  if(state.panel.section?.startsWith('guide-')){const id=state.panel.section;state.panel.section=null;openGuide(id);return;}
   if(state.panel.section){
     box.replaceChildren(el('p',{class:'small muted',text:'Loading…'}));
     try{
       const section=await api('/agent/library/'+encodeURIComponent(state.panel.section));
-      const blocks=section.text.split('\n').reduce((acc,line)=>{if(line.startsWith('• ')){const last=acc.at(-1);if(last?.tagName==='UL')last.append(el('li',{text:line.slice(2)}));else acc.push(el('ul',{},el('li',{text:line.slice(2)})));}else acc.push(el('p',{text:line}));return acc;},[]);
+      const isTex=line=>/\\(frac|beta|theta|lambda|Phi|tau|kappa|alpha|gamma|sigma|rho|iota|mu|eta|delta|phi|text|min|max|operatorname|leftarrow|qquad|sum)\b|\^\{|_\{/.test(line);
+      const blocks=section.text.split('\n').reduce((acc,line)=>{if(line.startsWith('• ')){const last=acc.at(-1);if(last?.tagName==='UL')last.append(el('li',{text:line.slice(2)}));else acc.push(el('ul',{},el('li',{text:line.slice(2)})));}
+        else if(isTex(line))acc.push(el('div',{class:'guide-formula','data-tex':line,text:line}));else acc.push(el('p',{text:line}));return acc;},[]);
       box.replaceChildren(el('button',{type:'button',class:'back-btn',onclick:()=>{state.panel.section=null;renderLibrary();}},icon('back'),'Library'),
         el('div',{},el('p',{class:'sub',text:section.source_label}),el('h3',{text:section.title})),
         el('div',{class:'lib-section'},blocks),
         el('div',{class:'actions'},el('button',{type:'button',class:'btn',onclick:()=>{$('prompt').value=`Explain “${section.title}” from the ${section.source_label.toLowerCase()} in plain language.`;autosize();$('prompt').focus();}},icon('spark'),'Ask NDIM about this')));
+      if(await loadKatex())renderTex(box);
     }catch(err){box.replaceChildren(callout('error','alert',err.message));}
     return;
   }

@@ -323,6 +323,10 @@ def sensitivity_section():
 def guide():
     sections = [encoding_section(), settings_section(), compartmental_section(), network_section(), robustness_section(),
                 twin_section(), bayes_section(), ranking_section(), inoculation_section(), grade_section(), sensitivity_section()]
+    for section in sections:  # the model in symbols, the derivation and the values used (see SYMBOLIC)
+        section.update(SYMBOLIC[section['id']]())
+        section['parameters_note'] = ('Values NDIM uses: constants written into its code by the developers as illustrative '
+                                      'defaults, not estimated from data. Real data should replace them (see step 11).')
     return {'title': 'How NDIM works', 'intro': (
         'NDIM turns field notes into illustrative scenarios in ten steps, and step 11 asks which assumptions matter most. Each step below shows the formula the engine '
         'really runs, what every symbol means, a worked example on one sample note, and what the step cannot tell you. '
@@ -335,8 +339,207 @@ def library_sections():
     """The guide as plain-text library sections for the research assistant (search_library / read_library)."""
     out = []
     for section in guide()['sections']:
-        text = [section['why'], '', 'Formulas (LaTeX):', *section['formulas'], '', 'Symbols:',
-                *[f'• {sym}: {meaning}' for sym, meaning in section['symbols']], '', 'Worked example:',
+        text = [section['why'], '', 'The model in symbols (LaTeX):', *section['formulas'], '', 'Symbols:',
+                *[f'• {sym}: {meaning}' for sym, meaning in section['symbols']], '', 'Derivation:',
+                *[f'• {step["text"]}' + (f'  [{step["tex"]}]' if step.get('tex') else '') for step in section.get('derivation', [])], '',
+                'Values NDIM uses (assumptions set by its developers, not estimated from data):',
+                *[f'• {sym} = {value}: {meaning}' for sym, value, meaning in section.get('parameters', [])], '', 'Worked example:',
                 *[f'• {line}' for line in section['example']], '', 'What it cannot tell you: ' + section['limits']]
         out.append({'id': section['id'], 'title': f'{section["number"]}. {section["title"]}', 'text': '\n'.join(text)})
     return out
+
+
+# ---------------------------------------------------------------- the math as math
+# Each step is shown as a model in symbols, a derivation, and a table of the values NDIM uses. Those values are
+# constants written into NDIM's code by its developers as illustrative defaults: none was estimated from data, and the
+# sensitivity analysis (step 11) shows that several of them drive the results. Numbers appear only in the tables and
+# in the worked examples. scripts/test_math_guide.py checks that the symbolic formulas, filled in with the table values,
+# give exactly the engine's own rates.
+ASSUMED = 'set by NDIM\'s developers as an illustrative default; not estimated from data'
+
+POPULATION_PARAMETERS = {  # modelling.compartmental_rates, written as parameters
+    'k_t': (0.035, 'word-of-mouth base rate'), 'c_t': (0.65, 'trust offset in word of mouth'),
+    'k_m': (0.030, 'misinformation base rate'), 'c_m': (0.55, 'offset in misinformation spread'),
+    'w_{mm}': (0.35, 'weight of misinformation risk m'), 'w_{mx}': (0.18, 'weight of reactance x'),
+    '\\iota_0': (0.006, 'outreach base rate'), '\\iota_s': (0.020, 'outreach per unit of intervention strength'),
+    '\\iota_i': (0.030, 'outreach per unit of inoculation strength'), '\\iota_f': (0.010, 'outreach per unit of messenger fit'),
+    '\\rho_0': (0.010, 'misinformed-to-convinced base rate'), '\\rho_\\tau': (0.020, 'per unit of trust'),
+    '\\rho_s': (0.012, 'per unit of intervention strength'), '\\rho_f': (0.010, 'per unit of messenger fit'),
+    '\\sigma_0': (0.008, 'inoculation of the misinformed, base'), '\\sigma_i': (0.020, 'per unit of inoculation strength'),
+    '\\sigma_d': (0.018, 'per unit of misinformation decay'), '\\mu_0': (0.004, 'convinced losing interest, base'),
+    '\\mu_b': (0.010, 'per unit of barrier'), '\\gamma_0': (0.008, 'inoculated settling, base'),
+    '\\gamma_s': (0.018, 'per unit of intervention strength'), '\\gamma_\\tau': (0.012, 'per unit of trust'),
+    '\\gamma_g': (0.012, 'per unit of resistance growth'), '\\eta_0': (0.006, 'convinced settling, base'),
+    '\\eta_\\tau': (0.012, 'per unit of trust'), '\\eta_g': (0.006, 'per unit of resistance growth'),
+    'w_0': (0.001, 'waning back to S, base'), 'w_1': (0.004, 'waning per unit of barrier above trust'),
+    '\\delta_b': (0.025, 'adopter stop rate per unit of barrier'), '\\delta_m': (0.008, 'per unit of misinformation risk'),
+    '\\delta_x': (0.010, 'per unit of reactance'),
+}
+
+
+def population_rates_from_parameters(inputs):
+    """The rates from the symbolic formulas and POPULATION_PARAMETERS (checked against compartmental_rates)."""
+    p = {key: value for key, (value, _) in POPULATION_PARAMETERS.items()}
+    clamp = lambda v: max(0.0, min(1.0, float(v)))
+    tau, b = clamp(inputs.get('trust_score', 0.6)), clamp(inputs.get('barrier_score', 0.35))
+    phi, s = clamp(inputs.get('narrative_influence', 0.38)), clamp(inputs.get('intervention_strength', 0.15))
+    i, m, x = clamp(inputs.get('inoculation_strength', 0)), clamp(inputs.get('misinformation_risk', 0)), clamp(inputs.get('reactance_penalty', 0))
+    f, g, d = clamp(inputs.get('trusted_messenger_fit', 0)), clamp(inputs.get('resistance_growth', 0)), clamp(inputs.get('misinformation_decay', 0))
+    return {'beta_t': p['k_t'] * (1 + phi) * (p['c_t'] + tau), 'beta_m': p['k_m'] * (p['c_m'] + b + p['w_{mm}'] * m + p['w_{mx}'] * x),
+            'iota': p['\\iota_0'] + p['\\iota_s'] * s + p['\\iota_i'] * i + p['\\iota_f'] * f,
+            'rho': p['\\rho_0'] + p['\\rho_\\tau'] * tau + p['\\rho_s'] * s + p['\\rho_f'] * f,
+            'sigma': p['\\sigma_0'] + p['\\sigma_i'] * i + p['\\sigma_d'] * d, 'mu': p['\\mu_0'] + p['\\mu_b'] * b,
+            'gamma': p['\\gamma_0'] + p['\\gamma_s'] * s + p['\\gamma_\\tau'] * tau + p['\\gamma_g'] * g,
+            'eta': p['\\eta_0'] + p['\\eta_\\tau'] * tau + p['\\eta_g'] * g, 'waning': p['w_0'] + p['w_1'] * max(0.0, b - tau),
+            'delta': p['\\delta_b'] * b + p['\\delta_m'] * m + p['\\delta_x'] * x}
+
+
+def _rows(table):
+    return [[symbol, value, meaning] for symbol, (value, meaning) in table.items()]
+
+
+def _step(text, tex=None):
+    return {'text': text, 'tex': tex}
+
+
+def _encoding_math():
+    rows = [['b_\\tau', TRUST_BASE, 'trust of a note with no matched words']]
+    rows += [[f'w^{{\\tau}}_{{\\text{{{LABELS[k]}}}}}', v, 'added to trust per word' if v > 0 else 'taken from trust per word'] for k, v in TRUST_WEIGHTS.items()]
+    rows += [['b_b \\;', BARRIER_BASE, 'barrier of a note with no matched words']]
+    rows += [[f'w^{{b}}_{{\\text{{{LABELS[k]}}}}}', v, 'added to barrier per word'] for k, v in BARRIER_PRESSURE.items()]
+    rows += [[f'w^{{b}}_{{\\text{{{LABELS[k]}}}}}', -v, 'taken from barrier per word'] for k, v in BARRIER_RELIEF.items()]
+    rows += [['\\ell,\\; u', '0.05, 0.95', 'lowest and highest score allowed']]
+    return {
+        'formulas': [r'n_k(d) = \#\{\text{words of list } k \text{ in note } d\}',
+                     r'\tau(d) = \operatorname{clamp}\Big(b_\tau + \sum_k w^{\tau}_k\, n_k(d)\Big)',
+                     r'b(d) = \operatorname{clamp}\Big(b_b + \sum_k w^{b}_k\, n_k(d)\Big)',
+                     r'\operatorname{clamp}(x) = \min\big(u, \max(\ell, x)\big)'],
+        'derivation': [
+            _step('Start from a points system: every matched word adds a fixed amount of evidence, so a score is linear in the counts.', r'\tau = b_\tau + w_1 n_1 + w_2 n_2 + \dots'),
+            _step('The base is the score of a note with no matched words: the neutral starting point before any evidence.', r'n_k = 0 \;\Rightarrow\; \tau = b_\tau'),
+            _step('The sign of a weight says the direction: trust words push trust up, distrust and rumour words push it down.', r'w^{\tau}_{\text{trust}} > 0, \quad w^{\tau}_{\text{distrust}} < 0'),
+            _step('Each word counts every time it occurs, so the effect of one list grows in steps of its weight.', r'\frac{\partial \tau}{\partial n_k} = w^{\tau}_k \quad (\text{inside the clamp})'),
+            _step('The clamp keeps every score strictly between 0 and 1, so the models downstream always receive valid shares.', r'\ell \le \tau(d) \le u'),
+            _step('Over many notes the model uses the average score, the mean of these linear sums.', r'\bar\tau = \frac{1}{N}\sum_{d=1}^{N}\tau(d)')],
+        'parameters': rows}
+
+
+def _settings_math():
+    return {
+        'formulas': [r'\phi = \min\big(\phi_{\max},\; a_\phi + b_\phi\,\bar c + g_\phi\, a\big)',
+                     r's = \min\big(s_{\max},\; a_s + b_s\,\bar\tau + \text{bonus} + g_s\, a\big)'],
+        'derivation': [
+            _step('The models need a few drivers, not the notes. Each driver is a straight-line function of an evidence summary, with a cap.', r'\text{driver} = \min(\text{cap}, \text{intercept} + \text{slope}\times\text{summary})'),
+            _step('Narrative influence rises with how confident the encoder was; intervention strength rises with trust, the ranking bonus and any applied inoculation.'),
+            _step('The caps stop either driver reaching 1, which would make the model\'s rates meaningless.')],
+        'parameters': [['a_\\phi,\\; b_\\phi,\\; g_\\phi,\\; \\phi_{\\max}', '0.20, 0.35, 0.12, 0.90', 'narrative influence line and cap (' + ASSUMED + ')'],
+                       ['a_s,\\; b_s,\\; g_s,\\; s_{\\max}', '0.10, 0.20, 0.28, 0.90', 'intervention strength line and cap (' + ASSUMED + ')']]}
+
+
+def _population_math():
+    return {
+        'formulas': [r'\Delta S = -\beta_m S M - \beta_t S (T + R) - \iota S + w(M + T) + \delta (T + R)',
+                     r'\Delta M = \beta_m S M - \rho M - \sigma M I',
+                     r'\Delta T = \beta_t S (T + R) + \rho M - \mu T - \eta T - \delta T',
+                     r'\Delta I = \iota S + \sigma M I - \gamma I',
+                     r'\Delta R = \gamma I + \eta T - \delta R \qquad A = T + I + R',
+                     r'\beta_t = k_t(1+\phi)(c_t+\tau)', r'\beta_m = k_m(c_m + b + w_{mm} m + w_{mx} x)',
+                     r'\delta = \delta_b b + \delta_m m + \delta_x x', r'\iota = \iota_0 + \iota_s s + \iota_i i + \iota_f f',
+                     r'\rho = \rho_0 + \rho_\tau \tau + \rho_s s + \rho_f f', r'\sigma = \sigma_0 + \sigma_i i + \sigma_d d',
+                     r'\mu = \mu_0 + \mu_b b', r'\gamma = \gamma_0 + \gamma_s s + \gamma_\tau \tau + \gamma_g g',
+                     r'\eta = \eta_0 + \eta_\tau \tau + \eta_g g', r'w = w_0 + w_1 \max(0, b - \tau)'],
+        'derivation': [
+            _step('Mass action: new adopters appear when people not yet reached (S) meet people who use it (T + R), so the flow is proportional to the product.', r'\text{flow}_{S\to T} = \beta_t\, S\,(T+R)'),
+            _step('Every flow leaves one share and enters another, so the changes add up to zero and the shares always add up to 1.', r'\Delta S + \Delta M + \Delta T + \Delta I + \Delta R = 0'),
+            _step('Long run, ignoring misinformation and outreach (M, I and ι small), adoption A = T + R obeys a logistic law with losses.', r'\frac{dA}{dt} \approx \beta_t (1 - A) A - \delta A = A\big[\beta_t(1-A) - \delta\big]'),
+            _step('Setting the change to zero gives two resting points: nobody adopts, or a stable level.', r'A^{*} = 0 \quad\text{or}\quad A^{*} = 1 - \frac{\delta}{\beta_t}'),
+            _step('Adoption survives only if word of mouth outpaces stopping: the ratio plays the role of a reproduction number.', r'R_0 = \frac{\beta_t}{\delta} > 1 \;\Longleftrightarrow\; A^{*} > 0'),
+            _step('So trust raises the level (through β_t) and barriers lower it (through δ). The engine solves the full system numerically, one day at a time (Euler steps, then rescaling to sum 1).', r'X_{t+1} = X_t + \Delta X_t, \quad \Delta t = 1 \text{ day}')],
+        'parameters': _rows(POPULATION_PARAMETERS)}
+
+
+def _network_math():
+    peer, media = network_rates({})['peer'], 0.05
+    return {
+        'formulas': [r'p_i(t) = \min\!\Big(1,\; \mu + \pi\,\frac{a_i(t)}{k_i} + o\Big) \qquad q = \delta_b b + \delta_m m + \delta_x x',
+                     r'\mu = (m_0 + m_i\, i + m_f\, f)\,\tau \qquad o = s\,\big(o_S\, q_0 + o_M (1 - q_0)\big)',
+                     r'A_{\text{hybrid}}(t) = h\,A_{\text{population}}(t) + (1-h)\,A_{\text{network}}(t)'],
+        'derivation': [
+            _step('Each day a household that has not adopted faces three independent routes; for small daily chances their probabilities add.', r'1 - (1-p_1)(1-p_2)(1-p_3) \approx p_1 + p_2 + p_3'),
+            _step('The neighbour route grows with the share of a household\'s own neighbours who adopted: a_i adopting neighbours out of k_i.'),
+            _step('On a fully mixed population that share is the overall adoption A, giving a mean-field equation.', r'\frac{dA}{dt} = (1-A)(\mu + \pi A + o) - qA'),
+            _step('Setting it to zero gives a quadratic for the resting level.', r'\pi A^2 - (\pi - \mu - o - q)A - (\mu + o) = 0'),
+            _step('Its positive root is the long-run level; a real network (villages, few bridges) moves the simulated curve away from it, which is what the 20 runs measure.', r'A^{*} = \frac{(\pi-\mu-o-q) + \sqrt{(\pi-\mu-o-q)^2 + 4\pi(\mu+o)}}{2\pi}')],
+        'parameters': [['\\pi', peer, 'neighbour (peer) effect per day (' + ASSUMED + ')'], ['m_0 \\;', media, 'media effect per day'],
+                       ['m_i,\\; m_f', '0.035, 0.020', 'extra media reach per unit of inoculation and messenger fit'],
+                       ['o_S,\\; o_M', f"{INTERVENTION_RATES['susceptible']}, {INTERVENTION_RATES['misinformed']}", 'outreach per unit of strength for the not-yet-reached and the misinformed'],
+                       ['\\delta_b,\\; \\delta_m,\\; \\delta_x', '0.025, 0.008, 0.010', 'stop rate weights, shared with the population model'],
+                       ['N, village, k, rewiring', '1000, 100, 8, 0.1', 'households, village size, ties per household, share of ties rewired'],
+                       ['runs', 20, 'simulations with different networks and chance events (fixed seed)'], ['h \\;', 0.55, 'hybrid weight of the population model']]}
+
+
+def _robustness_math():
+    return {'formulas': [r'\bar a_k = \frac{1}{T}\sum_{t=1}^{T} A_k(t) \qquad \text{spread} = \max_k \bar a_k - \min_k \bar a_k \le \varepsilon \;\Rightarrow\; \text{holds}'],
+            'derivation': [_step('The network is unknown, so the same scenario is run on several plausible shapes k and summarised by average adoption over the period.'),
+                           _step('If every shape gives nearly the same average, the conclusion does not depend on the shape; otherwise it does.')],
+            'parameters': [['\\varepsilon', SPREAD_LIMIT, 'largest spread that still counts as "holds" (' + ASSUMED + ')'], ['shapes', len(VARIANTS), 'network shapes compared']]}
+
+
+def _twin_math():
+    return {'formulas': [r'A(0) = y_{\text{obs}} \qquad \tau \leftarrow \tau + \Delta_\tau \qquad b \leftarrow b + \Delta_b'],
+            'derivation': [_step('The twin is the hybrid model restarted at the observed state: initial adoption is replaced by what was seen, and trust and barrier move by the observed changes.'),
+                           _step('Nothing is fitted: the gap between observed and predicted adoption is shown, not used to estimate any parameter.', r'e = y_{\text{obs}} - \hat y \quad (\text{reported, not fitted})')],
+            'parameters': [['y_{\\text{obs}},\\; \\Delta_\\tau,\\; \\Delta_b', '—', 'the researcher\'s field numbers; there are no defaults']]}
+
+
+def _bayes_math():
+    return {'formulas': [r'p \sim \operatorname{Beta}(\alpha, \beta) \qquad k \mid p \sim \operatorname{Binomial}(n, p)',
+                         r'p \mid k \sim \operatorname{Beta}(\alpha + k,\; \beta + n - k) \qquad \mathbb{E}[p \mid k] = \frac{\alpha + k}{\alpha + \beta + n}'],
+            'derivation': [
+                _step('Write the prior density and the likelihood of k successes in n trials.', r'f(p) \propto p^{\alpha-1}(1-p)^{\beta-1}, \qquad L(p) \propto p^{k}(1-p)^{n-k}'),
+                _step('Bayes\' rule multiplies them; the exponents add.', r'f(p \mid k) \propto p^{\alpha+k-1}(1-p)^{\beta+n-k-1}'),
+                _step('That is again a Beta density, so the prior is conjugate: the update just adds counts.', r'p \mid k \sim \operatorname{Beta}(\alpha+k, \beta+n-k)'),
+                _step('Its mean is a weighted average of the prior mean and the observed share, with weights α + β and n.', r'\frac{\alpha+k}{\alpha+\beta+n} = \frac{\alpha+\beta}{\alpha+\beta+n}\cdot\frac{\alpha}{\alpha+\beta} + \frac{n}{\alpha+\beta+n}\cdot\frac{k}{n}'),
+                _step('NDIM treats the average score as k/n with n = 12 per note, so more notes give n more weight.', r'n = 12\,N_{\text{notes}}, \qquad k = \operatorname{round}(\bar\tau\, n)')],
+            'parameters': [['\\alpha, \\beta \\;(\\text{trust})', '6, 4', 'prior counts, mean 0.6 (' + ASSUMED + ')'], ['\\alpha, \\beta \\;(\\text{barrier})', '4, 6', 'prior counts, mean 0.4'],
+                           ['pseudo-trials per note', 12, 'how far one note moves the belief (' + ASSUMED + ')']]}
+
+
+def _ranking_math():
+    return {'formulas': [r'\text{score}_j = L_j + w_\tau\,\tau - w_b\, b - C_j \qquad \text{bonus} = \kappa \max(0, \max_j \text{score}_j)'],
+            'derivation': [_step('Each action j has an assumed lift L_j and cost C_j; the score adds the current trust and subtracts the barrier.'),
+                           _step('The trust and barrier terms are the same for every action, so they cancel when two actions are compared.', r'\text{score}_j - \text{score}_{k} = (L_j - C_j) - (L_{k} - C_{k})'),
+                           _step('So the ranking is fixed by lift minus cost alone: it restates the assumptions, which is why it is not a recommendation.')],
+            'parameters': [['w_\\tau,\\; w_b', '0.30, 0.22', 'trust and barrier weights (' + ASSUMED + ')'], ['\\kappa', 0.025, 'share of the top score added to intervention strength'],
+                           *[[f'L_j, C_j \\;(\\text{{{name.replace("_", " ")}}})', f'{lift}, {cost}', 'assumed lift and cost'] for name, (lift, cost) in ACTIONS.items()]]}
+
+
+def _inoculation_math():
+    return {'formulas': [r'V = \operatorname{clamp}\big(v_0 + v_T T_h + v_M M_s + v_R R_f + v_F F_m - v_X X\big) \qquad \tau \leftarrow \tau + \alpha_\tau a, \quad b \leftarrow b - \alpha_b a'],
+            'derivation': [_step('The suggested strength is a weighted index: more threat, more misinformation, easier refutation and a better-fitting messenger raise it; backlash risk lowers it.'),
+                           _step('Applying an inoculation of strength a shifts trust up and barrier down in proportion, before the twin runs again.')],
+            'parameters': [['v_0, v_T, v_M, v_R, v_F, v_X \\;', '0.10, 0.20, 0.20, 0.18, 0.14, 0.08', 'index weights (' + ASSUMED + ')'], ['\\alpha_\\tau,\\; \\alpha_b', '0.08, 0.07', 'shift per unit of applied strength']]}
+
+
+def _grade_math():
+    return {'formulas': [r'\text{grade} = \begin{cases} B & N \ge 20 \text{ and } \bar c \ge 0.70 \\ C & N \ge 5 \text{ and } \bar c \ge 0.55 \\ D & \text{otherwise} \end{cases}'],
+            'derivation': [_step('A step function of two numbers: how many notes were accepted (N) and the encoder\'s average confidence (c̄). There is no grade A.')],
+            'parameters': [['N thresholds', '20, 5', 'notes needed for B and C (' + ASSUMED + ')'], ['c̄ thresholds', '0.70, 0.55', 'confidence needed for B and C']]}
+
+
+def _sensitivity_math():
+    from .sensitivity import ASSUMPTION_RANGE, BASE_SAMPLES, EVIDENCE_SPREAD
+    return {'derivation': [
+                _step('Split the variance of the result with the law of total variance, conditioning on one factor.', r'\operatorname{Var}(Y) = \operatorname{Var}\big(\mathbb{E}[Y\mid X_i]\big) + \mathbb{E}\big[\operatorname{Var}(Y\mid X_i)\big]'),
+                _step('The first part, as a share of the total, is what X_i explains alone: the first-order index S_i.'),
+                _step('Fixing everything except X_i and looking at the variance left gives the total index, which includes interactions.', r'S_{T,i} = 1 - \frac{\operatorname{Var}\big(\mathbb{E}[Y\mid X_{\sim i}]\big)}{\operatorname{Var}(Y)}'),
+                _step('Both are estimated from two random sample matrices A and B and their mixtures (Saltelli\'s scheme), N(k + 2) model runs in all.')],
+            'parameters': [['evidence range', f'±{EVIDENCE_SPREAD}', 'how far trust, barrier, influence and strength vary'],
+                           ['assumption range', f'×{ASSUMPTION_RANGE[0]} to ×{ASSUMPTION_RANGE[1]}', 'how far each rate constant is scaled'],
+                           ['N', BASE_SAMPLES, 'base samples (11 runs each)']]}
+
+
+SYMBOLIC = {'guide-encoding': _encoding_math, 'guide-settings': _settings_math, 'guide-compartmental': _population_math,
+            'guide-network': _network_math, 'guide-robustness': _robustness_math, 'guide-twin': _twin_math,
+            'guide-bayes': _bayes_math, 'guide-ranking': _ranking_math, 'guide-inoculation': _inoculation_math,
+            'guide-grade': _grade_math, 'guide-sensitivity': _sensitivity_math}

@@ -32,6 +32,27 @@ class MathGuideTests(unittest.TestCase):
             for key in ('why', 'formulas', 'symbols', 'example', 'limits', 'stages'):
                 self.assertTrue(section[key], (section['id'], key))
 
+    def test_every_step_has_symbols_derivation_and_values(self):
+        for section in self.guide['sections']:
+            self.assertTrue(section['derivation'], section['id'])
+            self.assertTrue(section['parameters'], section['id'])
+        encoding = ' '.join(self.by_id['guide-encoding']['formulas'])
+        self.assertNotIn('0.48', encoding)  # the model is in symbols; the numbers live in the values table
+        self.assertIn('b_\\tau', encoding)
+
+    def test_parameter_tables_reproduce_the_engines_rates(self):
+        import random
+        rng = random.Random(4)
+        for _ in range(200):
+            inputs = {key: rng.random() for key in ('trust_score', 'barrier_score', 'narrative_influence', 'intervention_strength',
+                                                   'inoculation_strength', 'misinformation_risk', 'reactance_penalty',
+                                                   'trusted_messenger_fit', 'resistance_growth', 'misinformation_decay')}
+            ours, engine = math_guide.population_rates_from_parameters(inputs), compartmental_rates(inputs)
+            for key, value in ours.items():
+                self.assertAlmostEqual(value, engine[key], places=12, msg=key)
+        values = {row[0]: row[1] for row in self.by_id['guide-encoding']['parameters']}
+        self.assertEqual(values['b_\\tau'], 0.48)
+
     def test_encoding_arithmetic_is_the_encoders(self):
         encoded = math_guide.example()['encoded']
         lines = {line.split(' = ')[0]: line for line in self.by_id['guide-encoding']['example'] if ' = ' in line}

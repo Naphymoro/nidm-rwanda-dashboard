@@ -766,7 +766,7 @@ posterior &= Beta(\alpha + successes,\beta + failures)
         </div>
       </details>
 
-      <details id="exports">
+      <details id="outputs">
         <summary>Outputs and exports</summary>
         <div class="section-body">
           <p>The main output is a human-readable policy brief. It should state evidence grade, confidence level, assumptions, limitations, uncertainty, required human review, and recommended intervention.</p>
@@ -791,35 +791,13 @@ posterior &= Beta(\alpha + successes,\beta + failures)
     </main>
     <a id="backTop" href="#top">Back to top</a>
     <script>
+      // Without KaTeX (offline), show the formula source as written: never a hand-drawn copy, which went stale.
+      // (A section id of "exports" once made KaTeX load as a module, so every equation fell back.)
       function fallbackEquation(tex) {
-        const compact = tex.replace(/\s+/g, " ");
-        const frac = (top, bottom) => `<span class="frac"><span>${top}</span><span>${bottom}</span></span>`;
-        const line = (left, right) => `<div class="eq-line"><span>${left}</span><span class="eq-op">=</span><span>${right}</span></div>`;
-        if (compact.includes("\\Phi_i")) {
-          return `<div class="eq-line"><span class="eq-var">Φ<sub>i</sub></span><span class="eq-op">=</span><span>0.30<span class="eq-var">E<sub>i</sub></span> + 0.30<span class="eq-var">C<sub>i</sub></span> + 0.20<span class="eq-var">τ<sub>i</sub></span> + 0.20<span class="eq-var">κ<sub>i</sub></span></span></div>`;
-        }
-        if (compact.includes("\\frac{dS}{dt}")) {
-          return `<div class="eq-matrix">
-            ${line(frac("dS", "dt"), `-β<sub>m</sub>SM - β<sub>t</sub>ST - ιS`)}
-            ${line(frac("dM", "dt"), `β<sub>m</sub>SM - ρM - μM`)}
-            ${line(frac("dT", "dt"), `β<sub>t</sub>ST + ρM - ηT`)}
-            ${line(frac("dI", "dt"), `ιS + ηT - γI`)}
-            ${line(frac("dR", "dt"), `γI + μM`)}
-          </div>`;
-        }
-        if (compact.includes("\\theta_{t+1}")) {
-          return `<div class="eq-line"><span class="eq-var">θ<sub>t+1</sub></span><span class="eq-op">=</span><span><span class="eq-var">θ<sub>t</sub></span> + λ(<span class="eq-var">y<sub>observed</sub></span> - <span class="eq-var">y<sub>predicted</sub></span>)</span></div>`;
-        }
-        if (compact.includes("prior") && compact.includes("posterior")) {
-          return `<div class="eq-matrix">
-            ${line(`<span class="eq-var">prior</span>`, `Beta(α, β)`)}
-            ${line(`<span class="eq-var">posterior</span>`, `Beta(α + successes, β + failures)`)}
-          </div>`;
-        }
-        if (compact.includes("Q(s,a)")) {
-          return `<div class="eq-line"><span class="eq-var">Q(s,a)</span><span class="eq-op">←</span><span><span class="eq-var">Q(s,a)</span> + α [ r + γ max<sub>a′</sub><span class="eq-var">Q(s′,a′)</span> - <span class="eq-var">Q(s,a)</span> ]</span></div>`;
-        }
-        return `<div class="eq-line">${tex}</div>`;
+        const pre = document.createElement("pre");
+        pre.className = "eq-source";
+        pre.textContent = tex;
+        return pre.outerHTML;
       }
 
       function renderManualMath() {

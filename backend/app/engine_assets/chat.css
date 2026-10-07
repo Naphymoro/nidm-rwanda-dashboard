@@ -409,3 +409,10 @@ dl.prov dd{margin:0;overflow-wrap:anywhere}
 .btn.pulse{animation:ndim-pulse 1.2s ease-out 2}
 @keyframes ndim-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ring) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
 @media (prefers-reduced-motion:reduce){.btn.pulse{animation:none;outline:2px solid var(--ring)}}
+.guide-derivation{margin:4px 0 10px;padding-left:20px;font-size:13.5px;line-height:1.55}
+.guide-derivation li{margin:6px 0}
+.guide-derivation .guide-formula{margin-top:4px}
+.guide-values td:nth-child(2){white-space:nowrap;font-variant-numeric:tabular-nums}
+.tex-inline .katex{font-size:1em}
+.md .katex-display{margin:6px 0;overflow-x:auto;overflow-y:hidden}
+.md .md-math{display:block}
