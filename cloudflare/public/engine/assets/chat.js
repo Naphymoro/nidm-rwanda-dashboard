@@ -102,7 +102,7 @@ function pageURL(){
   const params=new URLSearchParams();
   if(state.workspace)params.set('workspace',state.workspace);
   if(state.threadId&&(state.runs.length||state.messages.length||state.journey))params.set('chat',state.threadId);
-  if(apiBase)params.set('api',apiBase);
+  if(apiBase&&apiBase!==config.defaultApi)params.set('api',apiBase);  // the default engine needs no ?api=, keeping links short
   const query=params.toString();
   return location.pathname+(query?'?'+query:'');
 }
