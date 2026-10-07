@@ -85,7 +85,7 @@ async def engine_lifespan(app):
         harness.stop()
 
 
-app = FastAPI(title="NDIM Engine API", version=os.getenv("NDIM_VERSION", "0.9.0-alpha.9"), lifespan=engine_lifespan)
+app = FastAPI(title="NDIM Engine API", version=os.getenv("NDIM_VERSION", "0.10.0-alpha.1"), lifespan=engine_lifespan)
 app.include_router(research_router)
 app.include_router(engine_router)
 app.include_router(journey_router)
