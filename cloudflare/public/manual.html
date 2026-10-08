@@ -569,6 +569,25 @@ barrier &= clamp(0.30 + 0.095A + 0.075F + 0.07S_a + 0.055B + 0.06N + 0.025R - 0.
 \frac{dR}{dt} &= \gamma I + \eta T - \delta R
 \end{aligned}</div>
           <p>Read each derivative as a rate of change. Every flow leaves one compartment and enters another, so the changes add up to zero and the population is conserved; the model takes one-day steps. Adoption is T + I + R. The misinformed and convinced views fade back to S (w), and convinced people can lose interest (μ). Word of mouth comes from everyone who uses it (T and R). Adopters can stop and fall back to S at δ = 0.025 × barrier + 0.008 × misinformation risk + 0.010 × reactance, the same daily stop rate as the household model, so the long-run level (roughly 1 − δ/β_t) rises with trust and falls with barriers. Trust raises β_t = 0.035(1 + φ)(0.65 + trust); barriers raise β_m and δ. All rate formulas and a worked example are in How NDIM works, step 3.</p>
+          <p><strong>The ten flows.</strong> Each flow moves people from one compartment to another; the equations above collect them per compartment.</p>
+          <table>
+            <thead><tr><th>From → to</th><th>Flow per day</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td data-label="From → to">S → M</td><td data-label="Flow">β<sub>m</sub>SM</td><td data-label="Meaning">misinformation spreads by contact</td></tr>
+              <tr><td data-label="From → to">S → T</td><td data-label="Flow">β<sub>t</sub>S(T + R)</td><td data-label="Meaning">word of mouth from everyone who uses it</td></tr>
+              <tr><td data-label="From → to">S → I</td><td data-label="Flow">ιS</td><td data-label="Meaning">outreach and inoculation</td></tr>
+              <tr><td data-label="From → to">M → T</td><td data-label="Flow">ρM</td><td data-label="Meaning">misinformed people convinced by trustworthy information</td></tr>
+              <tr><td data-label="From → to">M → I</td><td data-label="Flow">σMI</td><td data-label="Meaning">misinformed people inoculated</td></tr>
+              <tr><td data-label="From → to">M → S</td><td data-label="Flow">wM</td><td data-label="Meaning">the misinformed view fades</td></tr>
+              <tr><td data-label="From → to">T → S</td><td data-label="Flow">(w + μ + δ)T</td><td data-label="Meaning">the view fades, interest is lost, or people stop</td></tr>
+              <tr><td data-label="From → to">T → R</td><td data-label="Flow">ηT</td><td data-label="Meaning">convinced people settle</td></tr>
+              <tr><td data-label="From → to">I → R</td><td data-label="Flow">γI</td><td data-label="Meaning">inoculated people settle</td></tr>
+              <tr><td data-label="From → to">R → S</td><td data-label="Flow">δR</td><td data-label="Meaning">settled adopters stop</td></tr>
+            </tbody>
+          </table>
+          <p><strong>Conservation.</strong> Adding the five changes, every flow appears once with a minus sign (its source) and once with a plus sign (its destination), so the total is exactly zero and the shares always add up to one without any correction:</p>
+          <div class="math-display">\frac{dS}{dt} + \frac{dM}{dt} + \frac{dT}{dt} + \frac{dI}{dt} + \frac{dR}{dt} = \sum_{\text{flows}} (\text{flow} - \text{flow}) = 0</div>
+          <p>Until 7 October 2026 two flows had one end only: fading added people to S without taking them from M and T, and losing interest removed people from T without a destination. The leak, up to 0.2% of the population a day, was hidden by rescaling the shares each day. A tester found it; every flow now has both ends, and a test checks conservation on the raw equations.</p>
 
           <h3>Agent-based model</h3>
           <p>The agent-based model follows 1,000 simulated households on an assumed social network. By default they live in villages of 100: each household is tied to about 8 near neighbours, a few ties are rewired at random, and each household has about one tie to another village. Other assumed shapes can be chosen: one small-world population, a scale-free network (a few highly connected households and many with few ties), or a well-mixed population with no network at all.</p>

@@ -695,6 +695,9 @@
           <p><strong>What the user should look for in the chart:</strong> if M rises quickly, harmful stories are winning attention. If T and I rise, trusted evidence and inoculation are working. If R rises, the system is becoming more stable.</p>
           <p><strong>Policy meaning:</strong> if misinformation pressure is high, a programme may need trusted messengers and prebunking before technology distribution can succeed.</p>
 
+                    <p><strong>Every flow has two ends:</strong> it leaves one compartment and enters another (S → M misinformation, S → T word of mouth, S → I outreach, M → T and M → I correction and inoculation, M and T → S fading and lost interest, T and I → R settling, R → S stopping). Adding the five changes, each flow cancels against itself, so the population is conserved:</p>
+          <div class="math-display">\frac{dS}{dt} + \frac{dM}{dt} + \frac{dT}{dt} + \frac{dI}{dt} + \frac{dR}{dt} = 0</div>
+
           <h3>3. Agent-based model: the household-level story</h3>
           <p>The agent-based model asks: what happens when households adopt partly because their neighbours do? It follows 1,000 simulated households on an assumed social network, by default villages of 100 households, each tied to about 8 neighbours, with about one tie per household to another village.</p>
           <div class="math-display">P(adopt_i \text{ on day } t) = \min(1,\; media + peer \times \frac{\text{adopting neighbours of } i}{\text{neighbours of } i} + outreach)</div>
